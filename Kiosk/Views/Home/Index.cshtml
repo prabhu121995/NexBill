@@ -554,17 +554,9 @@
   <!-- MODIFIER -->
   <div id="modifierModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="glass-strong rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
-      <div class="flex justify-between items-center mb-3"><h3 class="text-base font-extrabold">Kitchen Note</h3><button onclick="closeModal('modifierModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div class="flex justify-between items-center mb-3"><h3 class="text-base font-extrabold">Item Note</h3><button onclick="closeModal('modifierModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
       <p id="modifierDishName" class="text-sm font-bold text-brand-700 mb-3">Selected Dish</p>
-      <div class="flex flex-wrap gap-2 mb-4">
-        <button onclick="appendModifier('Less Spicy')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">Less Spicy</button>
-        <button onclick="appendModifier('Extra Spicy')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">Extra Spicy</button>
-        <button onclick="appendModifier('No Onion / Garlic')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">No Onion</button>
-        <button onclick="appendModifier('Crispy / Well Done')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">Crispy</button>
-        <button onclick="appendModifier('Extra Ghee')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">Extra Ghee</button>
-        <button onclick="appendModifier('Pack Separate')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">Pack Separate</button>
-      </div>
-      <input id="inputCustomModifier" type="text" placeholder="Custom note…" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-brand-600">
+      <input id="inputCustomModifier" type="text" placeholder="Type a note for this item…" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-brand-600">
       <div class="flex justify-end gap-2">
         <button onclick="clearModifierForSelected()" class="tap px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">Clear</button>
         <button onclick="saveModifier()" class="tap px-5 py-2 bg-brand-600 rounded-xl text-xs font-extrabold text-white">Save Note</button>
