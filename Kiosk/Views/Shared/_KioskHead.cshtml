@@ -1,0 +1,44 @@
+@*
+    Head for the frameless system pages (error, status). The till, display, login
+    and admin screens each carry their own head because each extends the theme
+    differently; these two only need the base palette, so they share one.
+
+    Every asset is local - a kiosk with no internet must still render.
+*@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>@(await Brand.NameAsync()) — @ViewData["Title"]</title>
+<partial name="_AppIcons" />
+<script src="~/lib/tailwind/tailwind.min.js"></script>
+<link rel="stylesheet" href="~/lib/fonts/fonts.css" />
+<link rel="stylesheet" href="~/css/density.css" asp-append-version="true" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+        colors: {
+          lavender: { 25:'#fbfaff',50:'#f6f3fc',100:'#ece5fa',200:'#ded2f6',300:'#c5b0f0',400:'#a787e6',500:'#8c60dc',600:'#7540cc',700:'#6432b4',800:'#522995',900:'#432279',950:'#231046' },
+          rose: { 50:'#fff1f2',100:'#ffe4e6',500:'#f43f5e',600:'#e11d48',700:'#be123c' }
+        },
+        boxShadow: {
+          'soft': '0 1px 2px rgba(35,16,70,.04), 0 4px 16px -4px rgba(35,16,70,.08)',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  .tap { touch-action: manipulation; transition: transform .1s ease, background-color .15s, box-shadow .15s; }
+  .tap:active { transform: scale(.96); }
+  .tap:focus-visible { outline: 2px solid #7540cc; outline-offset: 2px; }
+  body {
+    background:
+      radial-gradient(1100px 520px at 8% -12%, #ece5fa 0%, transparent 62%),
+      radial-gradient(900px 480px at 108% 112%, #f6f3fc 0%, transparent 60%),
+      #f4f2f9;
+  }
+</style>

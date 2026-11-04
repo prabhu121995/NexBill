@@ -1,0 +1,67 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>c2a9c238-048b-48e4-a943-e7576c6ba5b3</UserSecretsId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <!--
+      SDK 10.0.401 keeps Debug's pre-compressed static assets in obj\ under names
+      containing a literal {0}, and MapStaticAssets fails to resolve them: any
+      browser sending "Accept-Encoding: gzip" gets 200 with an EMPTY BODY. It went
+      unnoticed while every script came from a CDN; now that Tailwind, lucide and
+      the fonts are served locally it would break every screen in development.
+      Publish writes real .gz/.br files next to each asset and works correctly, so
+      this is scoped to Debug and production keeps its compression.
+    -->
+    <CompressionEnabled>false</CompressionEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- Microsoft.Data.SqlClient brings in a version with known DoS advisories, and
+         the ASP.NET Core runtime carries its own copy that is affected up to 10.0.12.
+         Stay on 10.x: a 9.x pin clears the warning but loses to the runtime's copy, so
+         the patched file never ships. Remove once servers run runtime 10.0.13 or later
+         and a newer SqlClient resolves a patched version itself. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!--
+      The till-side scripts are built next to the app always (CopyToOutputDirectory),
+      but published only on demand. The server does not run them: it is the client
+      kit, built from this source folder with Build-ClientKit.ps1, that carries
+      Install-Kiosk and Start-Kiosk to the terminal. On a hosted box - IIS or similar -
+      they are dead weight, and on Linux nothing can even execute a .ps1 or .bat.
+      Publishing for the old model, where the app itself runs on the till and is
+      installed from its own published folder, needs them back:
+
+          dotnet publish Kiosk/Kiosk.csproj -c Release -p:KioskScripts=PreserveNewest -o <dir>
+    -->
+    <KioskScripts Condition="'$(KioskScripts)' == ''">Never</KioskScripts>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Built beside the app; see KioskScripts above for whether they publish. -->
+    <Content Include="Start-Kiosk.ps1" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="$(KioskScripts)" />
+    <Content Include="Start-Kiosk.bat" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="$(KioskScripts)" />
+    <Content Include="Get-TerminalInfo.ps1" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="$(KioskScripts)" />
+    <Content Include="Install-Kiosk.ps1" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="$(KioskScripts)" />
+    <Content Include="Install-Kiosk.bat" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="$(KioskScripts)" />
+    <Content Include="Build-ClientKit.ps1" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="$(KioskScripts)" />
+  </ItemGroup>
+
+</Project>

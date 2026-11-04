@@ -1,0 +1,3065 @@
+﻿@{
+    Layout = null;
+    var displayName = ((ViewData["DisplayName"] as string) ?? "").Trim();
+    var roleName = (ViewData["RoleName"] as string) ?? "";
+    var initial = displayName.Length > 0 ? displayName[..1].ToUpperInvariant() : "?";
+    // Only admins and supervisors are offered the jump to the admin panel; for
+    // anyone else the button is not rendered at all, so there is nothing to probe.
+    var canAdmin = ViewData["CanAdmin"] as bool? ?? false;
+}
+<!DOCTYPE html>
+<html lang="en" class="h-full select-none">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>@(await Brand.NameAsync())</title>
+  <partial name="_AppIcons" />
+  <script src="~/lib/tailwind/tailwind.min.js"></script>
+  <script src="~/lib/lucide/lucide.min.js"></script>
+  <link rel="stylesheet" href="~/lib/fonts/fonts.css" />
+  <link rel="stylesheet" href="~/css/density.css" asp-append-version="true" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+            digital: ['"Chakra Petch"', 'sans-serif'],
+          },
+          colors: {
+            lavender: { 25:'#fbfaff',50:'#f6f3fc',100:'#ece5fa',200:'#ded2f6',300:'#c5b0f0',400:'#a787e6',500:'#8c60dc',600:'#7540cc',700:'#6432b4',800:'#522995',900:'#432279',950:'#231046' },
+            mint: { 50:'#edfcf5',100:'#d3f7e6',200:'#a7eecb',500:'#10b981',600:'#059669',700:'#047857' }
+          },
+          boxShadow: {
+            'soft': '0 1px 2px rgba(35,16,70,.04), 0 4px 16px -4px rgba(35,16,70,.08)',
+            'lift': '0 10px 30px -8px rgba(117,64,204,.28)',
+          },
+          animation: { 'pop-in': 'popIn .18s cubic-bezier(.16,1,.3,1)' },
+          keyframes: { popIn: { '0%': { transform: 'scale(.95)', opacity: 0 }, '100%': { transform: 'scale(1)', opacity: 1 } } }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ded2f6; border-radius: 6px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+    .tap { touch-action: manipulation; transition: transform .1s ease, background-color .15s, border-color .15s, box-shadow .15s; }
+    .tap:active { transform: scale(.96); }
+    .tap:focus-visible { outline: 2px solid #7540cc; outline-offset: 2px; }
+    .dish-card:hover { box-shadow: 0 8px 22px -10px rgba(117,64,204,.35); border-color: #c5b0f0; }
+    .rail-btn.active::before { content: ''; position: absolute; left: -10px; top: 18%; bottom: 18%; width: 4px; border-radius: 4px; background: #7540cc; }
+    .rail-btn.active::after { content: ''; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 9px solid #7540cc; }
+    .cut { --c: 14px; clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c))); }
+    .cut-frame { padding: 1.5px; }
+    .cut-frame > .cut { --c: 13.4px; }
+    .chev { --n: 12px; clip-path: polygon(0 0, calc(100% - var(--n)) 0, 100% 50%, calc(100% - var(--n)) 100%, 0 100%, var(--n) 50%); margin-left: -4px; padding-left: calc(var(--n) + 12px); padding-right: calc(var(--n) + 10px); }
+    .chev.first { clip-path: polygon(0 0, calc(100% - var(--n)) 0, 100% 50%, calc(100% - var(--n)) 100%, 0 100%); margin-left: 0; padding-left: 14px; }
+    .chev-frame { padding: 1.5px; }
+    .tree-section { position: relative; padding-left: 26px; }
+    .tree-section::before { content: ''; position: absolute; left: 8px; top: 14px; bottom: 0; width: 2px; background: linear-gradient(#c5b0f0, #ece5fa); border-radius: 2px; }
+    .tree-node { position: absolute; left: 2px; top: 6px; width: 14px; height: 14px; border-radius: 4px; transform: rotate(45deg); background: #fff; border: 2px solid #7540cc; }
+    .tree-branch { position: absolute; left: -18px; top: 50%; width: 18px; height: 2px; background: #ded2f6; }
+    /* lucide swaps the <i> for an <svg>, so the spin targets the child */
+    .refreshing svg { animation: spin .7s linear infinite; }
+    @@keyframes spin { to { transform: rotate(360deg); } }
+    /* Below sm the header actions share one row; square them up so they fit a 360px phone. */
+    @@media (max-width: 639px) {
+      #posActions > .tap, #posActions > .relative > .tap { width: 2.25rem; height: 2.25rem; padding: 0; }
+    }
+  </style>
+</head>
+
+<body class="bg-[#f4f2f9] text-slate-800 h-screen w-screen overflow-hidden flex flex-col font-sans antialiased">
+
+  <!-- TOAST -->
+  <div id="posNotificationBanner" class="fixed top-3 left-1/2 -translate-x-1/2 -translate-y-40 opacity-0 transition-all duration-300 z-[200] bg-white border border-lavender-200 px-4 py-3 rounded-2xl shadow-lift flex items-center gap-3 max-w-lg w-[92%] sm:w-auto">
+    <div id="notifIconWrapper" class="w-9 h-9 rounded-xl bg-lavender-100 text-lavender-700 flex items-center justify-center shrink-0"><i id="notifIcon" data-lucide="info" class="w-5 h-5"></i></div>
+    <div class="flex-1 min-w-0"><h4 id="notifTitle" class="font-bold text-sm text-slate-900">Notification</h4><p id="notifDesc" class="text-xs text-slate-500 truncate">Description</p></div>
+    <button onclick="dismissNotification()" class="text-slate-400 hover:text-slate-700 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+  </div>
+
+  <!-- ========== CLOSING COVER ==========
+       Painted the instant Close Terminal is confirmed and never taken down on the
+       way out. Chrome needs a moment to tear a window down, and whatever is on
+       screen then is what staff see — without this the till blanked out into
+       browser furniture. Same colour as the page canvas, so the hand-off to
+       Chrome's own last repaint is invisible. -->
+  <div id="closingCover" class="hidden fixed inset-0 z-[300] bg-[#f4f2f9] flex flex-col items-center justify-center">
+    <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-lavender-700 to-lavender-500 text-white shadow-lift flex items-center justify-center">
+      <i data-lucide="coffee" class="w-12 h-12"></i>
+    </div>
+    <p class="mt-6 text-lg font-extrabold text-lavender-950 tracking-tight">Closing terminal</p>
+    <p id="closingCoverNote" class="mt-1 text-xs font-semibold text-slate-400">Shift ended · signing out</p>
+    <i data-lucide="loader-2" class="w-6 h-6 mt-5 text-lavender-500 animate-spin"></i>
+  </div>
+
+  <form id="logoutForm" method="post" action="@Url.Action("Logout", "Account")" class="hidden">@Html.AntiForgeryToken()</form>
+
+  <!-- HEADER -->
+  <!-- Phones: brand and search share the first row, the actions take the second. -->
+  <header class="min-h-[3.5rem] lg:h-14 bg-white border-b border-lavender-100 px-3 py-2 lg:px-4 lg:py-0 flex flex-wrap lg:flex-nowrap items-center gap-x-3 gap-y-2 lg:gap-4 shrink-0">
+    <div class="flex items-center gap-2.5 lg:w-[200px] shrink-0">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-lavender-700 to-lavender-500 text-white flex items-center justify-center"><i data-lucide="coffee" class="w-5 h-5"></i></div>
+      <div class="leading-tight">
+        <div class="font-extrabold text-slate-900">@(await Brand.NameAsync())</div>
+        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider" title="@ViewData["MachineName"] · @ViewData["MachineGuid"]">@ViewData["TerminalName"]</div>
+      </div>
+    </div>
+    <div class="relative flex-1 min-w-0 lg:max-w-xl">
+      <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+      <input id="quickDishFilterInput" oninput="handleQuickDishFilter(this.value)" type="text" placeholder="Search dishes…"
+        class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 text-sm placeholder-slate-400 focus:outline-none focus:border-lavender-500 focus:bg-white">
+    </div>
+    <div id="posActions" class="w-full lg:w-auto lg:ml-auto flex items-center justify-between lg:justify-end gap-1 sm:gap-2">
+      <div class="hidden xl:flex flex-col items-end pr-3 mr-1 border-r border-slate-200 leading-tight">
+        <span id="liveClockTime" class="font-mono font-bold text-xs text-slate-700">--:--</span>
+        <span id="liveClockDate" class="text-[10px] font-semibold text-slate-400">Today</span>
+      </div>
+      <button onclick="openPendingOrdersModal()" class="tap relative h-10 px-3 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center gap-1.5 text-xs font-bold">
+        <i data-lucide="clock" class="w-4 h-4"></i><span class="hidden lg:inline">Held</span>
+        <span id="pendingCountBadge" class="hidden absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[10px] font-extrabold w-5 h-5 rounded-full items-center justify-center">0</span>
+      </button>
+      <button onclick="openTransactionModal()" class="tap w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center" title="Transactions"><i data-lucide="arrow-left-right" class="w-4 h-4"></i></button>
+      <button onclick="openSettlementModal()" class="tap w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center" title="Settlement"><i data-lucide="receipt-text" class="w-4 h-4"></i></button>
+      <button onclick="openSettingsModal()" class="tap w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center" title="Settings"><i data-lucide="settings-2" class="w-4 h-4"></i></button>
+      <!-- Waiters never sign in, so their shift is punched from here. -->
+      <button onclick="openPunchModal()" class="tap relative w-10 h-10 rounded-xl bg-mint-50 border border-mint-200 text-mint-700 flex items-center justify-center" title="Waiter punch in / out">
+        <i data-lucide="user-round-check" class="w-4 h-4"></i>
+        <span id="punchCountBadge" class="hidden absolute -top-1.5 -right-1.5 bg-mint-600 text-white text-[10px] font-extrabold w-5 h-5 rounded-full items-center justify-center">0</span>
+      </button>
+@if (canAdmin)
+{
+      <!-- End of Day: moves closed bills to the archive tables. Admin / Supervisor only, checked server side too. -->
+      <button id="eodBtn" onclick="runEndOfDay()" class="tap h-10 px-2.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center gap-1 text-[11px] font-extrabold" title="End of Day - archive closed bills"><i data-lucide="archive" class="w-4 h-4"></i><span class="hidden sm:inline">EOD</span></button>
+      <a href="@Url.Action("Index", "Admin")" onclick="event.preventDefault(); window.location.replace(this.href)" class="tap w-10 h-10 rounded-xl bg-lavender-50 border border-lavender-200 text-lavender-700 flex items-center justify-center" title="Admin panel"><i data-lucide="shield" class="w-4 h-4"></i></a>
+}
+      <div class="hidden lg:flex flex-col items-end pl-3 ml-1 border-l border-slate-200 leading-tight">
+        <span class="text-xs font-extrabold text-slate-800">@displayName</span>
+        <span class="text-[10px] font-bold text-lavender-400 uppercase tracking-wider">@roleName</span>
+      </div>
+      <div class="hidden sm:flex w-9 h-9 rounded-full bg-gradient-to-br from-lavender-700 to-lavender-500 text-white font-bold text-sm items-center justify-center shrink-0" title="@displayName · @roleName">@initial</div>
+      <!-- Both ways off this till sit behind the one power button: closing the
+           terminal and signing out differ only in whether the window survives, and
+           a cashier reaching for one looks in the same place for the other. -->
+      <div class="relative">
+        <button id="powerMenuBtn" onclick="togglePowerMenu(event)" class="tap w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center" title="Close terminal"><i data-lucide="power" class="w-4 h-4"></i></button>
+        <div id="powerMenu" class="hidden absolute top-12 right-0 w-60 bg-white border border-slate-200 rounded-2xl shadow-lift p-1.5 z-[170] animate-pop-in text-sm">
+          <button onclick="closePowerMenu();handleClosePOS()" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-rose-50 flex items-start gap-2.5">
+            <i data-lucide="power" class="w-4 h-4 text-rose-600 mt-0.5 shrink-0"></i>
+            <span class="min-w-0">
+              <span class="block font-bold text-slate-800">Close Terminal</span>
+              <span class="block text-[11px] font-semibold text-slate-400 leading-snug">Ends the shift and shuts the window</span>
+            </span>
+          </button>
+          <div class="h-px bg-slate-100 my-1"></div>
+          <button onclick="closePowerMenu();handleSignOut()" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-lavender-50 flex items-start gap-2.5">
+            <i data-lucide="user-round-x" class="w-4 h-4 text-lavender-700 mt-0.5 shrink-0"></i>
+            <span class="min-w-0">
+              <span class="block font-bold text-slate-800">Logout</span>
+              <span class="block text-[11px] font-semibold text-slate-400 leading-snug">Back to sign-in, terminal stays open</span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN: RAIL | MENU | ORDER -->
+  <main class="flex-1 flex min-h-0">
+
+    <!-- CATEGORY RAIL -->
+    <nav class="w-[84px] lg:w-[104px] shrink-0 bg-white border-r border-lavender-100 flex flex-col">
+      <div id="categoryRow1" class="flex-1 overflow-y-auto no-scrollbar py-3 pl-[10px] pr-2 space-y-2"></div>
+    </nav>
+
+    <!-- MENU AREA -->
+    <section class="flex-1 min-w-0 flex flex-col">
+      <div class="px-3 lg:px-5 pt-3 lg:pt-4 pb-3 shrink-0">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div class="min-w-0">
+            <div id="levelPath" class="flex items-center gap-1.5 text-xs font-bold flex-wrap"></div>
+            <div class="flex items-baseline gap-2 mt-1">
+              <h1 id="dishGridCategoryLabel" class="text-xl font-extrabold text-slate-900 tracking-tight">Tiffin</h1>
+              <p id="dishGridCountLabel" class="text-xs font-semibold text-slate-400">0 dishes</p>
+            </div>
+          </div>
+          <div class="flex items-center bg-white p-1 rounded-xl border border-slate-200 text-[11px] font-bold">
+            <button id="vegFilterAll" onclick="setVegFilter('all')" class="tap px-3 py-1.5 rounded-lg">All</button>
+            <button id="vegFilterVeg" onclick="setVegFilter('veg')" class="tap px-3 py-1.5 rounded-lg flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-600"></span>Veg</button>
+            <button id="vegFilterNon" onclick="setVegFilter('nonveg')" class="tap px-3 py-1.5 rounded-lg flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-600"></span>Non-veg</button>
+          </div>
+        </div>
+        <div id="level2Wrap" class="relative flex items-stretch gap-2">
+          <div class="shrink-0 flex flex-col items-center justify-center w-6">
+            <span class="w-2.5 h-2.5 rounded-full bg-lavender-600 ring-4 ring-lavender-100"></span>
+            <span class="flex-1 w-0.5 bg-lavender-300 mt-1"></span>
+          </div>
+          <div id="categoryRow2" class="flex-1 flex gap-0 overflow-x-auto no-scrollbar py-1"></div>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto px-3 pb-3 lg:px-5 lg:pb-5">
+        <div id="dishGrid" class="space-y-5"></div>
+      </div>
+    </section>
+
+    <!-- ORDER PANEL: a column from lg up; below that a full-screen sheet opened from
+         the order bar. z-40 keeps it under the modals it opens (z-50). -->
+    <aside id="orderPanel" class="fixed inset-0 z-40 translate-y-full transition-transform duration-300 lg:static lg:z-auto lg:translate-y-0 lg:transition-none lg:w-[380px] xl:w-[410px] shrink-0 bg-white lg:border-l border-lavender-100 flex flex-col min-h-0">
+      <div class="p-4 border-b border-slate-100 shrink-0 space-y-3">
+        <div class="flex lg:hidden items-center justify-between -mt-1">
+          <span class="text-sm font-extrabold text-slate-900">Current order</span>
+          <button onclick="toggleOrderSheet(false)" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center" title="Back to menu"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order</div>
+            <div class="flex items-baseline gap-2">
+              <span id="seqNumberDisplay" class="font-digital font-bold text-2xl text-slate-900">#1</span>
+              <span id="cartItemsBadge" class="text-xs font-semibold text-slate-400">0 items</span>
+              <span id="mergeBadge" class="hidden text-[10px] font-extrabold text-lavender-800 bg-lavender-100 border border-lavender-300 px-2 py-0.5 rounded-full tracking-wide">MERGED 0</span>
+            </div>
+          </div>
+          <div class="hidden">
+            <button id="btnDineIn" onclick="setOrderMode('dinein')" class="tap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"><i data-lucide="utensils" class="w-3.5 h-3.5"></i>Dine In</button>
+            <button id="btnTakeAway" onclick="setOrderMode('takeaway')" class="tap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"><i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>Take Away</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 gap-2">
+          <button id="tableChip" onclick="openTableModal()" class="hidden tap bg-lavender-50 border border-lavender-200 rounded-xl px-2.5 py-2 text-left">
+            <div class="text-[10px] font-bold text-lavender-500 uppercase">Table</div>
+            <div id="currentTableBadge" class="text-sm font-extrabold text-lavender-900">T5</div>
+          </button>
+          <button onclick="openPersonsModal()" class="hidden tap bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-left">
+            <div class="text-[10px] font-bold text-slate-400 uppercase">Guests</div>
+            <div id="currentPersonsCount" class="text-sm font-extrabold text-slate-800">2</div>
+          </button>
+          <button onclick="openCustomerModal()" class="tap bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-left min-w-0">
+            <div class="text-[10px] font-bold text-slate-400 uppercase">Customer</div>
+            <div id="topCustomerLabel" class="text-sm font-extrabold text-slate-800 truncate">Walk-in</div>
+          </button>
+        </div>
+      </div>
+
+      <div id="cartItemsList" class="flex-1 overflow-y-auto px-3 py-2 space-y-1.5"></div>
+
+      <div class="px-3 py-2 border-t border-slate-100 flex items-center gap-1.5 shrink-0">
+        <button onclick="openModifierModal()" class="tap flex-1 h-9 rounded-lg bg-lavender-50 border border-lavender-200 text-lavender-800 text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>Note</button>
+        <button onclick="toggleFOCForSelected()" class="tap flex-1 h-9 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold">FOC</button>
+        <button onclick="openDiscountModal()" class="tap flex-1 h-9 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="percent" class="w-3.5 h-3.5"></i>Disc.</button>
+        <button onclick="removeSelectedItem()" class="tap w-9 h-9 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center" title="Delete line"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        <div class="relative">
+          <button onclick="toggleMoreMenu(event)" class="tap w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center" title="More"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+          <div id="moreMenu" class="hidden absolute bottom-11 right-0 w-52 bg-white border border-slate-200 rounded-2xl shadow-lift p-1.5 z-40 animate-pop-in text-sm">
+            <button onclick="closeMoreMenu();openViewOrderModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>View Order</button>
+            <button onclick="closeMoreMenu();openSeatModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 flex items-center gap-2"><i data-lucide="armchair" class="w-4 h-4 text-slate-400"></i>Seat No</button>
+            <button onclick="closeMoreMenu();openMergeBillModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 flex items-center gap-2"><i data-lucide="git-merge" class="w-4 h-4 text-slate-400"></i>Merge Bill <span class="ml-auto text-[10px] text-slate-400">F11</span></button>
+            <button onclick="closeMoreMenu();handleRefund()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 flex items-center gap-2"><i data-lucide="undo-2" class="w-4 h-4 text-slate-400"></i>Refund</button>
+            <button onclick="closeMoreMenu();handleReprintReceipt()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>Last Order</button>
+            <div class="h-px bg-slate-100 my-1"></div>
+            <button onclick="closeMoreMenu();clearCurrentOrder()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-rose-50 text-rose-600 flex items-center gap-2"><i data-lucide="rotate-ccw" class="w-4 h-4"></i>Clear Order <span class="ml-auto text-[10px] text-rose-300">F2</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="px-4 pt-3 pb-4 border-t border-slate-100 bg-slate-50/70 shrink-0">
+        <div id="totalsBreakdown" class="hidden space-y-1 text-xs font-mono mb-2">
+          <div class="flex justify-between"><span class="font-sans text-slate-500">Sub Total</span><span id="summarySubTotal" class="font-bold">$0.00</span></div>
+          <div class="flex justify-between"><span class="font-sans text-slate-500">Discount (<span id="discountPercentLabel">0.00%</span>)</span><span id="summaryDiscount" class="font-bold text-amber-600">-$0.00</span></div>
+          <div class="flex justify-between"><span class="font-sans text-slate-500">Service (<span id="servicePercentLabel">@(((decimal)ViewData["ServiceChargePercent"]!).ToString("0.00"))%</span>)</span><span id="summaryServiceCharge" class="font-bold">$0.00</span></div>
+          <div class="flex justify-between"><span class="font-sans text-slate-500">Incdtl</span><span id="summaryIncdtl" class="font-bold">$0.00</span></div>
+          <div class="flex justify-between"><span class="font-sans text-slate-500">GST (<span id="gstPercentLabel">@(((decimal)ViewData["GstPercent"]!).ToString("0.00"))%</span>)</span><span id="summaryGST" class="font-bold">$0.00</span></div>
+        </div>
+        <div onclick="toggleTotalsBreakdown()" class="flex justify-between items-end pt-2 border-t border-dashed border-slate-300 cursor-pointer select-none">
+          <span class="text-sm font-extrabold text-slate-900 flex items-center gap-1">Net Total<span id="totalsBreakdownChevron" class="inline-flex text-slate-400 transition-transform"><i data-lucide="chevron-down" class="w-4 h-4"></i></span></span>
+          <span id="summaryNetTotal" class="font-digital font-bold text-3xl text-lavender-800 leading-none">$0.00</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-3">
+          <button onclick="holdCurrentOrder()" class="tap h-12 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="pause" class="w-4 h-4"></i>Hold</button>
+          <button onclick="placeOrder()" class="tap h-12 rounded-xl bg-lavender-100 border border-lavender-300 text-lavender-800 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="clipboard-check" class="w-4 h-4"></i>Order</button>
+          <button onclick="printBill()" class="tap h-12 rounded-xl bg-mint-50 border border-mint-200 text-mint-700 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="printer" class="w-4 h-4"></i>Print</button>
+        </div>
+        <button onclick="openPaymentModal()" class="tap mt-2 w-full h-14 rounded-2xl bg-gradient-to-r from-lavender-700 to-lavender-500 text-white font-extrabold shadow-lift flex items-center justify-between px-5">
+          <span class="flex items-center gap-2"><i data-lucide="credit-card" class="w-5 h-5"></i>Pay <span class="text-[10px] font-bold text-lavender-200">F10</span></span>
+          <span id="payBtnTotal" class="font-digital text-xl">$0.00</span>
+        </button>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Below lg: what is on the order, always in reach; tapping it opens the order sheet. -->
+  <button id="orderSheetBar" onclick="toggleOrderSheet(true)" class="lg:hidden tap shrink-0 mx-3 mb-3 h-14 rounded-2xl bg-gradient-to-r from-lavender-700 to-lavender-500 text-white font-extrabold shadow-lift flex items-center justify-between px-5">
+    <span class="flex items-center gap-2"><i data-lucide="shopping-basket" class="w-5 h-5"></i>View order <span id="orderSheetBarCount" class="text-xs font-bold text-lavender-200">0 items</span></span>
+    <span id="orderSheetBarTotal" class="font-digital text-xl">$0.00</span>
+  </button>
+
+  <!-- VIRTUAL KEYBOARD -->
+  <!-- mousedown is cancelled so tapping a key never steals focus from the field being typed into. -->
+  <div id="globalVirtualKeyboard" onmousedown="event.preventDefault()" class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-lavender-200 shadow-2xl p-3 z-[150] translate-y-full transition-transform duration-200">
+    <div class="max-w-4xl mx-auto space-y-1.5">
+      <div class="flex items-center justify-between px-1 pb-1.5 text-xs">
+        <div class="flex items-center gap-2 text-slate-500"><i data-lucide="keyboard" class="w-4 h-4 text-lavender-600"></i>Typing in: <span id="vkTargetLabel" class="font-bold text-lavender-700">Field</span></div>
+        <div class="flex gap-2">
+          <button onclick="virtualKeyClear()" class="tap px-3 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200">Clear</button>
+          <button onclick="closeGlobalVirtualKeyboard()" class="tap px-4 py-1 rounded-lg bg-lavender-600 text-white font-bold">Done</button>
+        </div>
+      </div>
+      <div id="vkRows" class="space-y-1.5"></div>
+    </div>
+  </div>
+
+  <!-- ===================== MODALS ===================== -->
+
+  <!-- PAYMENT -->
+  <div id="paymentModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[95vh]">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+        <h2 class="text-base font-extrabold text-slate-900">Settle Payment</h2>
+        <button onclick="closeModal('paymentModal')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div id="paymentModalBody" class="flex-1 overflow-y-auto p-6 space-y-5">
+        <div class="bg-lavender-50 border border-lavender-200 rounded-2xl p-4 flex flex-wrap sm:flex-nowrap items-center gap-x-5 gap-y-3">
+          <div class="shrink-0"><span class="text-[11px] text-lavender-600 font-bold uppercase tracking-wider block">Amount Payable</span><span id="paymentModalTotal" class="font-digital font-bold text-3xl text-lavender-900">$0.00</span></div>
+
+          <!-- WAITER — who the bill is credited to, saved on the order; leave
+               unassigned for counter sales. One scrolling row of chips rather than
+               a dropdown: at a touch screen a tap beats opening a list, and the row
+               keeps working the same way whether there are three waiters or thirty. -->
+          <div class="order-last sm:order-none basis-full sm:basis-auto flex-1 min-w-0">
+            <span class="text-[11px] text-lavender-600 font-bold uppercase tracking-wider block mb-1.5">Waiter</span>
+            <div id="waiterCards" class="flex gap-2 overflow-x-auto pb-1 -mb-1"></div>
+            <p id="waiterEmptyHint" class="hidden mt-1.5 text-[11px] font-semibold text-amber-600">No active waiter accounts — add one in the Admin Panel to credit bills.</p>
+          </div>
+
+          <span id="paymentModalModeBadge" class="shrink-0 ml-auto self-start sm:self-center bg-white border border-lavender-200 text-lavender-800 text-xs px-3 py-1 rounded-full font-bold">Dine In (T5)</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="selectPaymentMethod('mixed')" id="payTabMixed" class="tap"><i data-lucide="layers" class="w-5 h-5"></i><span>Mixed</span></button>
+          <button onclick="selectPaymentMethod('split')" id="payTabSplit" class="tap"><i data-lucide="users" class="w-5 h-5"></i><span>Split</span></button>
+        </div>
+
+        <!-- MIXED: one payer, up to three tenders. The cashier types the cash and card
+             parts and the balance goes on QR / UPI; leave a part at 0 to skip it, so
+             an all-cash or all-card bill is just one part. Split is for several people. -->
+        <div id="mixedSection" class="hidden space-y-3">
+          <div class="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div>
+              <div class="flex items-center justify-between h-7 mb-1">
+                <span class="text-xs font-bold text-slate-500 flex items-center gap-1"><i data-lucide="banknote" class="w-3.5 h-3.5"></i>Cash</span>
+                <button onclick="setMixedHalf()" class="tap text-[11px] font-bold text-lavender-700 bg-lavender-50 border border-lavender-200 px-2.5 py-1 rounded-lg">Half</button>
+              </div>
+              <input id="inputMixedCash" type="number" step="0.10" min="0" value="0.00" oninput="updateMixedCalculation()" onblur="this.value = (parseFloat(this.value) || 0).toFixed(2)" placeholder="Cash amount" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg focus:outline-none focus:border-lavender-600">
+            </div>
+            <div>
+              <div class="flex items-center justify-between h-7 mb-1">
+                <span class="text-xs font-bold text-slate-500 flex items-center gap-1"><i data-lucide="credit-card" class="w-3.5 h-3.5"></i>Card</span>
+              </div>
+              <input id="inputMixedCard" type="number" step="0.10" min="0" value="0.00" oninput="updateMixedCalculation()" onblur="this.value = (parseFloat(this.value) || 0).toFixed(2)" placeholder="Card amount" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg focus:outline-none focus:border-lavender-600">
+            </div>
+            <p class="col-span-2 text-[11px] text-slate-400">The rest is paid by QR / UPI. Leave a part at 0 to skip it.</p>
+          </div>
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <div class="bg-mint-50 border border-mint-200 rounded-xl py-2">
+              <div class="text-[10px] font-bold text-mint-600 uppercase tracking-wider">Cash</div>
+              <div id="mixedCashShow" class="font-digital font-bold text-lg text-mint-700">$0.00</div>
+            </div>
+            <div class="bg-lavender-50 border border-lavender-200 rounded-xl py-2">
+              <div class="text-[10px] font-bold text-lavender-600 uppercase tracking-wider">Card</div>
+              <div id="mixedCardShow" class="font-digital font-bold text-lg text-lavender-800">$0.00</div>
+            </div>
+            <div class="bg-lavender-50 border border-lavender-200 rounded-xl py-2">
+              <div class="text-[10px] font-bold text-lavender-600 uppercase tracking-wider">QR / UPI</div>
+              <div id="mixedQrShow" class="font-digital font-bold text-lg text-lavender-800">$0.00</div>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl py-2">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</div>
+              <div id="mixedTotalShow" class="font-digital font-bold text-lg text-slate-800">$0.00</div>
+            </div>
+          </div>
+          <p id="mixedOverWarn" class="hidden text-xs font-bold text-red-600 text-center"></p>
+        </div>
+
+        <!-- SPLIT BILL -->
+        <div id="splitSection" class="hidden">
+          <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 mb-3">
+            <div>
+              <span class="text-xs font-bold text-slate-600 block">Split between</span>
+              <span class="text-[11px] text-slate-400">Tap an amount to change it; the others share what is left</span>
+              <button onclick="resetSplitAmounts()" id="splitResetBtn" class="tap hidden text-[11px] font-bold text-lavender-700 underline">Reset to equal</button>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="changeSplitCount(-1)" class="tap w-9 h-9 rounded-xl bg-white border border-slate-200 font-extrabold text-slate-600">&minus;</button>
+              <span id="splitCount" class="w-10 text-center font-digital font-bold text-xl">2</span>
+              <button onclick="changeSplitCount(1)" class="tap w-9 h-9 rounded-xl bg-white border border-slate-200 font-extrabold text-lavender-700">+</button>
+            </div>
+          </div>
+
+          <div id="splitList" class="space-y-2 max-h-52 overflow-y-auto mb-3"></div>
+          <div id="splitWarn" class="hidden px-4 py-2 mb-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700"></div>
+
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl py-2">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order</div>
+              <div id="splitOrderTotal" class="font-digital font-bold text-lg text-slate-800">$0.00</div>
+            </div>
+            <div class="bg-mint-50 border border-mint-200 rounded-xl py-2">
+              <div class="text-[10px] font-bold text-mint-600 uppercase tracking-wider">Collected</div>
+              <div id="splitCollected" class="font-digital font-bold text-lg text-mint-700">$0.00</div>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl py-2">
+              <div class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Remaining</div>
+              <div id="splitRemaining" class="font-digital font-bold text-lg text-amber-700">$0.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+        <button onclick="closeModal('paymentModal')" class="tap px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm">Cancel</button>
+        <button onclick="finalizePayment()" class="tap px-6 py-2.5 rounded-xl bg-mint-600 hover:bg-mint-700 text-white font-extrabold text-sm flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i>Complete Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div id="tableModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
+      <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Select Table</h3><button onclick="closeModal('tableModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div id="tableGrid" class="grid grid-cols-4 gap-2.5"></div>
+    </div>
+  </div>
+
+  <!-- PERSONS -->
+  <div id="personsModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-xs shadow-2xl p-5 animate-pop-in">
+      <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Number of Guests</h3><button onclick="closeModal('personsModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div id="personsGrid" class="grid grid-cols-4 gap-2"></div>
+    </div>
+  </div>
+
+  <!-- PENDING -->
+  <div id="pendingModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-5 animate-pop-in">
+      <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Held Orders</h3><button onclick="closeModal('pendingModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div id="pendingOrdersList" class="space-y-2.5 max-h-80 overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <!-- WAITER PUNCH -->
+  <div id="punchModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-5 animate-pop-in flex flex-col max-h-[85vh]">
+      <div class="flex justify-between items-center mb-4 shrink-0">
+        <div>
+          <h3 class="text-base font-extrabold">Waiter Attendance</h3>
+          <p class="text-[11px] text-slate-400 font-semibold">Punch a waiter in at the start of their shift, and out at the end</p>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="loadPunchList()" title="Refresh list" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-lavender-700 flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+          <button onclick="closeModal('punchModal')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mb-4 shrink-0">
+        <select id="punchWaiterSelect" class="flex-1 min-w-0 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-700 focus:outline-none focus:border-lavender-500 focus:bg-white"></select>
+        <button id="punchInBtn" onclick="punchIn()" class="tap h-11 px-5 rounded-xl bg-mint-600 hover:bg-mint-700 text-white font-extrabold text-sm flex items-center gap-2 shrink-0 disabled:opacity-40"><i data-lucide="log-in" class="w-4 h-4"></i>Punch In</button>
+      </div>
+
+      <div class="flex items-center justify-between mb-2 shrink-0">
+        <span class="text-xs font-extrabold text-slate-500 uppercase tracking-wider">On shift</span>
+        <span id="punchOnCount" class="text-xs font-bold text-slate-400"></span>
+      </div>
+      <div id="punchList" class="space-y-2 overflow-y-auto min-h-0"></div>
+    </div>
+  </div>
+
+  <!-- CONFIRM: the till's own stand-in for window.confirm(), which shows the
+       browser's "this page says" box. Above every other modal, since some ask
+       from inside one. Driven by posConfirm(). -->
+  <div id="confirmModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[180] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 animate-pop-in">
+      <div class="flex items-start gap-3 mb-4">
+        <div id="confirmIconWrap" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"><i id="confirmIcon" class="w-5 h-5"></i></div>
+        <div class="min-w-0">
+          <h3 id="confirmTitle" class="text-base font-extrabold text-slate-900"></h3>
+          <div id="confirmBody" class="mt-1 space-y-2 text-sm font-medium text-slate-500"></div>
+        </div>
+      </div>
+      <div id="confirmWarn" class="hidden mb-4 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-200">
+        <div class="flex items-center gap-2 text-amber-800 text-xs font-extrabold uppercase tracking-wider mb-1"><i data-lucide="alert-triangle" class="w-4 h-4"></i><span id="confirmWarnTitle"></span></div>
+        <p id="confirmWarnText" class="text-sm font-semibold text-amber-900"></p>
+        <button id="confirmWarnAction" class="tap hidden mt-2.5 h-9 px-3.5 rounded-xl bg-white border border-amber-300 text-amber-800 font-bold text-xs flex items-center gap-1.5"><i data-lucide="user-check" class="w-3.5 h-3.5"></i><span id="confirmWarnActionText"></span></button>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="resolveConfirm(false)" class="tap h-11 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">Cancel</button>
+        <button id="confirmOkBtn" onclick="resolveConfirm(true)" class="tap h-11 rounded-xl text-white font-extrabold text-sm"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW / RECALL ORDER -->
+  <div id="recallModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[85vh]">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+        <div>
+          <h2 class="text-base font-extrabold text-slate-900">Open Orders</h2>
+          <p class="text-[11px] text-slate-400 font-semibold">Unpaid bills from today &middot; tap one to collect payment</p>
+        </div>
+        <div class="flex items-center gap-1">
+          <button id="recallRefreshBtn" onclick="loadRecallList()" title="Refresh list" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-lavender-700 flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+          <button onclick="closeModal('recallModal')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+      </div>
+      <div id="recallList" class="flex-1 overflow-y-auto px-6 py-4 space-y-2"></div>
+      <div class="px-6 py-3 border-t border-slate-100 bg-slate-50/70 flex items-center shrink-0">
+        <span class="text-[11px] font-semibold text-slate-400">Settling a recalled bill keeps the till's own bill number intact.</span>
+        <button onclick="closeModal('recallModal')" class="tap ml-auto px-5 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MERGE BILL -->
+  <div id="mergeModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[85vh]">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+        <div>
+          <h2 class="text-base font-extrabold text-slate-900">Merge Bills</h2>
+          <p class="text-[11px] text-slate-400 font-semibold">Unpaid bills from today &middot; pick two or more</p>
+        </div>
+        <div class="flex items-center gap-1">
+          <button id="mergeRefreshBtn" onclick="loadMergeList()" title="Refresh list" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-lavender-700 flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+          <button onclick="closeModal('mergeModal')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+      </div>
+
+      <div id="mergeList" class="flex-1 overflow-y-auto px-6 py-4 space-y-2"></div>
+
+      <div class="px-6 py-4 border-t border-slate-100 flex items-center gap-4 shrink-0 bg-slate-50/70">
+        <div class="text-xs font-bold text-slate-500">
+          <span id="mergeSelCount">0</span> selected
+          <span class="text-slate-300 mx-1">&middot;</span>
+          <span id="mergeSelTotal" class="font-digital text-base text-lavender-800">$0.00</span>
+        </div>
+        <div class="ml-auto flex gap-2">
+          <button onclick="closeModal('mergeModal')" class="tap px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm">Cancel</button>
+          <button id="mergeBtn" onclick="mergeSelectedBills()" class="tap px-6 py-2.5 rounded-xl bg-lavender-600 text-white font-extrabold text-sm flex items-center gap-2 disabled:opacity-40"><i data-lucide="git-merge" class="w-4 h-4"></i>Merge</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODIFIER -->
+  <div id="modifierModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
+      <div class="flex justify-between items-center mb-3"><h3 class="text-base font-extrabold">Kitchen Note</h3><button onclick="closeModal('modifierModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <p id="modifierDishName" class="text-sm font-bold text-lavender-700 mb-3">Selected Dish</p>
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button onclick="appendModifier('Less Spicy')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">Less Spicy</button>
+        <button onclick="appendModifier('Extra Spicy')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">Extra Spicy</button>
+        <button onclick="appendModifier('No Onion / Garlic')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">No Onion</button>
+        <button onclick="appendModifier('Crispy / Well Done')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">Crispy</button>
+        <button onclick="appendModifier('Extra Ghee')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">Extra Ghee</button>
+        <button onclick="appendModifier('Pack Separate')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">Pack Separate</button>
+      </div>
+      <input id="inputCustomModifier" type="text" placeholder="Custom note…" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-lavender-600">
+      <div class="flex justify-end gap-2">
+        <button onclick="clearModifierForSelected()" class="tap px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">Clear</button>
+        <button onclick="saveModifier()" class="tap px-5 py-2 bg-lavender-600 rounded-xl text-xs font-extrabold text-white">Save Note</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISCOUNT -->
+  <div id="discountModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-5 animate-pop-in">
+      <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Bill Discount</h3><button onclick="closeModal('discountModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div class="grid grid-cols-4 gap-2 mb-4">
+        <button onclick="setDiscountPercent(5)" class="tap py-2.5 bg-slate-50 hover:bg-amber-100 font-bold rounded-xl text-xs border border-slate-200">5%</button>
+        <button onclick="setDiscountPercent(10)" class="tap py-2.5 bg-slate-50 hover:bg-amber-100 font-bold rounded-xl text-xs border border-slate-200">10%</button>
+        <button onclick="setDiscountPercent(15)" class="tap py-2.5 bg-slate-50 hover:bg-amber-100 font-bold rounded-xl text-xs border border-slate-200">15%</button>
+        <button onclick="setDiscountPercent(20)" class="tap py-2.5 bg-slate-50 hover:bg-amber-100 font-bold rounded-xl text-xs border border-slate-200">20%</button>
+      </div>
+      <label class="text-xs font-bold text-slate-500">Custom (%)</label>
+      <input id="inputCustomDiscount" type="number" min="0" max="100" value="0" placeholder="Discount %" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg mt-1 mb-4 focus:outline-none focus:border-lavender-600">
+      <div class="flex justify-end gap-2">
+        <button onclick="applyCustomDiscount(0)" class="tap px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">Reset</button>
+        <button onclick="applyCustomDiscount()" class="tap px-5 py-2 bg-amber-600 rounded-xl text-xs font-extrabold text-white">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER -->
+  <div id="customerModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
+      <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Customer</h3><button onclick="closeModal('customerModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div class="space-y-3 mb-4">
+        <input id="custNameInput" type="text" placeholder="Customer name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-lavender-600">
+        <input id="custPhoneInput" type="tel" placeholder="Phone number" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-lavender-600">
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="setCustomer('Walk-in')" class="tap px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">Walk-in</button>
+        <button onclick="saveCustomer()" class="tap px-5 py-2 bg-lavender-600 rounded-xl text-xs font-extrabold text-white">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CASH IN / OUT -->
+  <div id="transactionModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-5xl shadow-2xl p-5 animate-pop-in flex flex-col max-h-[90vh]">
+      <div class="flex justify-between items-center mb-4 shrink-0">
+        <div>
+          <h3 class="text-base font-extrabold">Transactions</h3>
+          <p class="text-[11px] text-slate-400 font-semibold">Money put into or taken out of the till outside a bill</p>
+        </div>
+        <button onclick="closeModal('transactionModal')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="flex flex-col lg:flex-row gap-4 min-h-0 overflow-y-auto lg:overflow-hidden">
+        <!-- Entry form -->
+        <div class="lg:w-80 shrink-0 space-y-3">
+          <p id="txnFormTitle" class="text-xs font-extrabold text-lavender-800 uppercase tracking-wider">New Transaction</p>
+          <div>
+            <label for="txnNumber" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Transaction Number</label>
+            <input id="txnNumber" maxlength="30" placeholder="Transaction Number" class="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-mono font-bold focus:outline-none focus:border-lavender-500 focus:bg-white">
+          </div>
+          <div>
+            <span class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Type</span>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="txnTypeIn" onclick="setTxnType('IN')" class="tap h-11 rounded-xl border font-extrabold text-sm flex items-center justify-center gap-1.5"><i data-lucide="arrow-down-left" class="w-4 h-4"></i>Cash In</button>
+              <button id="txnTypeOut" onclick="setTxnType('OUT')" class="tap h-11 rounded-xl border font-extrabold text-sm flex items-center justify-center gap-1.5"><i data-lucide="arrow-up-right" class="w-4 h-4"></i>Cash Out</button>
+            </div>
+          </div>
+          <div>
+            <label for="txnMode" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Transaction Mode</label>
+            <select id="txnMode" class="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-700 focus:outline-none focus:border-lavender-500 focus:bg-white"></select>
+          </div>
+          <div>
+            <label for="txnAmount" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Amount</label>
+            <div class="flex gap-2">
+              <span id="txnAmountSign" class="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-mono font-extrabold text-lg shrink-0">-</span>
+              <input id="txnAmount" inputmode="decimal" maxlength="8" placeholder="Amount" oninput="this.value = this.value.replace(/[^0-9.]/g, '')" class="flex-1 min-w-0 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-right font-mono font-bold focus:outline-none focus:border-lavender-500 focus:bg-white">
+            </div>
+          </div>
+          <div>
+            <label for="txnRemarks" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Remarks</label>
+            <textarea id="txnRemarks" rows="3" maxlength="250" placeholder="Remarks" onclick="openGlobalVirtualKeyboard(this)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold resize-none focus:outline-none focus:border-lavender-500 focus:bg-white"></textarea>
+          </div>
+          <p id="txnError" class="hidden text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2"></p>
+          <div class="flex gap-2">
+            <button id="txnCancelBtn" onclick="resetTxnForm()" class="hidden tap h-11 px-4 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm">Cancel</button>
+            <button id="txnSaveBtn" onclick="saveTransaction()" class="tap flex-1 h-11 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-extrabold text-sm flex items-center justify-center gap-2 disabled:opacity-40"><i data-lucide="save" class="w-4 h-4"></i><span id="txnSaveLabel">Add Transaction</span></button>
+          </div>
+        </div>
+
+        <!-- List -->
+        <div class="flex-1 min-w-0 flex flex-col min-h-0">
+          <div class="flex flex-wrap items-end gap-2 mb-3 shrink-0">
+            <div>
+              <label for="txnFrom" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">From</label>
+              <input id="txnFrom" type="date" onchange="loadTransactions()" class="h-10 px-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700">
+            </div>
+            <div>
+              <label for="txnTo" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">To</label>
+              <input id="txnTo" type="date" onchange="loadTransactions()" class="h-10 px-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700">
+            </div>
+            <div class="ml-auto flex gap-3 text-right">
+              <div><div class="text-[10px] font-bold text-slate-400 uppercase">Cash In</div><div id="txnTotalIn" class="font-mono font-extrabold text-sm text-mint-700"></div></div>
+              <div><div class="text-[10px] font-bold text-slate-400 uppercase">Cash Out</div><div id="txnTotalOut" class="font-mono font-extrabold text-sm text-rose-600"></div></div>
+              <div class="pl-3 border-l border-slate-200"><div class="text-[10px] font-bold text-slate-400 uppercase">Net</div><div id="txnTotalNet" class="font-mono font-extrabold text-sm"></div></div>
+            </div>
+          </div>
+          <div id="txnList" class="flex-1 min-h-[12rem] overflow-y-auto space-y-2 pr-1"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTLEMENT -->
+  <div id="settlementModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-7xl shadow-2xl p-5 animate-pop-in flex flex-col max-h-[90vh]">
+      <div class="flex flex-wrap justify-between items-end gap-3 mb-4 shrink-0">
+        <div>
+          <h3 class="text-base font-extrabold">Settlement</h3>
+          <p id="setAsOf" class="text-[11px] text-slate-400 font-semibold"></p>
+        </div>
+        <div class="flex items-end gap-2">
+          <div>
+            <label for="setFrom" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">From</label>
+            <input id="setFrom" type="date" onchange="loadSettlement()" class="h-10 px-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700">
+          </div>
+          <div>
+            <label for="setTo" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">To</label>
+            <input id="setTo" type="date" onchange="loadSettlement()" class="h-10 px-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700">
+          </div>
+          <button onclick="closeModal('settlementModal')" class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700" title="Close"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+      </div>
+
+      <p id="setError" class="hidden text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2"></p>
+
+      <div id="setBody" class="min-h-0 overflow-y-auto space-y-3 pr-1">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div class="border border-slate-200 rounded-2xl overflow-hidden">
+            <div id="setSummary" class="divide-y divide-slate-100"></div>
+          </div>
+          <section class="lg:col-span-2 border border-slate-200 rounded-2xl overflow-hidden flex flex-col">
+            <h4 class="px-3 py-2 bg-lavender-50 text-xs font-extrabold text-lavender-800 uppercase tracking-wider">Sales Summary</h4>
+            <div id="setPaymodes" class="flex-1"></div>
+          </section>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-lavender-50 text-xs font-extrabold text-lavender-800 uppercase tracking-wider">Transaction</h4><div id="setTransactions" class="overflow-x-auto"></div></section>
+          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-lavender-50 text-xs font-extrabold text-lavender-800 uppercase tracking-wider">Sales</h4><div id="setSales"></div></section>
+          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-lavender-50 text-xs font-extrabold text-lavender-800 uppercase tracking-wider">Credit Sales</h4><div id="setCredit"></div></section>
+          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-lavender-50 text-xs font-extrabold text-lavender-800 uppercase tracking-wider">Discount Details</h4><div id="setDiscounts"></div></section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
+      <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Terminal Settings</h3><button onclick="closeModal('settingsModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div class="space-y-4 text-sm mb-5">
+        <div class="flex justify-between items-center"><span class="font-semibold flex items-center gap-2"><i id="soundIcon" data-lucide="volume-2" class="w-4 h-4 text-lavender-700"></i>Sound</span><button onclick="toggleSound()" id="soundToggleCheckbox" class="tap px-3 py-1 rounded-xl bg-lavender-600 text-white font-bold text-xs">Enabled</button></div>
+        <div class="flex justify-between items-center"><span class="font-semibold">Service Charge %</span><input id="settingServiceCharge" type="number" value="@ViewData["ServiceChargePercent"]" onchange="updateTaxSettings()" placeholder="Service %" class="w-20 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-right font-mono font-bold"></div>
+        <div class="flex justify-between items-center"><span class="font-semibold">GST / Tax %</span><input id="settingGST" type="number" value="@ViewData["GstPercent"]" onchange="updateTaxSettings()" placeholder="GST %" class="w-20 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-right font-mono font-bold"></div>
+        <div class="flex justify-between items-center"><span class="font-semibold">Currency</span>
+          <select id="settingCurrency" onchange="updateCurrencySetting()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1 font-bold">
+            <option value="$">$ (USD / SGD)</option><option value="&#8377;">&#8377; (INR)</option><option value="&#163;">&#163; (GBP)</option><option value="&#8364;">&#8364; (EUR)</option><option value="RM">RM (MYR)</option>
+          </select></div>
+        <div class="pt-3 border-t border-slate-100">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="font-semibold">PayNow QR on customer screen</span>
+              <p class="text-[11px] text-slate-400 font-medium mt-0.5">Splits the customer display and shows a scannable PayNow QR for the amount due.</p>
+            </div>
+            <button onclick="togglePaymentQr()" id="qrToggleCheckbox" class="tap px-3 py-1 rounded-xl bg-slate-400 text-white font-bold text-xs shrink-0 ml-3">Off</button>
+          </div>
+          <div id="qrPayeeRow" class="hidden mt-3 space-y-2.5">
+            <div>
+              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">PayNow registered to</label>
+              <div class="flex gap-2 mt-1">
+                <select id="settingPayNowType" onchange="updatePayNowSettings()" class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm font-bold">
+                  <option value="uen">UEN</option>
+                  <option value="mobile">Mobile</option>
+                </select>
+                <input id="settingPayNowProxy" type="text" placeholder="202312345A" onchange="updatePayNowSettings()"
+                       class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-lavender-600">
+              </div>
+              <p id="payNowHint" class="text-[11px] text-slate-400 font-medium mt-1">Business UEN as registered for PayNow.</p>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Business name on the QR</label>
+              <input id="settingMerchantName" type="text" placeholder="MY CAFE PTE LTD" maxlength="25" onchange="updatePayNowSettings()"
+                     class="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-lavender-600">
+              <p class="text-[11px] text-slate-400 font-medium mt-1">Shown in the customer's banking app. Max 25 characters.</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-between items-center pt-3 border-t border-slate-100"><span class="font-semibold">Fullscreen</span><button onclick="toggleFullscreen()" class="tap px-3 py-1 rounded-xl bg-slate-100 text-xs font-bold">Toggle</button></div>
+      </div>
+      <div class="flex justify-end"><button onclick="closeModal('settingsModal')" class="tap px-5 py-2 bg-lavender-600 rounded-xl text-xs font-extrabold text-white">Done</button></div>
+    </div>
+  </div>
+
+  <script>
+    // ================= DATA FROM SERVER =================
+    // App base path: "/" when hosted at the root, "/pos/" under an IIS virtual
+    // directory. Every server call is built from this so the app can move hosts.
+    const BASE = '@Url.Content("~/")';
+
+    const _posData = @Html.Raw(ViewData["PosData"]);
+    const INITIAL_CATEGORIES_ROW1 = _posData.categoriesRow1;
+    const INITIAL_CATEGORIES_ROW2 = _posData.categoriesRow2;
+    const INITIAL_MENU_CATALOG = _posData.catalog;
+
+    // Rates from config_terminal_setting. The source of truth is the database, so
+    // nothing below hardcodes 10 or 5 — change the row in the Admin Panel and
+    // every till picks it up on its next load.
+    const CONFIG_SERVICE_CHARGE = _posData.serviceChargePercent;
+    const CONFIG_GST = _posData.gstPercent;
+
+    INITIAL_MENU_CATALOG.forEach(i => { if (i.subCategory === null) delete i.subCategory; });
+
+    const AppState = {
+      orderMode: 'dinein', tableNo: 'T5', persons: 2, seqNo: @(ViewData["NextSeq"]),
+      customer: 'Walk-in', phone: '',
+      activeCategory: INITIAL_CATEGORIES_ROW1[0]?.id || 'TIFFIN',
+      activeSubCategory: null, activeFilterQuery: '', vegFilter: 'all', lastDishId: null,
+      selectedCartIndex: -1, cart: [],
+      openOrderId: null,   // set once saved unpaid, so Pay settles that row
+      waiterId: null,      // staff the bill is credited to; null for counter sales
+      waiters: [],         // picker options, refreshed from the server
+      billType: 'single',  // 'single' | 'split' — payment shape only
+      mergeFrom: new Set(),// bills staged for merge; absorbed only when this bill saves
+      discountPercent: 0, serviceChargePercent: CONFIG_SERVICE_CHARGE, gstPercent: CONFIG_GST, incdtl: 0,
+      currency: '$', soundEnabled: true, pendingOrders: [],
+      showPaymentQr: false, payNowType: 'uen', payNowProxy: '', merchantName: '',
+      categoriesRow1: INITIAL_CATEGORIES_ROW1, categoriesRow2: INITIAL_CATEGORIES_ROW2, catalog: INITIAL_MENU_CATALOG
+    };
+
+    const money = v => `${AppState.currency}${v.toFixed(2)}`;
+    // Cash In less Cash Out, sign before the currency. Rounded so float error cannot show as "-$0.00".
+    const netAmount = (cashIn, cashOut) => Math.round((cashIn - cashOut) * 100) / 100;
+    const signedMoney = v => `${v < 0 ? '-' : ''}${money(Math.abs(v))}`;
+    // For typed-in text coming back from the server (customer names on holds).
+    const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // Must uppercase the first character, not just lowercase the rest: it is also
+    // used to build element ids from lowercase keys ('cash' -> 'Cash').
+    const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
+
+    // Order numbers come from the Orders table and are padded to 3 digits (#007, #150).
+    const orderLabel = n => `#${String(n).padStart(3, '0')}`;
+    function renderSeqNo() {
+      document.getElementById('seqNumberDisplay').textContent = orderLabel(AppState.seqNo);
+    }
+
+    const CAT_TINTS = ['#7540cc','#0e9f6e','#d97706','#e11d48','#2563eb','#0891b2','#9333ea','#ca8a04','#db2777','#16a34a','#ea580c','#4f46e5','#0d9488','#64748b'];
+    // Each main category carries the colour set for it in the admin panel; it tints
+    // the rail tile, the sub category tabs, the path and every dish card under it.
+    // The positional palette is only a fallback for a row that has none yet.
+    function catTint(catId) {
+      const i = AppState.categoriesRow1.findIndex(c => c.id === catId);
+      const color = i < 0 ? '' : AppState.categoriesRow1[i].color;
+      return /^#[0-9a-f]{6}$/i.test(color || '') ? color : CAT_TINTS[(i < 0 ? 0 : i) % CAT_TINTS.length];
+    }
+
+    // ================= CATEGORIES =================
+    function itemsInCategory(catId) {
+      if (catId === 'ALL') return AppState.catalog;
+      return AppState.catalog.filter(i => i.category === catId);
+    }
+
+    function renderCategories() {
+      const rail = document.getElementById('categoryRow1');
+      rail.innerHTML = '';
+      AppState.categoriesRow1.forEach(cat => {
+        const active = AppState.activeCategory === cat.id;
+        const count = itemsInCategory(cat.id).length;
+        const tint = catTint(cat.id);
+        const btn = document.createElement('button');
+        btn.className = `rail-btn tap relative w-full rounded-2xl py-2.5 px-1 flex flex-col items-center gap-1 border ${active ? 'active bg-lavender-50 border-lavender-300' : 'bg-white border-transparent hover:bg-slate-50'}`;
+        btn.innerHTML = `
+          <span class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:${active ? tint : tint + '18'};color:${active ? '#fff' : tint}">
+            <i data-lucide="${cat.icon || 'utensils'}" class="w-5 h-5"></i>
+          </span>
+          <span class="text-[11px] font-bold leading-tight text-center ${active ? 'text-lavender-900' : 'text-slate-600'}">${escapeHtml(cat.name)}</span>
+          <span class="text-[9px] font-semibold text-slate-400">${count}</span>`;
+        btn.onclick = () => selectCategory(cat.id);
+        rail.appendChild(btn);
+      });
+      renderLevel2();
+      renderLevelPath();
+    }
+
+    function subsForCategory(catId) {
+      const inCat = itemsInCategory(catId);
+      return AppState.categoriesRow2.filter(s => inCat.some(i => i.subCategory === s.id));
+    }
+
+    function renderLevel2() {
+      const row2 = document.getElementById('categoryRow2');
+      const wrap = document.getElementById('level2Wrap');
+      row2.innerHTML = '';
+      const inCat = itemsInCategory(AppState.activeCategory);
+      const subs = subsForCategory(AppState.activeCategory);
+      if (subs.length === 0 || AppState.activeFilterQuery) { wrap.classList.add('hidden'); return; }
+      wrap.classList.remove('hidden');
+      const tint = catTint(AppState.activeCategory);
+      const card = (id, label, n, first) => {
+        const on = AppState.activeSubCategory === id;
+        const frame = document.createElement('button');
+        frame.className = `tap chev-frame chev ${first ? 'first' : ''} shrink-0 !p-[1.5px]`;
+        frame.style.background = on ? tint : '#ded2f6';
+        frame.innerHTML = `
+          <span class="chev ${first ? 'first' : ''} h-12 flex flex-col justify-center text-left ${on ? 'text-white' : 'bg-white text-slate-700'}" style="margin-left:0;${on ? `background:${tint}` : ''}">
+            <span class="text-[13px] font-extrabold leading-tight whitespace-nowrap">${escapeHtml(label)}</span>
+            <span class="text-[10px] font-semibold ${on ? 'text-white/75' : 'text-slate-400'}">${n} items</span>
+          </span>`;
+        frame.onclick = () => selectSubCategory(id);
+        row2.appendChild(frame);
+      };
+      card(null, 'All', inCat.length, true);
+      subs.forEach(s => card(s.id, s.name, inCat.filter(i => i.subCategory === s.id).length));
+      const others = inCat.filter(i => !i.subCategory).length;
+      if (others) card('__OTHER', 'Others', others);
+    }
+
+    function renderLevelPath() {
+      const el = document.getElementById('levelPath');
+      const cat = AppState.categoriesRow1.find(c => c.id === AppState.activeCategory);
+      const sub = AppState.categoriesRow2.find(s => s.id === AppState.activeSubCategory);
+      const dish = AppState.catalog.find(d => d.id === AppState.lastDishId);
+      const dishInPath = dish && (AppState.activeCategory === 'ALL' || dish.category === AppState.activeCategory) && (!AppState.activeSubCategory || dish.subCategory === AppState.activeSubCategory);
+      const tint = catTint(AppState.activeCategory);
+      const step = (n, label, state) => {
+        const styles = { done: `background:${tint};color:#fff`, idle: 'background:#f1f5f9;color:#94a3b8' };
+        return `<span class="cut-frame cut inline-flex" style="--c:7px;background:${state === 'done' ? tint : '#e2e8f0'}">
+          <span class="cut inline-flex items-center gap-1.5 px-2.5 py-1" style="--c:6.4px;${styles[state]}">
+            <span class="text-[9px] font-extrabold opacity-80">L${n}</span>${escapeHtml(label)}</span></span>`;
+      };
+      const arrow = '<i data-lucide="chevron-right" class="w-3.5 h-3.5 text-lavender-300"></i>';
+      el.innerHTML =
+        step(1, cat ? cat.name : cap(AppState.activeCategory), 'done') + arrow +
+        step(2, sub ? sub.name : (AppState.activeSubCategory === '__OTHER' ? 'Others' : 'All'), AppState.activeSubCategory ? 'done' : 'idle') + arrow +
+        step(3, dishInPath ? cap(dish.name) : 'Select dish', dishInPath ? 'done' : 'idle');
+    }
+
+    function selectCategory(catId) {
+      AppState.activeCategory = catId;
+      AppState.activeSubCategory = null;
+      AppState.activeFilterQuery = '';
+      document.getElementById('quickDishFilterInput').value = '';
+      playBeep('click');
+      renderCategories(); renderDishGrid();
+    }
+    function selectSubCategory(id) { AppState.activeSubCategory = id; playBeep('click'); renderCategories(); renderDishGrid(); }
+
+    function setVegFilter(v) {
+      AppState.vegFilter = v;
+      playBeep('click');
+      const map = { all: 'vegFilterAll', veg: 'vegFilterVeg', nonveg: 'vegFilterNon' };
+      Object.entries(map).forEach(([k, id]) => {
+        document.getElementById(id).className = `tap px-3 py-1.5 rounded-lg flex items-center gap-1 ${k === v ? 'bg-lavender-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`;
+      });
+      renderDishGrid();
+    }
+    function handleQuickDishFilter(q) { AppState.activeFilterQuery = q.toLowerCase().trim(); renderLevel2(); renderDishGrid(); }
+
+    // ================= DISH GRID =================
+    function renderDishGrid() {
+      const grid = document.getElementById('dishGrid');
+      grid.innerHTML = '';
+      const q = AppState.activeFilterQuery;
+      let items = q ? AppState.catalog.filter(i => i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q))
+                    : itemsInCategory(AppState.activeCategory);
+      if (!q && AppState.activeSubCategory) {
+        items = AppState.activeSubCategory === '__OTHER' ? items.filter(i => !i.subCategory) : items.filter(i => i.subCategory === AppState.activeSubCategory);
+      }
+      if (AppState.vegFilter === 'veg') items = items.filter(i => i.isVeg);
+      if (AppState.vegFilter === 'nonveg') items = items.filter(i => !i.isVeg);
+
+      const cat = AppState.categoriesRow1.find(c => c.id === AppState.activeCategory);
+      document.getElementById('dishGridCategoryLabel').textContent = q ? `Results for "${q}"` : (cat ? cat.name : cap(AppState.activeCategory));
+      document.getElementById('dishGridCountLabel').textContent = `${items.length} dishes`;
+
+      if (items.length === 0) {
+        grid.innerHTML = `<div class="py-20 text-center"><div class="w-14 h-14 rounded-2xl bg-lavender-100 text-lavender-500 flex items-center justify-center mx-auto mb-3"><i data-lucide="search-x" class="w-7 h-7"></i></div><p class="font-bold text-slate-700">No dishes found</p><p class="text-xs text-slate-400 mt-1">Try another category or clear the search</p></div>`;
+        renderLevelPath(); lucide.createIcons(); return;
+      }
+
+      const groupByCategory = q || AppState.activeCategory === 'ALL';
+      const groups = [];
+      const keyOf = d => groupByCategory ? d.category : (d.subCategory || '__OTHER');
+      items.forEach(d => {
+        let g = groups.find(x => x.key === keyOf(d));
+        if (!g) { g = { key: keyOf(d), items: [] }; groups.push(g); }
+        g.items.push(d);
+      });
+      const labelOf = key => {
+        if (groupByCategory) { const c = AppState.categoriesRow1.find(x => x.id === key); return c ? c.name : cap(key); }
+        if (key === '__OTHER') return 'Others';
+        const s = AppState.categoriesRow2.find(x => x.id === key); return s ? s.name : cap(key);
+      };
+      const parentLabel = groupByCategory ? 'Menu' : (cat ? cat.name : '');
+
+      groups.forEach(g => {
+        const tint = catTint(groupByCategory ? g.key : AppState.activeCategory);
+        const section = document.createElement('section');
+        section.className = 'tree-section';
+        section.innerHTML = `
+          <span class="tree-node" style="border-color:${tint}"></span>
+          <div class="flex items-center gap-2 mb-2.5">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${escapeHtml(parentLabel)}</span>
+            <i data-lucide="chevron-right" class="w-3 h-3 text-slate-300"></i>
+            <span class="text-sm font-extrabold text-slate-800">${escapeHtml(labelOf(g.key))}</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:${tint}18;color:${tint}">${g.items.length}</span>
+            <span class="flex-1 h-px bg-lavender-100"></span>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3"></div>`;
+        const inner = section.lastElementChild;
+        g.items.forEach(dish => inner.appendChild(buildDishCard(dish)));
+        grid.appendChild(section);
+      });
+      renderLevelPath();
+      lucide.createIcons();
+    }
+
+    function buildDishCard(dish) {
+      const qty = AppState.cart.filter(i => i.id === dish.id).reduce((a, c) => a + c.qty, 0);
+      const tint = catTint(dish.category);
+      const isLast = AppState.lastDishId === dish.id;
+      const frame = document.createElement('div');
+      frame.className = 'dish-card tap cut-frame cut relative cursor-pointer';
+      frame.style.background = isLast ? tint : (qty ? '#a787e6' : '#e2e8f0');
+      frame.style.padding = isLast ? '2.5px' : '1.5px';
+      frame.onclick = () => addDishToCart(dish);
+      frame.innerHTML = `
+        <div class="cut relative bg-white flex flex-col min-h-[132px] ${qty ? 'bg-gradient-to-b from-lavender-50 to-white' : ''}">
+          <div class="h-1.5 mr-[14px]" style="background:${tint}"></div>
+          <div class="p-3 flex-1 flex flex-col">
+            <div class="flex items-start justify-between gap-2">
+              <span class="w-4 h-4 mt-0.5 rounded-[4px] border-[1.5px] ${dish.isVeg ? 'border-emerald-600' : 'border-rose-600'} flex items-center justify-center shrink-0"><span class="w-1.5 h-1.5 rounded-full ${dish.isVeg ? 'bg-emerald-600' : 'bg-rose-600'}"></span></span>
+              ${qty ? `<span class="bg-lavender-600 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full animate-pop-in">x${qty}</span>` : ''}
+            </div>
+            <div class="font-bold text-[13px] text-slate-800 leading-snug mt-2 line-clamp-2">${cap(dish.name)}</div>
+            <div class="mt-auto pt-2 flex items-center justify-between pr-1">
+              <span class="font-digital font-bold text-base text-slate-900">${money(dish.price)}</span>
+              ${qty ? `
+                <div class="flex items-center bg-lavender-600 rounded-lg text-white" onclick="event.stopPropagation()">
+                  <button class="w-7 h-7 flex items-center justify-center" onclick="changeDishQty('${dish.id}',-1)"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
+                  <button class="w-7 h-7 flex items-center justify-center" onclick="changeDishQty('${dish.id}',1)"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+                </div>` :
+                `<span class="w-7 h-7 rounded-lg bg-lavender-50 text-lavender-600 flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4"></i></span>`}
+            </div>
+          </div>
+        </div>`;
+      return frame;
+    }
+
+    function changeDishQty(dishId, delta) {
+      const idx = AppState.cart.findIndex(i => i.id === dishId && !i.modifier);
+      const target = idx > -1 ? idx : AppState.cart.findIndex(i => i.id === dishId);
+      if (target < 0) return;
+      changeLineQty(target, delta);
+    }
+
+    // ================= CART =================
+    function addDishToCart(dish) {
+      playBeep('add');
+      AppState.lastDishId = dish.id;
+      const idx = AppState.cart.findIndex(i => i.id === dish.id && !i.modifier);
+      if (idx > -1) { AppState.cart[idx].qty++; AppState.selectedCartIndex = idx; }
+      else {
+        AppState.cart.push({ id: dish.id, name: dish.name, qty: 1, rPrice: dish.price, cPrice: dish.price, modifier: '', foc: false });
+        AppState.selectedCartIndex = AppState.cart.length - 1;
+      }
+      refreshAll();
+    }
+
+    function changeLineQty(index, delta) {
+      const item = AppState.cart[index];
+      if (!item) return;
+      AppState.selectedCartIndex = index;
+      item.qty += delta;
+      if (item.qty <= 0) { removeSelectedItem(); return; }
+      playBeep('click');
+      refreshAll();
+    }
+
+    function renderCart() {
+      const box = document.getElementById('cartItemsList');
+      const total = AppState.cart.reduce((a, c) => a + c.qty, 0);
+      document.getElementById('cartItemsBadge').textContent = `${total} item${total === 1 ? '' : 's'}`;
+      box.innerHTML = '';
+
+      if (!AppState.cart.length) {
+        box.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-center py-10"><div class="w-14 h-14 rounded-2xl bg-lavender-50 text-lavender-400 flex items-center justify-center mb-3"><i data-lucide="shopping-basket" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">No items yet</p><p class="text-xs text-slate-400 mt-1">Tap a dish to add it</p></div>`;
+        lucide.createIcons(); return;
+      }
+
+      AppState.cart.forEach((item, index) => {
+        const sel = index === AppState.selectedCartIndex;
+        const line = item.foc ? 0 : item.qty * item.rPrice;
+        const row = document.createElement('div');
+        row.className = `rounded-xl border p-2.5 flex items-center gap-2.5 cursor-pointer ${sel ? 'border-lavender-400 bg-lavender-50/70' : 'border-slate-100 hover:bg-slate-50'}`;
+        row.onclick = () => selectCartRow(index);
+        row.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-bold text-slate-800 truncate flex items-center gap-1.5">
+              ${item.foc ? '<span class="bg-amber-100 text-amber-800 text-[9px] px-1.5 py-0.5 rounded font-extrabold">FOC</span>' : ''}${cap(item.name)}
+            </div>
+            <div class="text-[11px] text-slate-400 font-mono">${money(item.rPrice)} each</div>
+            ${item.modifier ? `<div class="text-[11px] text-lavender-700 italic truncate">&#8627; ${item.modifier}</div>` : ''}
+          </div>
+          <div class="flex items-center bg-white border border-slate-200 rounded-lg" onclick="event.stopPropagation()">
+            <button class="tap w-8 h-8 flex items-center justify-center text-slate-600" onclick="changeLineQty(${index},-1)"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
+            <span class="w-6 text-center font-mono font-bold text-sm">${item.qty}</span>
+            <button class="tap w-8 h-8 flex items-center justify-center text-lavender-700" onclick="changeLineQty(${index},1)"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+          </div>
+          <div class="w-16 text-right font-mono font-bold text-sm ${item.foc ? 'text-amber-600 line-through' : 'text-slate-900'}">${money(item.foc ? item.qty * item.rPrice : line)}</div>`;
+        box.appendChild(row);
+      });
+      const r = box.children[AppState.selectedCartIndex];
+      if (r) r.scrollIntoView({ block: 'nearest' });
+      lucide.createIcons();
+    }
+
+    // Cart state goes to the customer display through the server, so the display
+    // can be any browser, profile or machine — not just another tab in this one.
+    function postToDisplay(body) {
+      fetch(BASE + 'api/display/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true
+      }).catch(() => { });
+    }
+
+    function buildDisplayState() {
+      const t = computeTotals();
+      return {
+        type: 'update',
+        cart: AppState.cart,
+        totals: {
+          subTotal: t.subTotal, discountAmt: t.discountAmt,
+          serviceChargeAmt: t.serviceChargeAmt, gstAmt: t.gstAmt, netTotal: t.netTotal,
+          discountPercent: AppState.discountPercent,
+          serviceChargePercent: AppState.serviceChargePercent,
+          gstPercent: AppState.gstPercent
+        },
+        seqNo: AppState.seqNo,
+        orderMode: AppState.orderMode,
+        tableNo: AppState.tableNo,
+        currency: AppState.currency,
+        showQr: AppState.showPaymentQr,
+        payNowType: AppState.payNowType,
+        payNowProxy: AppState.payNowProxy,
+        merchantName: AppState.merchantName
+      };
+    }
+
+    let _lastBroadcast = '';
+    function broadcastCart(force) {
+      const sig = JSON.stringify(buildDisplayState());
+      if (!force && sig === _lastBroadcast) return;
+      _lastBroadcast = sig;
+      postToDisplay(sig);
+    }
+
+    // Safety net: any mutation reaches the display within ~200ms regardless of
+    // which code path changed it. The signature check makes unchanged ticks free.
+    setInterval(() => broadcastCart(), 200);
+
+    function refreshAll() { renderCart(); calculateTotals(); renderDishGrid(); broadcastCart(); }
+    function selectCartRow(i) { AppState.selectedCartIndex = i; playBeep('click'); renderCart(); }
+
+    function moveSelection(d) {
+      if (!AppState.cart.length) return;
+      AppState.selectedCartIndex = Math.min(AppState.cart.length - 1, Math.max(0, AppState.selectedCartIndex + d));
+      playBeep('click'); renderCart();
+    }
+    function adjustSelectedQty(d) { if (AppState.selectedCartIndex < 0) return; changeLineQty(AppState.selectedCartIndex, d); }
+
+    function removeSelectedItem() {
+      const i = AppState.selectedCartIndex;
+      if (i < 0 || i >= AppState.cart.length) { showPOSNotification('warning', 'No Item Selected', 'Tap an item in the order first.'); return; }
+      playBeep('delete');
+      const [removed] = AppState.cart.splice(i, 1);
+      showPOSNotification('info', 'Item Removed', `Removed ${cap(removed.name)}.`);
+      if (AppState.selectedCartIndex >= AppState.cart.length) AppState.selectedCartIndex = AppState.cart.length - 1;
+      refreshAll();
+    }
+
+    function toggleFOCForSelected() {
+      const item = AppState.cart[AppState.selectedCartIndex];
+      if (!item) { showPOSNotification('warning', 'No Item Selected', 'Tap an item in the order first.'); return; }
+      item.foc = !item.foc; playBeep('click');
+      showPOSNotification('info', 'FOC Updated', `${cap(item.name)} is ${item.foc ? 'free of charge' : 'back to normal price'}.`);
+      renderCart(); calculateTotals(); broadcastCart();
+    }
+
+    function computeTotals() {
+      const subTotal = AppState.cart.reduce((a, i) => a + (i.foc ? 0 : i.qty * i.rPrice), 0);
+      const discountAmt = subTotal * AppState.discountPercent / 100;
+      const discountedSub = Math.max(0, subTotal - discountAmt);
+      const serviceChargeAmt = discountedSub * AppState.serviceChargePercent / 100;
+      const gstAmt = discountedSub * AppState.gstPercent / 100;
+      const netTotal = discountedSub + serviceChargeAmt + gstAmt + AppState.incdtl;
+      return { subTotal, discountAmt, serviceChargeAmt, gstAmt, netTotal };
+    }
+
+    function calculateTotals() {
+      const t = computeTotals();
+      const set = (id, v) => document.getElementById(id).textContent = v;
+      set('summarySubTotal', money(t.subTotal));
+      set('summaryDiscount', `-${money(t.discountAmt)}`);
+      set('summaryServiceCharge', money(t.serviceChargeAmt));
+      set('summaryIncdtl', money(AppState.incdtl));
+      set('summaryGST', money(t.gstAmt));
+      set('summaryNetTotal', money(t.netTotal));
+      set('payBtnTotal', money(t.netTotal));
+      set('discountPercentLabel', `${AppState.discountPercent.toFixed(2)}%`);
+      set('servicePercentLabel', `${AppState.serviceChargePercent.toFixed(2)}%`);
+      set('gstPercentLabel', `${AppState.gstPercent.toFixed(2)}%`);
+      broadcastCart();
+      return t;
+    }
+
+    // Collapsed by default; the choice is remembered per device.
+    function toggleTotalsBreakdown(open) {
+      const box = document.getElementById('totalsBreakdown');
+      if (open === undefined) open = box.classList.contains('hidden');
+      box.classList.toggle('hidden', !open);
+      document.getElementById('totalsBreakdownChevron').classList.toggle('rotate-180', open);
+      try { localStorage.setItem('pos.totalsOpen', open ? '1' : '0'); } catch { }
+    }
+
+    // ================= MODALS =================
+    function openModal(id) { playBeep('click'); document.getElementById(id).classList.remove('hidden'); lucide.createIcons(); }
+    function closeModal(id) { playBeep('click'); document.getElementById(id).classList.add('hidden'); closeGlobalVirtualKeyboard(); }
+
+    // ================= CONFIRM =================
+    // posConfirm({ title, lines, okText, tone, warn }) resolves true on OK, false on
+    // Cancel or Esc. tone 'danger' paints OK red. warn adds an amber box:
+    // { title, text, actionText, action } where action runs after Cancel.
+    let _confirmResolve = null;
+    function posConfirm({ title, lines = [], okText = 'OK', tone = 'primary', warn = null }) {
+      if (_confirmResolve) _confirmResolve(false);
+      document.getElementById('confirmTitle').textContent = title;
+      const body = document.getElementById('confirmBody');
+      body.innerHTML = '';
+      lines.forEach(l => { const p = document.createElement('p'); p.textContent = l; body.appendChild(p); });
+
+      const danger = tone === 'danger';
+      document.getElementById('confirmIconWrap').className = `w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-rose-100 text-rose-600' : 'bg-lavender-100 text-lavender-700'}`;
+      document.getElementById('confirmIcon').outerHTML = `<i id="confirmIcon" data-lucide="${danger ? 'alert-octagon' : 'help-circle'}" class="w-5 h-5"></i>`;
+      const ok = document.getElementById('confirmOkBtn');
+      ok.textContent = okText;
+      ok.className = `tap h-11 rounded-xl text-white font-extrabold text-sm ${danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-lavender-600 hover:bg-lavender-700'}`;
+
+      document.getElementById('confirmWarn').classList.toggle('hidden', !warn);
+      const act = document.getElementById('confirmWarnAction');
+      act.classList.toggle('hidden', !warn?.action);
+      if (warn) {
+        document.getElementById('confirmWarnTitle').textContent = warn.title;
+        document.getElementById('confirmWarnText').textContent = warn.text;
+        document.getElementById('confirmWarnActionText').textContent = warn.actionText || '';
+        act.onclick = () => { resolveConfirm(false); warn.action?.(); };
+      }
+
+      openModal('confirmModal');
+      return new Promise(r => { _confirmResolve = r; });
+    }
+    function resolveConfirm(answer) {
+      document.getElementById('confirmModal').classList.add('hidden');
+      const r = _confirmResolve; _confirmResolve = null;
+      if (r) r(answer);
+    }
+    function toggleMoreMenu(e) { e.stopPropagation(); document.getElementById('moreMenu').classList.toggle('hidden'); playBeep('click'); }
+    function closeMoreMenu() { document.getElementById('moreMenu').classList.add('hidden'); }
+    document.addEventListener('click', e => { if (!e.target.closest('#moreMenu')) closeMoreMenu(); });
+
+    // stopPropagation, or the listener below would close the menu this click opened.
+    function togglePowerMenu(e) { e.stopPropagation(); closeMoreMenu(); document.getElementById('powerMenu').classList.toggle('hidden'); lucide.createIcons(); playBeep('click'); }
+    function closePowerMenu() { document.getElementById('powerMenu').classList.add('hidden'); }
+    document.addEventListener('click', e => { if (!e.target.closest('#powerMenu')) closePowerMenu(); });
+
+    // Below lg the order panel is a sheet over the menu. From lg up it is a column
+    // and lg:translate-y-0 wins, so the class flip does nothing there.
+    function toggleOrderSheet(open) {
+      document.getElementById('orderPanel').classList.toggle('translate-y-full', !open);
+      if (!open) closeMoreMenu();
+      playBeep('click');
+    }
+
+    // The order bar repeats the panel's item count and total. Mirrored from the
+    // panel's own labels, so every path that updates them updates the bar too.
+    function syncOrderSheetBar() {
+      document.getElementById('orderSheetBarCount').textContent = document.getElementById('cartItemsBadge').textContent;
+      document.getElementById('orderSheetBarTotal').textContent = document.getElementById('payBtnTotal').textContent;
+    }
+    ['cartItemsBadge', 'payBtnTotal'].forEach(id =>
+      new MutationObserver(syncOrderSheetBar).observe(document.getElementById(id), { childList: true, characterData: true, subtree: true }));
+
+    function openTableModal() {
+      const g = document.getElementById('tableGrid'); g.innerHTML = '';
+      for (let n = 1; n <= 12; n++) {
+        const t = `T${n}`, on = t === AppState.tableNo;
+        const b = document.createElement('button');
+        b.className = `tap py-4 rounded-xl font-extrabold border ${on ? 'bg-lavender-600 text-white border-lavender-700' : 'bg-slate-50 hover:bg-lavender-100 border-slate-200'}`;
+        b.textContent = t; b.onclick = () => selectTable(t); g.appendChild(b);
+      }
+      openModal('tableModal');
+    }
+    function selectTable(t) { AppState.tableNo = t; document.getElementById('currentTableBadge').textContent = t; closeModal('tableModal'); broadcastCart(); showPOSNotification('info', 'Table Selected', `Active table set to ${t}.`); }
+
+    function openPersonsModal() {
+      const g = document.getElementById('personsGrid'); g.innerHTML = '';
+      for (let n = 1; n <= 8; n++) {
+        const on = n === AppState.persons;
+        const b = document.createElement('button');
+        b.className = `tap py-3 rounded-xl font-extrabold text-base border ${on ? 'bg-lavender-600 text-white border-lavender-700' : 'bg-slate-50 hover:bg-lavender-100 border-slate-200'}`;
+        b.textContent = n === 8 ? '8+' : n; b.onclick = () => selectPersons(n); g.appendChild(b);
+      }
+      openModal('personsModal');
+    }
+    function selectPersons(n) { AppState.persons = n; document.getElementById('currentPersonsCount').textContent = n === 8 ? '8+' : n; closeModal('personsModal'); }
+
+    function openCustomerModal() {
+      document.getElementById('custNameInput').value = AppState.customer === 'Walk-in' ? '' : AppState.customer;
+      document.getElementById('custPhoneInput').value = AppState.phone;
+      openModal('customerModal');
+    }
+    function updateCustomerDisplay() { document.getElementById('topCustomerLabel').textContent = AppState.customer; }
+    function saveCustomer() {
+      AppState.customer = document.getElementById('custNameInput').value.trim() || 'Walk-in';
+      AppState.phone = document.getElementById('custPhoneInput').value.trim();
+      updateCustomerDisplay(); closeModal('customerModal');
+      showPOSNotification('info', 'Customer', `Order assigned to ${AppState.customer}.`);
+    }
+    function setCustomer(name) { AppState.customer = name; AppState.phone = ''; updateCustomerDisplay(); closeModal('customerModal'); }
+
+    // A finished bill must not leak its customer into the next one. Recalling a
+    // named bill used to make that name stick to every order afterwards.
+    // Clears what belongs to one bill rather than to the till: the guest, and the
+    // waiter it was credited to. Called wherever a bill leaves the screen — settled,
+    // saved unpaid or cleared — so the next guest never inherits either.
+    function resetCustomer() {
+      AppState.customer = 'Walk-in';
+      AppState.phone = '';
+      AppState.waiterId = null;
+      updateCustomerDisplay();
+    }
+
+    function openModifierModal() {
+      const item = AppState.cart[AppState.selectedCartIndex];
+      if (!item) { showPOSNotification('warning', 'No Item Selected', 'Tap an item in the order first.'); return; }
+      document.getElementById('modifierDishName').textContent = cap(item.name);
+      document.getElementById('inputCustomModifier').value = item.modifier || '';
+      openModal('modifierModal');
+    }
+    function appendModifier(t) { playBeep('click'); const i = document.getElementById('inputCustomModifier'); i.value = i.value ? `${i.value}, ${t}` : t; }
+    function saveModifier() {
+      const item = AppState.cart[AppState.selectedCartIndex];
+      if (!item) return;
+      item.modifier = document.getElementById('inputCustomModifier').value.trim();
+      renderCart(); broadcastCart(); closeModal('modifierModal');
+      showPOSNotification('info', 'Note Saved', `Kitchen note added to ${cap(item.name)}.`);
+    }
+    function clearModifierForSelected() { const item = AppState.cart[AppState.selectedCartIndex]; if (item) { item.modifier = ''; renderCart(); } closeModal('modifierModal'); }
+
+    function openDiscountModal() { document.getElementById('inputCustomDiscount').value = AppState.discountPercent; openModal('discountModal'); }
+    function setDiscountPercent(p) { AppState.discountPercent = p; calculateTotals(); broadcastCart(); closeModal('discountModal'); showPOSNotification('info', 'Discount Applied', `${p}% off this order.`); }
+    function applyCustomDiscount(val) {
+      AppState.discountPercent = val !== undefined ? val : Math.min(100, Math.max(0, parseFloat(document.getElementById('inputCustomDiscount').value) || 0));
+      calculateTotals(); broadcastCart(); closeModal('discountModal');
+    }
+
+    // ================= ORDER FLOW =================
+    function setOrderMode(mode) {
+      AppState.orderMode = mode;
+      const on = 'tap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-lavender-800 shadow-sm';
+      const off = 'tap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500';
+      document.getElementById('btnDineIn').className = mode === 'dinein' ? on : off;
+      document.getElementById('btnTakeAway').className = mode === 'takeaway' ? on : off;
+      document.getElementById('tableChip').classList.toggle('opacity-40', mode === 'takeaway');
+      playBeep('click'); broadcastCart();
+    }
+    // Shared payload builder so an unpaid order and a settled one record the same figures.
+    function billPayload() {
+      const t = calculateTotals();
+      // billType is set before this runs, so a split bill reports its real head
+      // count while an unpaid save or a normal bill reports one payer.
+      const persons = AppState.billType === 'split' ? splitCount : 1;
+      const shares = persons > 1 ? currentSplitShares(t.netTotal) : [t.netTotal];
+
+      return {
+        orderId: AppState.openOrderId,
+        billType: AppState.billType,
+        mergeFrom: [...AppState.mergeFrom],
+        splitCount: persons,
+        splitAmount: shares[0],
+        orderMode: AppState.orderMode,
+        tableNo: AppState.tableNo,
+        guests: AppState.persons,
+        customerName: AppState.customer,
+        customerPhone: AppState.phone,
+        waiterId: AppState.waiterId,
+        subTotal: parseFloat(t.subTotal.toFixed(2)),
+        discountPercent: parseFloat(AppState.discountPercent.toFixed(2)),
+        discountAmount: parseFloat(t.discountAmt.toFixed(2)),
+        serviceChargePercent: parseFloat(AppState.serviceChargePercent.toFixed(2)),
+        serviceChargeAmount: parseFloat(t.serviceChargeAmt.toFixed(2)),
+        gstPercent: parseFloat(AppState.gstPercent.toFixed(2)),
+        gstAmount: parseFloat(t.gstAmt.toFixed(2)),
+        netTotal: parseFloat(t.netTotal.toFixed(2)),
+        items: AppState.cart.map(i => ({
+          id: i.id, name: i.name, qty: i.qty,
+          unitPrice: parseFloat(i.rPrice.toFixed(2)),
+          isFOC: i.foc, note: i.modifier || ''
+        }))
+      };
+    }
+
+    // Saves the order unpaid — the guest settles when they leave. Pressing it again
+    // updates the same order rather than creating a second one.
+    async function placeOrder() {
+      if (!AppState.cart.length) { showPOSNotification('warning', 'Order is Empty', 'Add dishes before saving the order.'); return; }
+      playBeep('add');
+
+      try {
+        const res = await fetch(BASE + 'api/billing/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(billPayload())
+        });
+        if (!res.ok) { showPOSNotification('warning', 'Save Failed', 'Order could not be saved.'); return; }
+
+        const data = await res.json();
+        const n = AppState.cart.reduce((a, c) => a + c.qty, 0);
+        const where = AppState.orderMode === 'dinein' ? `Table ${AppState.tableNo}` : 'Take Away';
+        showPOSNotification('success', 'Order Saved',
+          `${orderLabel(data.seqNo)} • ${where} • ${n} item(s) • pay on leaving`);
+
+        // Clear the screen for the next guest. The order stays in the database as
+        // 'ordered' and is settled when they pay.
+        AppState.openOrderId = null;
+        AppState.seqNo = data.nextSeq ?? (data.seqNo + 1);
+        _tillSeqNo = null;
+        AppState.cart = []; AppState.selectedCartIndex = -1; AppState.discountPercent = 0;
+        AppState.mergeFrom.clear(); AppState.billType = 'single';
+        resetCustomer();
+        renderMergeBadge();
+        renderSeqNo();
+        refreshAll();
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach the server. Order not saved.');
+      }
+    }
+
+
+    // ================= WAITER PUNCH =================
+    // Waiters do not sign in, so the till clocks them in and out. The list is read
+    // from the server each time the popup opens: any till can punch, so what this
+    // page last saw may already be stale.
+    let punchWaiters = [];
+    let punchBusy = false;
+    const antiForgeryToken = () => document.querySelector('#logoutForm input[name="__RequestVerificationToken"]').value;
+
+    async function openPunchModal() {
+      document.getElementById('punchList').innerHTML = '<p class="py-8 text-center text-sm font-bold text-slate-400">Loading…</p>';
+      openModal('punchModal');
+      await loadPunchList();
+    }
+
+    async function loadPunchList() {
+      try {
+        const res = await fetch(BASE + 'api/billing/attendance/waiters', { cache: 'no-store' });
+        if (!res.ok) throw new Error();
+        punchWaiters = await res.json();
+      } catch {
+        document.getElementById('punchList').innerHTML = '<p class="py-8 text-center text-sm font-bold text-rose-500">Could not load waiters</p>';
+        return;
+      }
+      renderPunch();
+    }
+
+    function renderPunch() {
+      const onShift = punchWaiters.filter(w => w.isIn).sort((a, b) => a.firstInAt.localeCompare(b.firstInAt));
+      const off = punchWaiters.filter(w => !w.isIn);
+
+      const badge = document.getElementById('punchCountBadge');
+      badge.textContent = onShift.length;
+      badge.classList.toggle('hidden', !onShift.length); badge.classList.toggle('flex', !!onShift.length);
+
+      const sel = document.getElementById('punchWaiterSelect');
+      const keep = sel.value;
+      sel.innerHTML = off.length
+        ? '<option value="">Select waiter…</option>' + off.map(w => `<option value="${w.id}">${escHtml(w.name)}</option>`).join('')
+        : `<option value="">${punchWaiters.length ? 'Every waiter is punched in' : 'No waiters set up'}</option>`;
+      if (off.some(w => String(w.id) === keep)) sel.value = keep;
+      sel.disabled = !off.length;
+      document.getElementById('punchInBtn').disabled = !off.length;
+
+      document.getElementById('punchOnCount').textContent = `${onShift.length} of ${punchWaiters.length}`;
+      const list = document.getElementById('punchList');
+      if (!onShift.length) {
+        list.innerHTML = '<div class="py-8 text-center"><i data-lucide="user-x" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i><p class="text-sm font-bold text-slate-500">Nobody punched in yet</p></div>';
+      } else {
+        const t = iso => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        list.innerHTML = onShift.map(w => `
+          <div class="border border-slate-200 rounded-2xl px-3.5 py-2.5 flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-mint-100 text-mint-700 flex items-center justify-center text-xs font-extrabold shrink-0">${escHtml(waiterInitials(w.name))}</span>
+            <div class="min-w-0 flex-1">
+              <div class="font-extrabold text-sm text-slate-800 truncate">${escHtml(w.name)}</div>
+              <div class="text-[11px] font-semibold text-slate-400">In since ${t(w.firstInAt)}${w.lastInAt !== w.firstInAt ? ' · back at ' + t(w.lastInAt) : ''}${w.fromYesterday ? ' <span class="text-amber-600 font-bold">· from yesterday</span>' : ''}</div>
+            </div>
+            <button onclick="punchOut(${w.id})" class="tap h-9 px-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs flex items-center gap-1.5 shrink-0"><i data-lucide="log-out" class="w-3.5 h-3.5"></i>Punch Out</button>
+          </div>`).join('');
+      }
+      lucide.createIcons();
+    }
+
+    async function punchSend(action, waiterId) {
+      if (punchBusy) return;
+      punchBusy = true;
+      playBeep('click');
+      const verb = action === 'punch-in' ? 'Punch In' : 'Punch Out';
+      try {
+        const res = await fetch(BASE + 'api/billing/attendance/' + action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': antiForgeryToken() },
+          body: JSON.stringify({ waiterId })
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) showPOSNotification('warning', verb + ' Failed', body.error || 'Please try again.');
+        else showPOSNotification('success', action === 'punch-in' ? 'Punched In' : 'Punched Out',
+          `${body.name} ${action === 'punch-in' ? 'is now on shift' : 'is off shift'}.`);
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach the server.');
+      } finally {
+        punchBusy = false;
+      }
+      // Re-read either way: a refusal usually means another till already changed it.
+      await loadPunchList();
+    }
+
+    function punchIn() {
+      const id = Number(document.getElementById('punchWaiterSelect').value);
+      if (!id) { showPOSNotification('warning', 'Select a Waiter', 'Pick who is starting their shift.'); return; }
+      punchSend('punch-in', id);
+    }
+
+    function punchOut(id) { punchSend('punch-out', id); }
+
+    // ================= END OF DAY =================
+    // Moves every closed bill off Orders into order_archive (lines and payments
+    // with it) so the live tables stay small. Today's unpaid bills stay where they
+    // are. Reports and the dashboard read both tables, so no figure changes.
+    let eodBusy = false;
+
+    async function runEndOfDay() {
+      if (eodBusy) return;
+      playBeep('click');
+
+      let preview;
+      try {
+        const res = await fetch(BASE + 'api/billing/eod', { cache: 'no-store' });
+        preview = await res.json().catch(() => ({}));
+        if (!res.ok) { showPOSNotification('warning', 'End of Day', preview.error || 'Could not check the day.'); return; }
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach the server.');
+        return;
+      }
+
+      if (!preview.toArchive) {
+        showPOSNotification('info', 'Nothing to Archive', preview.openToday
+          ? `Only ${preview.openToday} unpaid bill(s) on the till - they stay until settled.`
+          : 'The live order tables are already empty.');
+        return;
+      }
+
+      const lines = [`${preview.toArchive} closed bill(s) will move to the archive, with their items and payments.`];
+      if (preview.openToday) lines.push(`${preview.openToday} unpaid bill(s) from today stay on the till.`);
+      lines.push('Reports, the dashboard and the Orders list still show archived bills.');
+      const ok = await posConfirm({
+        title: `End of Day · ${preview.businessDate}`,
+        lines,
+        okText: 'Run End of Day',
+        warn: preview.heldCarts ? { title: 'Held carts', text: `${preview.heldCarts} held cart(s) are not bills and are not archived.` } : null
+      });
+      if (!ok) return;
+
+      eodBusy = true;
+      const btn = document.getElementById('eodBtn');
+      btn.disabled = true;
+      try {
+        const res = await fetch(BASE + 'api/billing/eod', {
+          method: 'POST',
+          headers: { 'RequestVerificationToken': antiForgeryToken() }
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) showPOSNotification('warning', 'End of Day Failed', body.error || 'Nothing was moved. Please try again.');
+        else showPOSNotification('success', 'End of Day Done',
+          `Archived ${body.orders} bill(s), ${body.items} item(s), ${body.payments} payment(s).`);
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach the server.');
+      } finally {
+        eodBusy = false;
+        btn.disabled = false;
+      }
+    }
+
+    // ================= WAITER =================
+    // The list comes from the server on every settle, so a waiter added mid-shift
+    // appears without reloading the till. The current pick survives the refresh;
+    // it is only dropped when that account is no longer selectable.
+    async function loadWaiters() {
+      try {
+        const res = await fetch(BASE + 'api/billing/waiters');
+        if (!res.ok) return;
+        AppState.waiters = await res.json();
+      } catch { return; }
+      renderWaiterCards();
+      scrollWaiterIntoView();
+    }
+
+    // Display names are staff-entered, so they are escaped before going into
+    // markup rather than trusted the way a fixed label would be.
+    const escHtml = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    // "Ravi Kumar" -> "RK". One letter when there is only one word, so a card is
+    // never blank.
+    const waiterInitials = name => String(name ?? '').trim().split(/\s+/).filter(Boolean)
+      .slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+
+    function renderWaiterCards() {
+      const box = document.getElementById('waiterCards');
+      const list = AppState.waiters;
+
+      if (AppState.waiterId && !list.some(w => w.id === AppState.waiterId)) AppState.waiterId = null;
+
+      const card = (id, name, badge, isIcon) => {
+        const on = id === AppState.waiterId;
+        return `<button onclick="selectWaiter(${id === null ? 'null' : id})" title="${escHtml(name)}"
+          class="tap shrink-0 pl-1.5 pr-3 py-1.5 rounded-full border-2 flex items-center gap-2 ${on ? 'border-lavender-600 bg-white' : 'border-lavender-100 bg-white/70'}">
+          <span class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${on ? 'bg-lavender-600 text-white' : 'bg-slate-100 text-slate-500'}">${isIcon ? badge : escHtml(badge)}</span>
+          <span class="max-w-[96px] truncate text-xs font-bold ${on ? 'text-lavender-900' : 'text-slate-600'}">${escHtml(name)}</span>
+        </button>`;
+      };
+
+      // Unassigned is a card like any other, so clearing the attribution is one tap
+      // and never needs a trip through a list.
+      box.innerHTML =
+        card(null, 'Unassigned', '<i data-lucide="user-x" class="w-4 h-4"></i>', true) +
+        list.map(w => card(w.id, w.name, waiterInitials(w.name), false)).join('');
+
+      document.getElementById('waiterEmptyHint').classList.toggle('hidden', list.length > 0);
+      lucide.createIcons();
+    }
+
+    function selectWaiter(id) {
+      AppState.waiterId = id;
+      playBeep('click');
+      renderWaiterCards();
+    }
+
+    // A recalled bill can be credited to someone far along the row, so bring that
+    // card into view instead of leaving the row parked at the start.
+    function scrollWaiterIntoView() {
+      const on = document.querySelector('#waiterCards .border-lavender-600');
+      if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
+    }
+
+    let selectedPayMethod = 'mixed';
+    function openPaymentModal() {
+      if (!AppState.cart.length) { showPOSNotification('warning', 'Order is Empty', 'Add items before payment.'); return; }
+      const { netTotal } = calculateTotals();
+      document.getElementById('paymentModalTotal').textContent = money(netTotal);
+      document.getElementById('paymentModalModeBadge').textContent = AppState.orderMode === 'dinein' ? `Dine In (${AppState.tableNo})` : 'Take Away';
+      splitCount = 1;
+      splitPaid = [false];
+      splitFixed = [null];
+      splitEdited = [false];
+
+      // The body scrolls now that the dialog is taller than some kiosk screens, so
+      // a reopen must start at the top rather than where the last bill left it.
+      document.getElementById('paymentModalBody').scrollTop = 0;
+
+      // Draw what is already known, then refresh in the background so the dialog
+      // never waits on the network to open.
+      renderWaiterCards();
+      scrollWaiterIntoView();
+      loadWaiters();
+
+      // Mixed opens with the whole bill on cash; the cashier edits from there.
+      document.getElementById('inputMixedCash').value = netTotal.toFixed(2);
+      document.getElementById('inputMixedCard').value = '0.00';
+      selectPaymentMethod('mixed');
+      openModal('paymentModal');
+    }
+    function selectPaymentMethod(m) {
+      selectedPayMethod = m; playBeep('click');
+      ['mixed', 'split'].forEach(t => {
+        const b = document.getElementById(`payTab${cap(t)}`);
+        b.className = `tap py-3.5 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 border-2 ${t === m ? 'border-lavender-600 bg-lavender-50 text-lavender-900' : 'border-slate-200 bg-white text-slate-600'}`;
+      });
+      document.getElementById('mixedSection').classList.toggle('hidden', m !== 'mixed');
+      document.getElementById('splitSection').classList.toggle('hidden', m !== 'split');
+      if (m === 'split') renderSplit();
+      if (m === 'mixed') updateMixedCalculation();
+    }
+
+    // ================= MIXED PAYMENT =================
+    // One payer, up to three tenders: the cashier types the cash and card parts and
+    // the balance goes on QR / UPI. Saved as one order_payment row per non-zero part.
+    const PAY_LABELS = { cash: 'Cash', card: 'Card', qr: 'QR / UPI', split: 'Split' };
+
+    function mixedParts() {
+      const cents = id => Math.max(0, Math.round((parseFloat(document.getElementById(id).value) || 0) * 100));
+      const total = Math.round(calculateTotals().netTotal * 100);
+      const cash = cents('inputMixedCash');
+      const card = cents('inputMixedCard');
+      // Cash and card typed past the bill leave nothing for QR; `over` is how far.
+      const over = Math.max(0, cash + card - total);
+      return { cash: cash / 100, card: card / 100, qr: Math.max(0, total - cash - card) / 100, over: over / 100, total: total / 100 };
+    }
+
+    function setMixedHalf() {
+      playBeep('click');
+      const total = Math.round(calculateTotals().netTotal * 100);
+      document.getElementById('inputMixedCash').value = (Math.round(total / 2) / 100).toFixed(2);
+      updateMixedCalculation();
+    }
+
+    function updateMixedCalculation() {
+      const { cash, card, qr, over, total } = mixedParts();
+      document.getElementById('mixedCashShow').textContent = money(cash);
+      document.getElementById('mixedCardShow').textContent = money(card);
+      document.getElementById('mixedQrShow').textContent = money(qr);
+      document.getElementById('mixedTotalShow').textContent = money(total);
+      const warn = document.getElementById('mixedOverWarn');
+      warn.textContent = over > 0 ? `Cash + Card is ${money(over)} more than the bill.` : '';
+      warn.classList.toggle('hidden', over <= 0);
+    }
+    // ================= SPLIT BILL =================
+    let splitCount = 1;
+    let splitPaid = [false];
+    // Per person: a fixed share in cents, or null to take an even part of what the
+    // fixed shares leave. A share is fixed when the cashier typed it (splitEdited)
+    // or once that person has paid, so later edits never move money already taken.
+    let splitFixed = [null];
+    let splitEdited = [false];
+
+    // Work in cents so 100.00 / 3 gives 33.34 + 33.33 + 33.33 rather than a
+    // rounded total that no longer matches the bill.
+    function splitShares(total, n) {
+      const cents = Math.round(total * 100);
+      const base = Math.floor(cents / n);
+      let extra = cents - base * n;
+      return Array.from({ length: n }, () => (base + (extra-- > 0 ? 1 : 0)) / 100);
+    }
+
+    // Fixed shares as entered; everyone else splits the remainder evenly
+    // (e.g. $100 with Person 1 set to $15 leaves $85 for Person 2).
+    function currentSplitShares(total) {
+      const cents = Math.round(total * 100);
+      const fixedSum = splitFixed.reduce((a, c) => a + (c ?? 0), 0);
+      const free = splitFixed.map((c, i) => c == null ? i : -1).filter(i => i >= 0);
+      const freeShares = free.length ? splitShares(Math.max(0, cents - fixedSum) / 100, free.length) : [];
+      return splitFixed.map((c, i) => c != null ? c / 100 : freeShares[free.indexOf(i)]);
+    }
+
+    function changeSplitCount(d) {
+      splitCount = Math.min(20, Math.max(1, splitCount + d));
+      splitPaid = Array(splitCount).fill(false);
+      splitFixed = Array(splitCount).fill(null);
+      splitEdited = Array(splitCount).fill(false);
+      playBeep('click');
+      renderSplit();
+    }
+
+    function toggleSplitPaid(i) {
+      const shares = currentSplitShares(calculateTotals().netTotal);
+      splitPaid[i] = !splitPaid[i];
+      if (splitPaid[i]) splitFixed[i] = Math.round(shares[i] * 100);
+      else if (!splitEdited[i]) splitFixed[i] = null;
+      playBeep('click'); renderSplit();
+    }
+
+    // Blank puts the person back on the even share; otherwise the amount is
+    // clamped to the bill so a typo cannot push the total far out.
+    function setSplitAmount(i, raw) {
+      const { netTotal } = calculateTotals();
+      const v = parseFloat(raw);
+      if (raw.trim() === '' || isNaN(v)) {
+        splitEdited[i] = false;
+        splitFixed[i] = splitPaid[i] ? splitFixed[i] : null;
+      } else {
+        splitEdited[i] = true;
+        splitFixed[i] = Math.round(Math.min(Math.max(0, v), netTotal) * 100);
+      }
+    }
+
+    function resetSplitAmounts() {
+      splitPaid = Array(splitCount).fill(false);
+      splitFixed = Array(splitCount).fill(null);
+      splitEdited = Array(splitCount).fill(false);
+      playBeep('click'); renderSplit();
+    }
+
+    function splitCollected() {
+      const shares = currentSplitShares(calculateTotals().netTotal);
+      return shares.reduce((a, c, i) => a + (splitPaid[i] ? c : 0), 0);
+    }
+
+    // Rebuilds the rows. Only for structural changes (head count, paid state):
+    // while someone is typing the rows must stay put, because the on-screen
+    // keyboard holds a reference to the input it is typing into.
+    function renderSplit() {
+      const list = document.getElementById('splitList');
+      if (activeInputTarget && list.contains(activeInputTarget)) closeGlobalVirtualKeyboard();
+
+      document.getElementById('splitCount').textContent = splitCount;
+      list.innerHTML = '';
+      for (let i = 0; i < splitCount; i++) {
+        const paid = splitPaid[i];
+        const row = document.createElement('div');
+        row.className = `tap w-full flex items-center gap-3 px-4 py-2 rounded-xl border text-left cursor-pointer ${paid ? 'bg-mint-50 border-mint-200' : 'bg-white border-slate-200'}`;
+        row.onclick = () => toggleSplitPaid(i);
+        row.innerHTML = `
+          <span class="w-8 h-8 rounded-lg ${paid ? 'bg-mint-600' : 'bg-slate-300'} text-white font-extrabold text-xs flex items-center justify-center shrink-0">${i + 1}</span>
+          <span class="flex-1 font-bold text-sm ${paid ? 'text-mint-800' : 'text-slate-700'}">Person ${i + 1} <span data-custom class="hidden text-[10px] text-lavender-600 font-extrabold uppercase">custom</span></span>
+          <span class="flex items-center gap-1 font-digital font-bold text-lg ${paid ? 'text-mint-700' : 'text-slate-900'}">${AppState.currency}<input type="text" inputmode="decimal" autocomplete="off" ${paid ? 'disabled' : ''}
+            class="w-24 px-2 py-1 rounded-lg border ${paid ? 'border-transparent bg-transparent' : 'border-slate-200 bg-slate-50 focus:border-lavender-500 focus:bg-white placeholder:text-slate-300'} text-right font-digital font-bold text-lg outline-none"></span>
+          <span class="w-12 text-right text-[10px] font-extrabold uppercase ${paid ? 'text-mint-600' : 'text-slate-300'}">${paid ? 'paid' : 'due'}</span>`;
+
+        const input = row.querySelector('input');
+        // Tapping opens the on-screen keyboard on an empty box (old amount shown
+        // faintly) so the first key replaces the amount instead of appending to it.
+        input.onclick = e => {
+          e.stopPropagation();
+          if (paid) return;
+          input.placeholder = input.value;
+          input.value = '';
+          openGlobalVirtualKeyboard(input);
+          document.getElementById('vkTargetLabel').textContent = `Person ${i + 1} amount`;
+          input.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        };
+        // Every keystroke (on-screen or physical) re-tallies the other people live.
+        input.oninput = () => {
+          const clean = input.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\./g, '$1').replace(/(\.\d{2})\d+$/, '$1');
+          if (clean !== input.value) input.value = clean;
+          setSplitAmount(i, clean);
+          refreshSplitTally(input);
+        };
+        input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); closeGlobalVirtualKeyboard(); } };
+        // Enter, Done or tapping anywhere else: settle and show tidy amounts.
+        input.onblur = () => {
+          if (activeInputTarget === input) closeGlobalVirtualKeyboard();
+          refreshSplitTally();
+        };
+        list.appendChild(row);
+      }
+      refreshSplitTally();
+    }
+
+    // Updates amounts, totals and the mismatch warning in place. `editing` is the
+    // box being typed into, left alone so the cashier's keystrokes are not
+    // reformatted under them.
+    function refreshSplitTally(editing = null) {
+      const { netTotal } = calculateTotals();
+      const shares = currentSplitShares(netTotal);
+      document.getElementById('splitResetBtn').classList.toggle('hidden', !splitFixed.some(c => c != null));
+
+      document.querySelectorAll('#splitList > div').forEach((row, i) => {
+        const input = row.querySelector('input');
+        row.querySelector('[data-custom]').classList.toggle('hidden', !splitEdited[i]);
+        if (input === editing) return;
+        input.value = shares[i].toFixed(2);
+        input.placeholder = '';
+      });
+
+      const allocated = shares.reduce((a, c) => a + c, 0);
+      const collected = shares.reduce((a, c, i) => a + (splitPaid[i] ? c : 0), 0);
+      document.getElementById('splitOrderTotal').textContent = money(netTotal);
+      document.getElementById('splitCollected').textContent = money(collected);
+      document.getElementById('splitRemaining').textContent = money(Math.max(0, netTotal - collected));
+
+      // Every share fixed and they don't add up to the bill: say by how much.
+      const diff = Math.round((allocated - netTotal) * 100) / 100;
+      const warn = document.getElementById('splitWarn');
+      warn.classList.toggle('hidden', Math.abs(diff) < 0.005);
+      warn.textContent = diff > 0
+        ? `Shares are ${money(diff)} over the bill. Lower an amount.`
+        : `Shares are ${money(-diff)} short of the bill. Raise an amount or clear one.`;
+    }
+
+
+    // TODO: print logic to be added.
+    function printBill() {
+    }
+
+    function finalizePayment() {
+      const t = calculateTotals();
+
+      if (selectedPayMethod === 'split') {
+        const allocated = currentSplitShares(t.netTotal).reduce((a, c) => a + c, 0);
+        if (Math.abs(allocated - t.netTotal) >= 0.005) {
+          showPOSNotification('warning', 'Split Mismatch', `Shares total ${money(allocated)} but the bill is ${money(t.netTotal)}.`);
+          return;
+        }
+        const outstanding = t.netTotal - splitCollected();
+        if (outstanding > 0.005) {
+          showPOSNotification('warning', 'Split Incomplete', `${money(outstanding)} still to collect.`);
+          return;
+        }
+        // One payer is just a normal bill, however it was collected.
+        AppState.billType = splitCount > 1 ? 'split' : 'single';
+        closeModal('paymentModal');
+        finalizePaymentWithDetails(0, [{ method: 'split', amount: round2(t.netTotal), tendered: 0 }]);
+        return;
+      }
+
+      if (selectedPayMethod === 'mixed') {
+        const { cash, card, qr, over } = mixedParts();
+        if (over > 0) {
+          showPOSNotification('warning', 'Mixed Payment', `Cash + Card is ${money(over)} more than the bill of ${money(t.netTotal)}.`);
+          return;
+        }
+        const parts = [
+          { method: 'cash', amount: cash, tendered: cash },
+          { method: 'card', amount: card, tendered: 0 },
+          { method: 'qr',   amount: qr,   tendered: 0 }
+        ].filter(p => p.amount > 0);
+        // Mixed is the only single-payer tab, so one part is a plain cash, card or
+        // QR bill. A zero bill still needs a line to save against.
+        if (!parts.length) parts.push({ method: 'cash', amount: 0, tendered: 0 });
+        closeModal('paymentModal');
+        finalizePaymentWithDetails(0, parts);
+        return;
+      }
+    }
+
+    const round2 = v => Math.round(v * 100) / 100;
+
+    // `payments` is one line per tender; they add up to the bill and are saved to
+    // order_payment, which is what the drawer and card totals reconcile against.
+    async function finalizePaymentWithDetails(change, payments) {
+      const t = calculateTotals();
+      playBeep('cash');
+
+      try {
+        // billPayload carries openOrderId, so an already-saved order is settled
+        // in place instead of being written a second time.
+        const res = await fetch(BASE + 'api/billing/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...billPayload(), payments })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const how = payments.map(p => payments.length > 1 ? `${PAY_LABELS[p.method]} ${money(p.amount)}` : PAY_LABELS[p.method]).join(' + ');
+          showPOSNotification('success', `Paid (${how})`,
+            `${orderLabel(data.seqNo)} settled • Total ${money(t.netTotal)} • Change ${money(change)}`);
+          // The server reports the real next number, so settling a recalled bill
+          // cannot rewind the counter.
+          AppState.seqNo = data.nextSeq ?? (data.seqNo + 1);
+        } else {
+          showPOSNotification('warning', 'Save Failed', 'Order could not be saved to database.');
+          if (_tillSeqNo !== null) AppState.seqNo = _tillSeqNo;
+        }
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach server. Order not saved.');
+        if (_tillSeqNo !== null) AppState.seqNo = _tillSeqNo;
+      }
+      _tillSeqNo = null;
+
+      AppState.openOrderId = null;
+      AppState.billType = 'single';
+      AppState.mergeFrom.clear();
+      resetCustomer();
+      renderMergeBadge();
+      renderSeqNo();
+      postToDisplay(JSON.stringify({ type: 'paid' }));
+      AppState.cart = []; AppState.discountPercent = 0; AppState.selectedCartIndex = -1;
+      refreshAll();
+    }
+
+    // ================= HOLD =================
+    // Holds live in the held_order table, not in the page, so they survive a
+    // reload or a sign-out and any till can pick them up. A hold is not a bill:
+    // it takes no order number until it is recalled and saved or settled.
+
+    async function updatePendingBadge() {
+      try {
+        const res = await fetch(BASE + 'api/billing/held');
+        if (res.ok) AppState.pendingOrders = await res.json();
+      } catch { }
+      const b = document.getElementById('pendingCountBadge');
+      const n = AppState.pendingOrders.length;
+      b.textContent = n; b.classList.toggle('hidden', !n); b.classList.toggle('flex', !!n);
+    }
+
+    async function holdCurrentOrder() {
+      if (!AppState.cart.length) { showPOSNotification('warning', 'Order is Empty', 'Nothing to hold.'); return; }
+      // A recalled or merge-staged bill already has a row in Orders; parking a copy
+      // would leave two versions of it. Saving it with Order keeps it open instead.
+      if (AppState.openOrderId || AppState.mergeFrom.size) {
+        showPOSNotification('warning', 'Cannot Hold', 'This is a saved bill. Use Order to keep it open.');
+        return;
+      }
+      playBeep('click');
+
+      try {
+        const res = await fetch(BASE + 'api/billing/hold', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(billPayload())
+        });
+        if (!res.ok) { showPOSNotification('warning', 'Hold Failed', 'Order could not be held.'); return; }
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach the server. Order not held.');
+        return;
+      }
+
+      const where = AppState.orderMode === 'dinein' ? AppState.tableNo : 'Take Away';
+      showPOSNotification('info', 'Order Held', `Order for ${where} put on hold.`);
+      AppState.cart = []; AppState.selectedCartIndex = -1; AppState.discountPercent = 0;
+      resetCustomer();
+      refreshAll(); updatePendingBadge();
+    }
+
+    async function openPendingOrdersModal() {
+      const c = document.getElementById('pendingOrdersList');
+      c.innerHTML = '<p class="py-10 text-center text-sm font-bold text-slate-400">Loading…</p>';
+      openModal('pendingModal');
+      await updatePendingBadge();
+
+      c.innerHTML = '';
+      if (!AppState.pendingOrders.length) {
+        c.innerHTML = `<div class="py-10 text-center"><i data-lucide="inbox" class="w-8 h-8 text-amber-500 mx-auto mb-2"></i><p class="text-sm font-bold text-slate-700">No held orders</p></div>`;
+      } else AppState.pendingOrders.forEach(o => {
+        const time = new Date(o.heldAt.endsWith('Z') ? o.heldAt : o.heldAt + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const by = [o.heldBy, o.terminal].filter(Boolean).join(' @@ ');
+        const d = document.createElement('div');
+        d.className = 'border border-slate-200 rounded-2xl p-3.5 flex justify-between items-center';
+        d.innerHTML = `<div class="min-w-0"><div class="font-extrabold text-sm flex items-center gap-2">${escapeHtml(o.customerName || 'Walk-in')}<span class="bg-lavender-100 text-lavender-800 text-xs px-2 py-0.5 rounded-full">${o.orderMode === 'dinein' ? escapeHtml(o.tableNo) : 'Take Away'}</span></div><div class="text-xs text-slate-500 mt-1 truncate">${o.lines} line(s) • ${time}${by ? ' • ' + escapeHtml(by) : ''}${o.waiter ? ' • ' + escapeHtml(o.waiter) : ''}</div></div>
+          <div class="flex items-center gap-2 shrink-0"><span class="font-digital font-bold text-lavender-800 mr-1">${money(o.netTotal)}</span>
+          <button onclick="recallPendingOrder(${o.id})" class="tap bg-lavender-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl">Recall</button>
+          <button onclick="deletePendingOrder(${o.id})" class="tap bg-rose-50 text-rose-600 p-2 rounded-xl border border-rose-200"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
+        c.appendChild(d);
+      });
+      lucide.createIcons();
+    }
+
+    async function recallPendingOrder(id) {
+      if (AppState.cart.length) {
+        showPOSNotification('warning', 'Order in Progress', 'Hold, save or clear the current order first.');
+        return;
+      }
+      let o;
+      try {
+        const res = await fetch(BASE + `api/billing/held/${id}/recall`, { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          // Another till got there first; show the list as it is now.
+          showPOSNotification('warning', 'Cannot Recall', err.error || 'That hold could not be recalled.');
+          openPendingOrdersModal();
+          return;
+        }
+        o = await res.json();
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach the server.');
+        return;
+      }
+
+      AppState.cart = o.items.map(i => ({
+        id: i.id, name: i.name, qty: i.qty,
+        rPrice: i.rPrice, cPrice: i.rPrice,
+        modifier: i.modifier || '', foc: i.foc
+      }));
+      AppState.openOrderId     = null;
+      AppState.tableNo         = o.tableNo;
+      AppState.persons         = o.guests || 1;
+      AppState.customer        = o.customerName || 'Walk-in';
+      AppState.phone           = o.customerPhone || '';
+      AppState.waiterId        = o.waiterId ?? null;
+      AppState.discountPercent = o.discountPercent || 0;
+      AppState.selectedCartIndex = -1;
+
+      document.getElementById('currentTableBadge').textContent = o.tableNo;
+      document.getElementById('currentPersonsCount').textContent = AppState.persons >= 8 ? '8+' : AppState.persons;
+      updateCustomerDisplay(); setOrderMode(o.orderMode); refreshAll(); updatePendingBadge();
+      closeModal('pendingModal');
+      showPOSNotification('info', 'Order Recalled', `${o.orderMode === 'dinein' ? o.tableNo : 'Take Away'} restored.`);
+    }
+
+    async function deletePendingOrder(id) {
+      if (!await posConfirm({ title: 'Discard this held order?', lines: ['It cannot be recalled afterwards.'], okText: 'Discard', tone: 'danger' })) return;
+      playBeep('delete');
+      try {
+        const res = await fetch(BASE + `api/billing/held/${id}/discard`, { method: 'POST' });
+        if (!res.ok) showPOSNotification('warning', 'Cannot Discard', 'That hold was already recalled or discarded.');
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach the server.');
+      }
+      openPendingOrdersModal();
+    }
+
+    async function clearCurrentOrder() {
+      if (!AppState.cart.length) return;
+      if (await posConfirm({ title: 'Clear current order items?', okText: 'Clear', tone: 'danger' })) {
+        playBeep('delete');
+        AppState.cart = []; AppState.selectedCartIndex = -1; AppState.discountPercent = 0;
+        AppState.openOrderId = null;
+        AppState.billType = 'single';
+        AppState.mergeFrom.clear();
+        // Abandoning a recalled bill restores the till's own number.
+        if (_tillSeqNo !== null) { AppState.seqNo = _tillSeqNo; _tillSeqNo = null; }
+        resetCustomer();
+        renderMergeBadge();
+        renderSeqNo();
+        refreshAll();
+        showPOSNotification('info', 'Order Cleared', 'Active order was reset.');
+      }
+    }
+    /// Waiters never sign in, so nothing punches them out when the till goes away.
+    /// Fetched fresh rather than read from punchWaiters: another till may have
+    /// punched someone in or out since this one last loaded the list.
+    async function waitersStillInWarning() {
+      try {
+        const res = await fetch(BASE + 'api/billing/attendance/waiters', { cache: 'no-store' });
+        if (!res.ok) return null;
+        const names = (await res.json()).filter(w => w.isIn).map(w => w.name);
+        if (!names.length) return null;
+        return {
+          title: `${names.length} waiter${names.length > 1 ? 's' : ''} still punched in`,
+          text: `${names.join(', ')}. Punch them out first or their shift stays open.`,
+          actionText: 'Punch out waiters',
+          action: openPunchModal
+        };
+      } catch { return null; }
+    }
+
+    const discardLine = n => `${n} item(s) in the current order will be discarded. Hold the order first if you want to keep it.`;
+
+    async function handleClosePOS() {
+      const n = AppState.cart.reduce((a, c) => a + c.qty, 0);
+      const ok = await posConfirm({
+        title: 'Close this terminal and end the shift?',
+        lines: [...(n ? [discardLine(n)] : []), 'You will be signed out — the next launch starts at the login screen.'],
+        okText: 'Close Terminal', tone: 'danger',
+        warn: await waitersStillInWarning()
+      });
+      if (!ok) return;
+
+      // The customer screen runs in its own browser instance, so there is no
+      // window handle for it — ask it to shut down over the display channel.
+      postToDisplay(JSON.stringify({ type: 'closed' }));
+      playBeep('click');
+
+      // Give the POST a moment to leave before this window goes away.
+      setTimeout(exitKiosk, 250);
+    }
+
+    /// Signing out ends the shift but leaves the window open, unlike handleClosePOS.
+    async function handleSignOut() {
+      const n = AppState.cart.reduce((a, c) => a + c.qty, 0);
+      const ok = await posConfirm({
+        title: 'Sign out?',
+        lines: n ? [discardLine(n)] : [],
+        okText: 'Logout',
+        warn: await waitersStillInWarning()
+      });
+      if (!ok) return;
+
+      playBeep('click');
+      await submitLogout();
+    }
+
+    /// Chrome lets a page close its own window only while that window's history
+    /// holds a single entry. A plain form submit adds one, and the login screen's
+    /// Close Terminal is then refused wherever the server has no window to close,
+    /// so the sign-out replaces this page instead of adding to the history.
+    async function submitLogout() {
+      const form = document.getElementById('logoutForm');
+      try {
+        const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        if (res.ok) { window.location.replace(res.url); return; }
+      } catch { /* fall through and let the browser show what went wrong */ }
+      form.submit();
+    }
+
+    /// Chrome refuses window.close() on a window a script did not open, so a
+    /// launcher-started till cannot shut itself down from the page. The server can:
+    /// Start-Kiosk records each window's pid and /api/terminal/close closes them.
+    /// That call also signs the shift out, so the next launch starts at /login.
+    async function exitKiosk() {
+      // Cover the till before anything else, and set the same colour on the root
+      // element: that is the colour Chrome keeps painting once the page is gone, so
+      // the window disappears out of a solid frame instead of a white flash.
+      document.documentElement.style.background = '#f4f2f9';
+      document.getElementById('closingCover').classList.remove('hidden');
+      lucide.createIcons();
+
+      // Close the customer display THIS page opened, before the POST. On one
+      // monitor the display is a popup we own, so closing it is allowed here and
+      // is the only thing that can: Start-Kiosk clears display.pid in that mode,
+      // so the server has no pid for it. It also shares the till's Chrome
+      // process, so a WM_CLOSE aimed at that process's main window shuts the till
+      // and leaves this popup holding the process open - the display would sit
+      // there for the five-second graceful wait and then die by Kill(), which
+      // Chrome records as a crash. Closing it first lets the till exit cleanly.
+      //
+      // On two monitors the launcher started the display itself and this handle is
+      // null, so this is a no-op and the display.pid path does the work.
+      try {
+        if (_customerDisplayWin && !_customerDisplayWin.closed) _customerDisplayWin.close();
+      } catch { /* already gone, or cross-origin for a window we did not open */ }
+
+      // The POST comes first, deliberately. It is what closes both windows, so it
+      // must not be cancelled by window.close() tearing this document down around
+      // it. keepalive keeps it in flight even if the window goes first.
+      let launcherSession = false;
+      try {
+        const res = await fetch(BASE + 'api/terminal/close', {
+          method: 'POST',
+          keepalive: true,
+          // The endpoint is open to the login screen as well, so the token rather
+          // than the auth cookie is what proves the request came from this origin.
+          headers: { 'RequestVerificationToken': document.querySelector('#logoutForm input[name="__RequestVerificationToken"]').value }
+        });
+        if (res.ok) launcherSession = (await res.json()).launcherSession === true;
+      } catch { /* server already gone, or hosted remotely */ }
+
+      // The windows close from the server side a moment after that response. The
+      // cover stays up for that moment — there is nothing left worth showing.
+      if (launcherSession) return;
+
+      // Nothing for the server to close. A window this page's own script opened can
+      // still close itself, so try that before giving up.
+      window.close();
+
+      // Still here - opened by hand, or hosted remotely. Nothing navigates from
+      // here, deliberately: a navigation issued into a window that is already
+      // closing is what painted Chrome's "page can't be reached" over the till on
+      // the way out, and a browser error page is the one thing that cannot be
+      // allowed to show on a screen meant to look like a desktop app. The shift is
+      // signed out server side already, so this cover over a dead till is safe to
+      // leave up - it carries the only instruction that is still useful.
+      document.getElementById('closingCoverNote').textContent =
+        'This window was not opened by Start-Kiosk — press Alt+F4 to close it';
+    }
+    function handleCheckOut() { openPaymentModal(); }
+    function openSeatModal() { const s = prompt('Enter Seat Number (e.g. S1):', 'S1'); if (s) showPOSNotification('info', 'Seat Assigned', `Seat ${s}`); }
+    // ================= OPEN ORDERS / RECALL =================
+    // The till keeps its own bill number while a recalled bill is being settled,
+    // so this is remembered and restored rather than derived from the recall.
+    let _tillSeqNo = null;
+
+    function openViewOrderModal() {
+      openModal('recallModal');
+      loadRecallList();
+    }
+
+    async function loadRecallList() {
+      const list = document.getElementById('recallList');
+      const btn = document.getElementById('recallRefreshBtn');
+      list.innerHTML = '<p class="py-10 text-center text-sm font-bold text-slate-400">Loading…</p>';
+      btn.classList.add('refreshing');
+
+      let orders = [];
+      try {
+        const res = await fetch(BASE + 'api/billing/open-orders');
+        if (res.ok) orders = await res.json();
+      } catch { }
+      btn.classList.remove('refreshing');
+
+      list.innerHTML = '';
+      if (!orders.length) {
+        list.innerHTML = `<div class="py-12 text-center"><div class="w-14 h-14 rounded-2xl bg-lavender-50 text-lavender-400 flex items-center justify-center mx-auto mb-3"><i data-lucide="inbox" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">No unpaid bills today</p><p class="text-xs text-slate-400 mt-1">Save an order with the Order button first</p></div>`;
+        lucide.createIcons(); return;
+      }
+
+      orders.forEach(o => {
+        const who = [o.customerName, o.customerPhone].filter(v => v && v !== 'Walk-in').join(' · ');
+        // Shown so the till can tell two open tables apart by who is serving them.
+        const served = o.waiter ? ` · ${o.waiter}` : '';
+        const row = document.createElement('button');
+        row.className = 'tap w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border bg-white border-slate-200 hover:bg-lavender-50 hover:border-lavender-300';
+        row.onclick = () => recallOrder(o.id);
+        row.innerHTML = `
+          <span class="font-digital font-bold text-lg text-lavender-800 w-16 shrink-0">${orderLabel(o.seqNo)}</span>
+          <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">${o.orderMode === 'dinein' ? o.tableNo : 'Take Away'}</span>
+          <span class="flex-1 min-w-0 text-xs text-slate-500 font-semibold truncate">${who || 'Walk-in'} &middot; ${o.lines} line(s)${served}</span>
+          <span class="font-digital font-bold text-base text-slate-900 shrink-0">${money(o.netTotal)}</span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>`;
+        list.appendChild(row);
+      });
+      lucide.createIcons();
+    }
+
+    async function recallOrder(id) {
+      if (AppState.cart.length && !await posConfirm({ title: 'Replace the items on screen with this saved bill?', okText: 'Replace' })) return;
+
+      try {
+        const res = await fetch(BASE + 'api/billing/order/' + id);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          // Someone else settled it; the modal is still open so just reload.
+          showPOSNotification('warning', 'Cannot Open', err.error || 'That bill could not be loaded.');
+          loadRecallList();
+          return;
+        }
+
+        const o = await res.json();
+        closeModal('recallModal');
+
+        // Remember the till's own number so settling this bill does not rewind it.
+        if (_tillSeqNo === null) _tillSeqNo = AppState.seqNo;
+
+        AppState.cart = o.items.map(i => ({
+          id: i.id, name: i.name, qty: i.qty,
+          rPrice: i.rPrice, cPrice: i.rPrice,
+          modifier: i.modifier || '', foc: i.foc
+        }));
+        AppState.openOrderId    = o.orderId;
+        AppState.seqNo          = o.seqNo;
+        AppState.orderMode      = o.orderMode;
+        AppState.tableNo        = o.tableNo;
+        AppState.persons        = o.guests || 1;
+        AppState.customer       = o.customerName || 'Walk-in';
+        AppState.phone          = o.customerPhone || '';
+        AppState.waiterId       = o.waiterId ?? null;
+        AppState.discountPercent = o.discountPercent || 0;
+        AppState.billType       = 'single';
+        AppState.mergeFrom.clear();
+        AppState.selectedCartIndex = -1;
+
+        document.getElementById('currentTableBadge').textContent = o.tableNo;
+        document.getElementById('currentPersonsCount').textContent = AppState.persons >= 8 ? '8+' : AppState.persons;
+        setOrderMode(o.orderMode);
+        updateCustomerDisplay();
+        renderMergeBadge();
+        renderSeqNo();
+        refreshAll();
+
+        const { netTotal } = calculateTotals();
+        showPOSNotification('info', `Bill ${orderLabel(o.seqNo)}`,
+          Math.abs(netTotal - o.netTotal) > 0.005
+            ? `Recalculated to ${money(netTotal)} — saved as ${money(o.netTotal)}. Check tax settings.`
+            : `${o.tableNo} • ${money(o.netTotal)} • ready to collect`);
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach the server.');
+      }
+    }
+    // ================= MERGE BILLS =================
+    let _openOrders = [];
+    const _mergePicked = new Set();
+
+    function openMergeBillModal() {
+      _mergePicked.clear();
+      openModal('mergeModal');
+      loadMergeList();
+    }
+
+    async function loadMergeList() {
+      const list = document.getElementById('mergeList');
+      const btn = document.getElementById('mergeRefreshBtn');
+      list.innerHTML = '<p class="py-10 text-center text-sm font-bold text-slate-400">Loading…</p>';
+      btn.classList.add('refreshing');
+
+      try {
+        const res = await fetch(BASE + 'api/billing/open-orders');
+        _openOrders = res.ok ? await res.json() : [];
+      } catch {
+        _openOrders = [];
+      }
+      btn.classList.remove('refreshing');
+
+      // Drop ticks for bills that another till has since settled or merged.
+      const live = new Set(_openOrders.map(o => o.id));
+      [..._mergePicked].forEach(id => { if (!live.has(id)) _mergePicked.delete(id); });
+
+      renderMergeList();
+    }
+
+    function renderMergeList() {
+      const list = document.getElementById('mergeList');
+      list.innerHTML = '';
+
+      if (!_openOrders.length) {
+        list.innerHTML = `<div class="py-12 text-center"><div class="w-14 h-14 rounded-2xl bg-lavender-50 text-lavender-400 flex items-center justify-center mx-auto mb-3"><i data-lucide="inbox" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">No unpaid bills today</p><p class="text-xs text-slate-400 mt-1">Save an order with the Order button first</p></div>`;
+        lucide.createIcons(); updateMergeFooter(); return;
+      }
+
+      _openOrders.forEach(o => {
+        const on = _mergePicked.has(o.id);
+        const who = [o.customerName, o.customerPhone].filter(v => v && v !== 'Walk-in').join(' · ');
+        const row = document.createElement('button');
+        row.className = `tap w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border ${on ? 'bg-lavender-50 border-lavender-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`;
+        row.onclick = () => toggleMergePick(o.id);
+        row.innerHTML = `
+          <span class="w-5 h-5 rounded-md border-2 ${on ? 'bg-lavender-600 border-lavender-600' : 'border-slate-300'} flex items-center justify-center shrink-0">
+            ${on ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}
+          </span>
+          <span class="font-digital font-bold text-lg text-lavender-800 w-16 shrink-0">${orderLabel(o.seqNo)}</span>
+          <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">${o.orderMode === 'dinein' ? o.tableNo : 'Take Away'}</span>
+          <span class="flex-1 min-w-0 text-xs text-slate-500 font-semibold truncate">${who || 'Walk-in'} &middot; ${o.lines} line(s)</span>
+          <span class="font-digital font-bold text-base text-slate-900 shrink-0">${money(o.netTotal)}</span>`;
+        list.appendChild(row);
+      });
+      lucide.createIcons();
+      updateMergeFooter();
+    }
+
+    function toggleMergePick(id) {
+      _mergePicked.has(id) ? _mergePicked.delete(id) : _mergePicked.add(id);
+      playBeep('click');
+      renderMergeList();
+    }
+
+    function updateMergeFooter() {
+      const total = _openOrders.filter(o => _mergePicked.has(o.id)).reduce((a, o) => a + o.netTotal, 0);
+      document.getElementById('mergeSelCount').textContent = _mergePicked.size;
+      document.getElementById('mergeSelTotal').textContent = money(total);
+      document.getElementById('mergeBtn').disabled = _mergePicked.size < 1;
+    }
+
+    // Pulls the chosen bills' lines into the current cart. Nothing is written to
+    // the database until this combined bill is saved or settled, so backing out
+    // here leaves the original bills untouched.
+    async function mergeSelectedBills() {
+      if (_mergePicked.size < 1) { showPOSNotification('warning', 'Nothing Picked', 'Select at least one bill.'); return; }
+
+      try {
+        const res = await fetch(BASE + 'api/billing/merge-preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderIds: [..._mergePicked] })
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          showPOSNotification('warning', 'Merge Failed', err.error || 'Could not read those bills.');
+          return;
+        }
+
+        const data = await res.json();
+        closeModal('mergeModal');
+
+        // Append, folding into an existing line when the dish, note and FOC match.
+        data.items.forEach(i => {
+          const line = AppState.cart.find(c =>
+            c.id === i.id && (c.modifier || '') === (i.modifier || '') && c.foc === i.foc);
+          if (line) line.qty += i.qty;
+          else AppState.cart.push({
+            id: i.id, name: i.name, qty: i.qty,
+            rPrice: i.rPrice, cPrice: i.rPrice,
+            modifier: i.modifier || '', foc: i.foc
+          });
+        });
+
+        // Remember what to absorb; applied server-side on save or payment.
+        // billType is left alone — it only ever records 'single' or 'split'.
+        data.bills.forEach(b => AppState.mergeFrom.add(b.id));
+        AppState.persons = Math.min(20, (AppState.persons || 0) + (data.guests || 0));
+        AppState.selectedCartIndex = AppState.cart.length - 1;
+
+        document.getElementById('currentPersonsCount').textContent = AppState.persons >= 8 ? '8+' : AppState.persons;
+        renderMergeBadge();
+        refreshAll();
+
+        const from = data.bills.map(b => orderLabel(b.seqNo)).join(', ');
+        showPOSNotification('success', 'Bills Added', `${from} pulled into this bill — not yet committed`);
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach the server.');
+      }
+    }
+
+    function renderMergeBadge() {
+      const el = document.getElementById('mergeBadge');
+      el.textContent = `MERGED ${AppState.mergeFrom.size}`;
+      el.classList.toggle('hidden', AppState.mergeFrom.size === 0);
+    }
+    function handleRefund() { const r = prompt('Receipt number for refund:', '#0001'); if (r) showPOSNotification('info', 'Refund', `Refund started for ${r}.`); }
+    function handleReprintReceipt() { showPOSNotification('info', 'Last Order', `${orderLabel(Math.max(1, AppState.seqNo - 1))} sent to printer.`); }
+
+    // A browser can only see the monitor it already sits on, so the local server
+    // reports the real Windows display layout instead of us guessing at it.
+    let _screens = [];
+    const shortScreenName = d => (d || '').split('\\').filter(Boolean).pop() || '?';
+
+    async function refreshScreens() {
+      try {
+        const res = await fetch(BASE + 'api/screens');
+        if (res.ok) _screens = await res.json();
+      } catch { }
+      return _screens;
+    }
+
+    function screenHoldingPos() {
+      const dpr = window.devicePixelRatio || 1;
+      const cx = (window.screenX + window.outerWidth / 2) * dpr;
+      const cy = (window.screenY + window.outerHeight / 2) * dpr;
+      return _screens.find(s => cx >= s.left && cx < s.left + s.width
+                              && cy >= s.top && cy < s.top + s.height) || null;
+    }
+
+    // The monitor the POS is NOT on. Null when there is only one.
+    function customerScreen() {
+      if (_screens.length < 2) return null;
+      const here = screenHoldingPos();
+      // With no match, prefer the non-primary screen — never fall through to the
+      // first entry, which is the one the till is most likely sitting on.
+      if (!here) return _screens.find(s => !s.isPrimary) || null;
+      return _screens.find(s => s.deviceName !== here.deviceName) || null;
+    }
+
+    // ================= LAUNCHER-OWNED CUSTOMER DISPLAY =================
+    // On two monitors Start-Kiosk opens the customer screen as its own kiosk
+    // window and marks the till URL with launcher=1, which tells the POS page not
+    // to open a second, popup copy of the same screen.
+    //
+    // That marker only survives one navigation. The till lands on /?launcher=1,
+    // [Authorize] bounces it here, and sign-in then redirects to a bare "/" — so
+    // by the time billing renders the flag is gone and it opens a popup display
+    // on top of the one the launcher already has. Latch it the first time it is
+    // seen instead. sessionStorage is scoped to this tab, which is exactly the
+    // window the launcher owns, and it survives the login hop and every reload,
+    // sign-out and sign-in for the rest of the shift.
+    function launcherOwnsDisplay() {
+      const KEY = 'kiosk.launcherDisplay';
+      const q = new URLSearchParams(location.search);
+
+      // On the login page the flag is inside the ReturnUrl the cookie middleware
+      // built from /?launcher=1, not a parameter of its own.
+      let returnUrl = '';
+      for (const [k, v] of q) if (k.toLowerCase() === 'returnurl') returnUrl = v;
+      const nested = new URLSearchParams(returnUrl.split('?')[1] || '');
+
+      const flagged = q.get('launcher') === '1' || nested.get('launcher') === '1';
+      try {
+        if (flagged) sessionStorage.setItem(KEY, '1');
+        return flagged || sessionStorage.getItem(KEY) === '1';
+      } catch {
+        // Storage walled off (private mode, locked-down profile). The URL is all
+        // there is to go on, so fall back to it.
+        return flagged;
+      }
+    }
+
+    let _customerDisplayWin = null;
+
+    function openCustomerDisplay(auto) {
+      if (_customerDisplayWin && !_customerDisplayWin.closed) {
+        _customerDisplayWin.focus();
+        broadcastCart(true);
+        return;
+      }
+
+      // The layout is already cached, so the window can be placed in the open()
+      // call itself. Fetching here would both spend the user-activation token and
+      // let the window flash on top of the POS before being moved.
+      const target = customerScreen();
+      const dpr = window.devicePixelRatio || 1;
+      const px = v => Math.round(v / dpr);
+
+      let features = 'popup=yes,menubar=no,toolbar=no,location=no,status=no';
+      features += target
+        ? `,left=${px(target.workLeft)},top=${px(target.workTop)},width=${px(target.workWidth)},height=${px(target.workHeight)}`
+        : ',width=1280,height=720';
+
+      const win = window.open(BASE + 'customer-display?fs=1', 'CustomerDisplay', features);
+      // Blocked by the browser: carry on without a display rather than putting a
+      // warning bar over the till.
+      if (!win) return;
+      _customerDisplayWin = win;
+
+      if (target) {
+        // Some Chromium builds ignore left/top on open; nudge it into place.
+        try {
+          win.moveTo(px(target.workLeft), px(target.workTop));
+          win.resizeTo(px(target.workWidth), px(target.workHeight));
+        } catch { }
+        // Keep the till usable — the customer screen must not steal focus.
+        window.focus();
+        showPOSNotification('info', 'Customer Display',
+          `POS on ${shortScreenName(screenHoldingPos()?.deviceName)} → customer screen on ${shortScreenName(target.deviceName)}.`);
+      } else if (!auto) {
+        // Nothing actionable, so stay quiet when this ran by itself on page load.
+        showPOSNotification('warning', 'One Monitor Only',
+          'Windows reports a single display, so the customer screen opened on this monitor.');
+      }
+
+      refreshScreens(); // keep the layout current for the next open
+    }
+
+    function openSettingsModal() { openModal('settingsModal'); }
+    function updateTaxSettings() { AppState.serviceChargePercent = parseFloat(document.getElementById('settingServiceCharge').value) || 0; AppState.gstPercent = parseFloat(document.getElementById('settingGST').value) || 0; calculateTotals(); broadcastCart(); }
+    function updateCurrencySetting() { AppState.currency = document.getElementById('settingCurrency').value; refreshAll(); }
+
+    // ================= PAYMENT QR =================
+    // Persisted: a kiosk relaunches daily and the QR silently vanishing would
+    // not be obvious to staff.
+    function saveQrSettings() {
+      try {
+        localStorage.setItem('pos.showPaymentQr', AppState.showPaymentQr ? '1' : '0');
+        localStorage.setItem('pos.payNowType', AppState.payNowType);
+        localStorage.setItem('pos.payNowProxy', AppState.payNowProxy);
+        localStorage.setItem('pos.merchantName', AppState.merchantName);
+      } catch { }
+    }
+
+    function loadQrSettings() {
+      try {
+        AppState.showPaymentQr = localStorage.getItem('pos.showPaymentQr') === '1';
+        AppState.payNowType    = localStorage.getItem('pos.payNowType') || 'uen';
+        AppState.payNowProxy   = localStorage.getItem('pos.payNowProxy') || '';
+        AppState.merchantName  = localStorage.getItem('pos.merchantName') || '';
+      } catch { }
+      document.getElementById('settingPayNowType').value = AppState.payNowType;
+      document.getElementById('settingPayNowProxy').value = AppState.payNowProxy;
+      document.getElementById('settingMerchantName').value = AppState.merchantName;
+      renderQrSettingUi();
+    }
+
+    function renderQrSettingUi() {
+      const btn = document.getElementById('qrToggleCheckbox');
+      btn.textContent = AppState.showPaymentQr ? 'On' : 'Off';
+      btn.classList.toggle('bg-lavender-600', AppState.showPaymentQr);
+      btn.classList.toggle('bg-slate-400', !AppState.showPaymentQr);
+      document.getElementById('qrPayeeRow').classList.toggle('hidden', !AppState.showPaymentQr);
+
+      const mobile = AppState.payNowType === 'mobile';
+      document.getElementById('settingPayNowProxy').placeholder = mobile ? '+6591234567' : '202312345A';
+      document.getElementById('payNowHint').textContent = mobile
+        ? 'Mobile number in +65 format, as registered for PayNow.'
+        : 'Business UEN as registered for PayNow.';
+    }
+
+    function togglePaymentQr() {
+      AppState.showPaymentQr = !AppState.showPaymentQr;
+      playBeep('click');
+      renderQrSettingUi();
+      saveQrSettings();
+      broadcastCart(true);
+      showPOSNotification('info', 'PayNow QR',
+        AppState.showPaymentQr
+          ? (AppState.payNowProxy ? 'Showing on the customer screen.' : 'Enabled — add your UEN or mobile to make it payable.')
+          : 'Hidden from the customer screen.');
+    }
+
+    function updatePayNowSettings() {
+      AppState.payNowType   = document.getElementById('settingPayNowType').value;
+      AppState.payNowProxy  = document.getElementById('settingPayNowProxy').value.trim();
+      AppState.merchantName = document.getElementById('settingMerchantName').value.trim();
+      renderQrSettingUi();
+      saveQrSettings();
+      broadcastCart(true);
+    }
+    function toggleFullscreen() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }
+
+    // ================= CASH IN / OUT =================
+    let txnModes = [], txnRows = [];
+    let txnEditing = null;     // the row being edited, or null when adding
+    let txnSuggested = '';     // the generated number the form was filled with
+    let txnType = 'OUT';
+    let txnBusy = false;
+
+    async function txnFetch(path, options = {}) {
+      const res = await fetch(BASE + path, {
+        cache: 'no-store',
+        ...options,
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'RequestVerificationToken': antiForgeryToken() }
+      });
+      // Expired cookie: hand the page back to the login flow.
+      if (res.redirected || res.status === 401 || res.status === 403) { location.reload(); throw new Error('auth'); }
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(body?.error || 'Please try again.');
+      return body;
+    }
+
+    async function openTransactionModal() {
+      document.getElementById('txnFrom').value = document.getElementById('txnTo').value = '';
+      openModal('transactionModal');
+      try {
+        txnModes = await txnFetch('api/billing/transaction-modes');
+      } catch (e) {
+        if (e.message !== 'auth') showTxnError('Could not load transaction modes.');
+        return;
+      }
+      await Promise.all([resetTxnForm(), loadTransactions()]);
+    }
+
+    function showTxnError(msg) {
+      const el = document.getElementById('txnError');
+      el.textContent = msg || '';
+      el.classList.toggle('hidden', !msg);
+    }
+
+    function setTxnType(type) {
+      txnType = type;
+      const paint = (id, on, onCls) => {
+        document.getElementById(id).className = `tap h-11 rounded-xl border font-extrabold text-sm flex items-center justify-center gap-1.5 ${on ? onCls : 'bg-white border-slate-200 text-slate-500'}`;
+      };
+      paint('txnTypeIn', type === 'IN', 'bg-mint-600 border-mint-600 text-white');
+      paint('txnTypeOut', type === 'OUT', 'bg-rose-600 border-rose-600 text-white');
+      document.getElementById('txnAmountSign').textContent = type === 'IN' ? '+' : '-';
+    }
+
+    // An inactive mode stays selectable only on the entry already using it.
+    function fillTxnModes(row) {
+      const opts = txnModes.map(m => ({ id: m.id, name: m.name }));
+      if (row && !opts.some(m => m.id === row.modeId)) opts.push({ id: row.modeId, name: row.mode + ' (inactive)' });
+      const sel = document.getElementById('txnMode');
+      sel.innerHTML = opts.length
+        ? opts.map(m => `<option value="${m.id}">${escHtml(m.name)}</option>`).join('')
+        : '<option value="">No modes set up</option>';
+      if (row) sel.value = row.modeId;
+    }
+
+    async function resetTxnForm() {
+      txnEditing = null;
+      showTxnError('');
+      document.getElementById('txnFormTitle').textContent = 'New Transaction';
+      document.getElementById('txnSaveLabel').textContent = 'Add Transaction';
+      document.getElementById('txnCancelBtn').classList.add('hidden');
+      document.getElementById('txnAmount').value = '';
+      document.getElementById('txnRemarks').value = '';
+      setTxnType('OUT');
+      fillTxnModes(null);
+      const num = document.getElementById('txnNumber');
+      num.value = '';
+      txnSuggested = '';
+      try {
+        txnSuggested = (await txnFetch('api/billing/transactions/next-number')).number;
+        num.value = txnSuggested;
+      } catch (e) {
+        // Left blank: the server generates a number for an empty field anyway.
+      }
+    }
+
+    function editTransaction(id) {
+      const r = txnRows.find(x => x.id === id);
+      if (!r) return;
+      playBeep('click');
+      txnEditing = r;
+      showTxnError('');
+      document.getElementById('txnFormTitle').textContent = 'Edit Transaction';
+      document.getElementById('txnSaveLabel').textContent = 'Save Changes';
+      document.getElementById('txnCancelBtn').classList.remove('hidden');
+      document.getElementById('txnNumber').value = r.transactionNo;
+      setTxnType(r.type);
+      fillTxnModes(r);
+      document.getElementById('txnAmount').value = r.amount.toFixed(2);
+      document.getElementById('txnRemarks').value = r.remarks;
+    }
+
+    async function saveTransaction() {
+      if (txnBusy) return;
+      const number = document.getElementById('txnNumber').value.trim();
+      const amountText = document.getElementById('txnAmount').value.trim();
+      const modeId = Number(document.getElementById('txnMode').value);
+
+      if (txnEditing && !number) { showTxnError('Enter a transaction number.'); return; }
+      if (!/^[A-Za-z0-9\-_/]*$/.test(number)) { showTxnError('Transaction number can only use letters, digits, - _ or /.'); return; }
+      if (!modeId) { showTxnError('Choose a transaction mode.'); return; }
+      if (!/^\d{1,5}(\.\d{1,2})?$/.test(amountText) || Number(amountText) <= 0) {
+        showTxnError('Enter an amount above 0, up to 99999.99, with at most 2 decimals.');
+        document.getElementById('txnAmount').focus();
+        return;
+      }
+
+      txnBusy = true;
+      showTxnError('');
+      const btn = document.getElementById('txnSaveBtn');
+      btn.disabled = true;
+      const editing = txnEditing;
+      try {
+        // An untouched suggestion goes back empty, so the server draws the number
+        // and a till that used this one in the meantime does not cause a refusal.
+        const saved = await txnFetch(editing ? `api/billing/transactions/${editing.id}` : 'api/billing/transactions', {
+          method: editing ? 'PUT' : 'POST',
+          body: JSON.stringify({
+            transactionNo: !editing && number === txnSuggested ? '' : number,
+            type: txnType,
+            modeId,
+            amount: Number(amountText),
+            remarks: document.getElementById('txnRemarks').value.trim()
+          })
+        });
+        showPOSNotification('success', editing ? 'Transaction Updated' : 'Transaction Added', saved.transactionNo);
+        await Promise.all([resetTxnForm(), loadTransactions()]);
+      } catch (e) {
+        if (e.message !== 'auth') showTxnError(e.message);
+      } finally {
+        txnBusy = false;
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteTransaction(id) {
+      const r = txnRows.find(x => x.id === id);
+      if (!r || txnBusy) return;
+      const ok = await posConfirm({
+        title: 'Delete transaction?',
+        lines: [`${r.transactionNo}: ${r.type === 'IN' ? 'Cash In' : 'Cash Out'} ${money(r.amount)} (${r.mode})`],
+        okText: 'Delete',
+        tone: 'danger'
+      });
+      if (!ok) return;
+      txnBusy = true;
+      try {
+        await txnFetch(`api/billing/transactions/${id}`, { method: 'DELETE' });
+        showPOSNotification('success', 'Transaction Deleted', r.transactionNo);
+        if (txnEditing?.id === id) await resetTxnForm();
+        await loadTransactions();
+      } catch (e) {
+        if (e.message !== 'auth') showPOSNotification('warning', 'Delete Failed', e.message);
+      } finally {
+        txnBusy = false;
+      }
+    }
+
+    async function loadTransactions() {
+      const fromEl = document.getElementById('txnFrom'), toEl = document.getElementById('txnTo');
+      const list = document.getElementById('txnList');
+      const q = new URLSearchParams();
+      if (fromEl.value) q.set('from', fromEl.value);
+      if (toEl.value) q.set('to', toEl.value);
+      let data;
+      try {
+        data = await txnFetch('api/billing/transactions?' + q);
+      } catch (e) {
+        if (e.message !== 'auth') list.innerHTML = `<p class="py-8 text-center text-sm font-bold text-rose-500">${escHtml(e.message)}</p>`;
+        return;
+      }
+      // An empty filter opens on the trading day the server says it is.
+      fromEl.value = data.from;
+      toEl.value = data.to;
+      txnRows = data.rows;
+      document.getElementById('txnTotalIn').textContent = money(data.totalIn);
+      document.getElementById('txnTotalOut').textContent = money(data.totalOut);
+      const net = netAmount(data.totalIn, data.totalOut);
+      const netEl = document.getElementById('txnTotalNet');
+      netEl.textContent = signedMoney(net);
+      netEl.className = `font-mono font-extrabold text-sm ${net < 0 ? 'text-rose-600' : 'text-slate-800'}`;
+
+      if (!txnRows.length) {
+        list.innerHTML = '<div class="py-8 text-center"><i data-lucide="arrow-left-right" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i><p class="text-sm font-bold text-slate-500">No transactions for these dates</p></div>';
+      } else {
+        list.innerHTML = (data.count > txnRows.length ? `<p class="text-[11px] font-bold text-amber-700">Showing the latest ${txnRows.length} of ${data.count}. Narrow the dates to see the rest.</p>` : '') + txnRows.map(r => `
+          <div class="border border-slate-200 rounded-2xl px-3.5 py-2.5 flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${r.type === 'IN' ? 'bg-mint-100 text-mint-700' : 'bg-rose-100 text-rose-600'}"><i data-lucide="${r.type === 'IN' ? 'arrow-down-left' : 'arrow-up-right'}" class="w-4 h-4"></i></span>
+            <div class="min-w-0 flex-1">
+              <div class="font-mono font-extrabold text-xs text-slate-800 truncate">${escHtml(r.transactionNo)}</div>
+              <div class="text-[11px] font-semibold text-slate-400 truncate">${escHtml(r.mode)} · ${escHtml(r.localTime)} · ${escHtml(r.by)}</div>
+              ${r.remarks ? `<div class="text-[11px] font-medium text-slate-500 truncate" title="${escHtml(r.remarks)}">${escHtml(r.remarks)}</div>` : ''}
+            </div>
+            <span class="font-mono font-extrabold text-sm shrink-0 ${r.type === 'IN' ? 'text-mint-700' : 'text-rose-600'}">${r.type === 'IN' ? '+' : '-'}${money(r.amount)}</span>
+            <button onclick="editTransaction(${r.id})" title="Edit" class="tap w-8 h-8 rounded-lg bg-lavender-50 text-lavender-700 flex items-center justify-center shrink-0"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+            <button onclick="deleteTransaction(${r.id})" title="Delete" class="tap w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>`).join('');
+      }
+      lucide.createIcons();
+    }
+
+    // ================= SETTLEMENT =================
+    let settlementRequest = 0; // only the latest date change may paint the popup
+
+    function openSettlementModal() {
+      document.getElementById('setFrom').value = document.getElementById('setTo').value = '';
+      openModal('settlementModal');
+      loadSettlement();
+    }
+
+    // heads and each row line up by column; every column after the first is a figure.
+    function settlementTable(id, heads, rows, foot) {
+      const cell = (v, i, cls) => `<td class="px-3 py-1.5 ${cls} ${i ? 'text-right font-mono' : ''}">${escHtml(v)}</td>`;
+      const body = rows.length
+        ? rows.map(r => `<tr class="border-t border-slate-100">${r.map((v, i) => cell(v, i, 'font-bold text-slate-700')).join('')}</tr>`).join('')
+        : `<tr><td colspan="${heads.length}" class="px-3 py-5 text-center font-semibold text-slate-400">Nothing for these dates</td></tr>`;
+      document.getElementById(id).innerHTML = `<table class="w-full text-xs">
+        <thead><tr class="text-[10px] uppercase tracking-wider text-slate-400">${heads.map((h, i) => `<th class="px-3 py-1.5 font-bold ${i ? 'text-right' : 'text-left'}">${escHtml(h)}</th>`).join('')}</tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr class="border-t-2 border-slate-200 bg-slate-50">${foot.map((v, i) => cell(v, i, 'font-extrabold text-slate-800')).join('')}</tr></tfoot>
+      </table>`;
+    }
+
+    async function loadSettlement() {
+      const fromEl = document.getElementById('setFrom'), toEl = document.getElementById('setTo');
+      const errorEl = document.getElementById('setError'), bodyEl = document.getElementById('setBody');
+      const request = ++settlementRequest;
+      const q = new URLSearchParams();
+      if (fromEl.value) q.set('from', fromEl.value);
+      if (toEl.value) q.set('to', toEl.value);
+      let data;
+      try {
+        data = await txnFetch('api/billing/settlement?' + q);
+      } catch (e) {
+        if (e.message === 'auth' || request !== settlementRequest) return;
+        // Old figures under the newly picked dates would read as that range's takings.
+        errorEl.textContent = e.message;
+        errorEl.classList.remove('hidden');
+        bodyEl.classList.add('hidden');
+        return;
+      }
+      if (request !== settlementRequest) return;
+      errorEl.classList.add('hidden');
+      bodyEl.classList.remove('hidden');
+
+      // An empty filter opens on the trading day the server says it is.
+      fromEl.value = data.from;
+      toEl.value = data.to;
+      document.getElementById('setAsOf').textContent = `All tills · as of ${data.asOf}`;
+
+      const s = data.summary;
+      document.getElementById('setSummary').innerHTML = [
+        ['Sales Total', money(s.salesTotal)],
+        ['Total Discount', money(s.discount)],
+        ['Service Charge', money(s.serviceCharge)],
+        ['GST', money(s.gst)],
+        ['Round Off', money(s.roundOff)],
+        ['Net Sales', money(s.netSales), 'text-sm font-extrabold text-lavender-800 bg-lavender-50'],
+        ['Number Of Guests', String(s.guests)],
+        ['Number Of Receipts', String(s.receipts)],
+        ['UnBilled', money(s.unbilled), 'text-sm font-extrabold text-mint-700 bg-mint-50']
+      ].map(([label, value, cls]) => `<div class="flex justify-between gap-3 px-3 py-1.5 ${cls || 'text-xs font-bold text-slate-700'}"><span>${label}</span><span class="font-mono">${escHtml(value)}</span></div>`).join('');
+
+      const sum = (rows, key) => rows.reduce((a, r) => a + r[key], 0);
+      const payRows = rows => rows.map(p => [p.paymode, money(p.amount)]);
+
+      settlementTable('setPaymodes', ['Paymode', 'Amount', 'Rcpt Cnt'],
+        data.paymodes.map(p => [p.paymode, money(p.amount), String(p.receipts)]),
+        ['Total', money(sum(data.paymodes, 'amount')), String(s.receipts)]);
+      const cashIn = sum(data.transactions, 'cashIn'), cashOut = sum(data.transactions, 'cashOut');
+      settlementTable('setTransactions', ['Paymode', 'Cash In', 'Cash Out', 'Net'],
+        data.transactions.map(t => [t.paymode, money(t.cashIn), money(t.cashOut), signedMoney(netAmount(t.cashIn, t.cashOut))]),
+        ['Total', money(cashIn), money(cashOut), signedMoney(netAmount(cashIn, cashOut))]);
+      settlementTable('setSales', ['Paymode', 'Amount'], payRows(data.sales), ['Total', money(sum(data.sales, 'amount'))]);
+      settlementTable('setCredit', ['Paymode', 'Amount'], payRows(data.creditSales), ['Total', money(sum(data.creditSales, 'amount'))]);
+      settlementTable('setDiscounts', ['Discount', 'Amount'],
+        data.discounts.map(d => [d.name, money(d.amount)]),
+        ['Total', money(sum(data.discounts, 'amount'))]);
+    }
+
+    // ================= VIRTUAL KEYBOARD =================
+    let activeInputTarget = null, isShiftActive = false;
+    function buildKeyboard() {
+      const rows = ['1234567890', 'QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM.'];
+      const box = document.getElementById('vkRows');
+      const key = (label, fn, cls = '') => `<button onclick="${fn}" class="tap h-11 rounded-xl border font-bold flex items-center justify-center ${cls || 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-lavender-100'}">${label}</button>`;
+      box.innerHTML = rows.map((r, i) => {
+        let keys = [...r].map(c => key(c, `virtualKeyPress('${c}')`)).join('');
+        if (i === 3) keys = `<button id="vkShiftBtn" onclick="virtualKeyToggleShift()" class="tap h-11 rounded-xl border bg-lavender-100 border-lavender-200 text-lavender-800 flex items-center justify-center"><i data-lucide="arrow-big-up" class="w-5 h-5"></i></button>` + keys + key('<i data-lucide="delete" class="w-5 h-5"></i>', 'virtualKeyBackspace()', 'bg-rose-50 border-rose-200 text-rose-700');
+        const cols = i === 2 ? 9 : 10;
+        return `<div class="grid gap-1.5 ${i === 2 ? 'px-5' : ''}" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${keys}</div>`;
+      }).join('') + `<div class="flex gap-1.5">${key('-', "virtualKeyPress('-')", 'w-16 bg-slate-50 border-slate-200')}<button onclick="virtualKeyPress(' ')" class="tap flex-1 h-11 rounded-xl border bg-slate-50 border-slate-200 text-slate-500 text-sm font-bold tracking-widest">SPACE</button><button onclick="closeGlobalVirtualKeyboard()" class="tap w-32 h-11 rounded-xl bg-lavender-600 text-white font-bold">Enter</button></div>`;
+    }
+    function openGlobalVirtualKeyboard(el) {
+      activeInputTarget = el;
+      document.getElementById('vkTargetLabel').textContent = el.getAttribute('placeholder') || 'Field';
+      document.getElementById('globalVirtualKeyboard').classList.replace('translate-y-full', 'translate-y-0');
+    }
+    function closeGlobalVirtualKeyboard() {
+      document.getElementById('globalVirtualKeyboard').classList.replace('translate-y-0', 'translate-y-full');
+      if (activeInputTarget) activeInputTarget.blur();
+    }
+    function fireInput() { ['input', 'change'].forEach(t => activeInputTarget.dispatchEvent(new Event(t, { bubbles: true }))); }
+    function virtualKeyPress(ch) {
+      if (!activeInputTarget) return;
+      playBeep('click');
+      const c = /[a-z]/i.test(ch) ? (isShiftActive ? ch.toUpperCase() : ch.toLowerCase()) : ch;
+      activeInputTarget.value += c;
+      fireInput();
+      if (isShiftActive) virtualKeyToggleShift();
+    }
+    function virtualKeyBackspace() { if (!activeInputTarget) return; playBeep('delete'); activeInputTarget.value = activeInputTarget.value.slice(0, -1); fireInput(); }
+    function virtualKeyClear() { if (!activeInputTarget) return; activeInputTarget.value = ''; fireInput(); }
+    function virtualKeyToggleShift() {
+      isShiftActive = !isShiftActive;
+      const b = document.getElementById('vkShiftBtn');
+      b.classList.toggle('bg-lavender-600', isShiftActive); b.classList.toggle('text-white', isShiftActive);
+      b.classList.toggle('bg-lavender-100', !isShiftActive);
+    }
+    function bindVirtualKeyboardToInputs() {
+      // Bound to click, not focus: the keyboard should appear only when someone
+      // taps a field. Focusing a field in code (so a physical keyboard can type
+      // straight away) must not force the on-screen keyboard up.
+      // Date fields use the browser's picker: appending keystrokes would corrupt them.
+      document.querySelectorAll('input:not([type="date"])').forEach(i => i.addEventListener('click', () => openGlobalVirtualKeyboard(i)));
+    }
+
+    // ================= SOUND & TOAST =================
+    let audioCtx = null;
+    function playBeep(type = 'click') {
+      if (!AppState.soundEnabled) return;
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const tone = (f, start, dur, wave = 'sine', vol = .1, f2) => {
+          const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+          o.type = wave; o.frequency.setValueAtTime(f, start);
+          if (f2) o.frequency.exponentialRampToValueAtTime(f2, start + dur);
+          g.gain.setValueAtTime(vol, start); g.gain.exponentialRampToValueAtTime(.001, start + dur);
+          o.connect(g); g.connect(audioCtx.destination); o.start(start); o.stop(start + dur);
+        };
+        if (type === 'click') tone(900, now, .04, 'sine', .08, 450);
+        if (type === 'add') tone(600, now, .08, 'triangle', .1, 900);
+        if (type === 'delete') tone(320, now, .08, 'sawtooth', .06, 160);
+        if (type === 'cash') [587.33, 739.99, 880, 1174.66].forEach((f, i) => tone(f, now + i * .06, .25, 'sine', .12));
+      } catch (e) {}
+    }
+    function toggleSound() {
+      AppState.soundEnabled = !AppState.soundEnabled;
+      document.getElementById('soundIcon').setAttribute('data-lucide', AppState.soundEnabled ? 'volume-2' : 'volume-x');
+      const chk = document.getElementById('soundToggleCheckbox');
+      chk.textContent = AppState.soundEnabled ? 'Enabled' : 'Muted';
+      chk.classList.toggle('bg-lavender-600', AppState.soundEnabled); chk.classList.toggle('bg-slate-400', !AppState.soundEnabled);
+      lucide.createIcons();
+    }
+
+    let notifTimeout = null;
+    function showPOSNotification(type, title, desc) {
+      const banner = document.getElementById('posNotificationBanner');
+      document.getElementById('notifTitle').textContent = title;
+      document.getElementById('notifDesc').textContent = desc;
+      const styles = {
+        success: ['bg-mint-100 text-mint-700', 'check-circle-2', 'border-mint-500'],
+        warning: ['bg-amber-100 text-amber-700', 'alert-triangle', 'border-amber-500'],
+        info: ['bg-lavender-100 text-lavender-700', 'info', 'border-lavender-300']
+      }[type] || [];
+      document.getElementById('notifIconWrapper').className = `w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${styles[0]}`;
+      document.getElementById('notifIcon').setAttribute('data-lucide', styles[1]);
+      banner.className = `fixed top-3 left-1/2 -translate-x-1/2 translate-y-0 opacity-100 transition-all duration-300 z-[200] bg-white border-2 ${styles[2]} px-4 py-3 rounded-2xl shadow-lift flex items-center gap-3 max-w-lg w-[92%] sm:w-auto`;
+      lucide.createIcons();
+      clearTimeout(notifTimeout);
+      notifTimeout = setTimeout(dismissNotification, 3200);
+    }
+    function dismissNotification() {
+      const b = document.getElementById('posNotificationBanner');
+      b.classList.remove('translate-y-0', 'opacity-100'); b.classList.add('-translate-y-40', 'opacity-0');
+    }
+
+    // ================= CLOCK & SHORTCUTS =================
+    function updateClock() {
+      const n = new Date();
+      document.getElementById('liveClockTime').textContent = n.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      document.getElementById('liveClockDate').textContent = n.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+    setInterval(updateClock, 1000);
+
+    window.addEventListener('keydown', e => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+        if (e.key === 'Escape') { document.activeElement.blur(); closeGlobalVirtualKeyboard(); }
+        return;
+      }
+      const map = { F2: clearCurrentOrder, F3: openPendingOrdersModal, F6: holdCurrentOrder, F7: placeOrder, F8: handleCheckOut, F10: openPaymentModal, F11: openMergeBillModal };
+      if (map[e.key]) { e.preventDefault(); map[e.key](); return; }
+      if (e.key === 'Escape') {
+        e.preventDefault(); closeGlobalVirtualKeyboard(); closeMoreMenu(); closePowerMenu();
+        // A confirm sits above whatever asked it; Esc answers it and stops there.
+        if (_confirmResolve) { resolveConfirm(false); return; }
+        const open = ['paymentModal','tableModal','personsModal','pendingModal','modifierModal','discountModal','customerModal','settingsModal','settlementModal','mergeModal','recallModal','punchModal'].find(id => !document.getElementById(id).classList.contains('hidden'));
+        // Esc only dismisses things. It must never exit the till — a stray
+        // keypress mid-order would close the terminal.
+        if (open) closeModal(open);
+      }
+      if (e.key === '+') adjustSelectedQty(1);
+      if (e.key === '-') adjustSelectedQty(-1);
+      if (e.key === 'Delete') removeSelectedItem();
+      if (e.key === 'ArrowUp') moveSelection(-1);
+      if (e.key === 'ArrowDown') moveSelection(1);
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      buildKeyboard();
+      renderCategories(); renderDishGrid(); renderCart(); calculateTotals();
+      try { toggleTotalsBreakdown(localStorage.getItem('pos.totalsOpen') === '1'); } catch { }
+      setOrderMode('dinein'); setVegFilter('all');
+      bindVirtualKeyboardToInputs(); updateCustomerDisplay(); updateClock(); updatePendingBadge();
+      renderSeqNo();
+      loadQrSettings();
+      loadWaiters();
+      loadPunchList();
+      lucide.createIcons();
+
+      // Resolve the monitor layout first so the customer screen opens already
+      // positioned, then launch it automatically.
+      await refreshScreens();
+      // The launcher opens the customer screen as its own kiosk window, so only
+      // fall back to a popup when the POS was opened manually in a browser.
+      if (!launcherOwnsDisplay()) openCustomerDisplay(true);
+    });
+  </script>
+</body>
+</html>

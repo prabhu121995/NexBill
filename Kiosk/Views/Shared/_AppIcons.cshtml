@@ -1,0 +1,17 @@
+@*
+    Every surface that can show an app icon: the browser tab, the icon Chrome
+    gives an --app window on the taskbar, and the manifest an installed PWA or a
+    tablet used as a customer display reads.
+
+    Included rather than inherited - each screen owns its own <head> (see
+    _ViewStart), so there is no layout to put this in.
+
+    The files come from scripts/make-icons.py; see "App icon" in the Readme for
+    how to put a real logo in. Nothing here is edited by hand.
+*@
+<link rel="icon" href="~/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="~/icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="~/icons/apple-touch-icon.png">
+<link rel="manifest" href="~/site.webmanifest">
+@* Colours the window frame of an installed app and the Android status bar. *@
+<meta name="theme-color" content="#7540cc">

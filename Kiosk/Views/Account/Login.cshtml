@@ -1,0 +1,642 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en" class="h-full select-none">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>@(await Brand.NameAsync()) — Sign In</title>
+  <partial name="_AppIcons" />
+  <script src="~/lib/tailwind/tailwind.min.js"></script>
+  <script src="~/lib/lucide/lucide.min.js"></script>
+  <link rel="stylesheet" href="~/lib/fonts/fonts.css" />
+  <link rel="stylesheet" href="~/css/density.css" asp-append-version="true" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+            digital: ['"Chakra Petch"', 'sans-serif'],
+          },
+          colors: {
+            lavender: { 25:'#fbfaff',50:'#f6f3fc',100:'#ece5fa',200:'#ded2f6',300:'#c5b0f0',400:'#a787e6',500:'#8c60dc',600:'#7540cc',700:'#6432b4',800:'#522995',900:'#432279',950:'#231046' },
+            mint: { 50:'#edfcf5',100:'#d3f7e6',200:'#a7eecb',500:'#10b981',600:'#059669',700:'#047857' }
+          },
+          boxShadow: {
+            'soft': '0 1px 2px rgba(35,16,70,.04), 0 4px 16px -4px rgba(35,16,70,.08)',
+            'lift': '0 10px 30px -8px rgba(117,64,204,.28)',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ded2f6; border-radius: 6px; }
+    .tap { touch-action: manipulation; transition: transform .1s ease, background-color .15s, border-color .15s, box-shadow .15s; }
+    .tap:active { transform: scale(.96); }
+    .tap:focus-visible { outline: 2px solid #7540cc; outline-offset: 2px; }
+
+    /* ===== SPLASH ANIMATIONS ===== */
+    @@keyframes float-particle {
+      0%   { transform: translateY(0) scale(1); opacity: 0; }
+      15%  { opacity: .9; }
+      85%  { opacity: .5; }
+      100% { transform: translateY(-105vh) scale(.3); opacity: 0; }
+    }
+    @@keyframes logo-enter {
+      0%   { transform: scale(0) rotate(-160deg); opacity: 0; }
+      55%  { transform: scale(1.18) rotate(8deg);  opacity: 1; }
+      78%  { transform: scale(.94) rotate(-4deg);  opacity: 1; }
+      100% { transform: scale(1) rotate(0deg);     opacity: 1; }
+    }
+    @@keyframes text-reveal {
+      0%   { max-width: 0;     opacity: 0; }
+      5%   { opacity: 1; }
+      100% { max-width: 320px; opacity: 1; }
+    }
+    @@keyframes fade-up {
+      0%   { transform: translateY(10px); opacity: 0; }
+      100% { transform: translateY(0);    opacity: 1; }
+    }
+    @@keyframes loading-bar {
+      0%   { width: 0; }
+      35%  { width: 52%; }
+      70%  { width: 80%; }
+      100% { width: 100%; }
+    }
+    @@keyframes splash-exit {
+      0%   { transform: scale(1);    opacity: 1; }
+      100% { transform: scale(1.08); opacity: 0; }
+    }
+    @@keyframes login-enter {
+      0%   { transform: translateY(32px); opacity: 0; }
+      100% { transform: translateY(0);    opacity: 1; }
+    }
+    @@keyframes glow-pulse {
+      0%, 100% { transform: scale(1);   opacity: .12; }
+      50%      { transform: scale(1.45); opacity: .28; }
+    }
+    @@keyframes steam {
+      0%   { transform: translateY(4px) scaleX(1);  opacity: 0; }
+      20%  { opacity: .55; }
+      60%  { transform: translateY(-16px) scaleX(1.4); opacity: .3; }
+      100% { transform: translateY(-34px) scaleX(.5);  opacity: 0; }
+    }
+    .splash-particle {
+      position: absolute; border-radius: 50%; pointer-events: none;
+      animation: float-particle linear infinite;
+    }
+    @@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+    .animate-shake { animation: shake .35s ease; }
+  </style>
+</head>
+
+<body class="h-full bg-[#f4f2f9] font-sans overflow-hidden">
+
+  @Html.AntiForgeryToken()
+
+  <!-- ========== SPLASH SCREEN ========== -->
+  <div id="splashScreen" onclick="endSplash()" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#f4f2f9] cursor-pointer">
+
+    <!-- floating particles -->
+    <div id="particles" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
+
+    <!-- glow ring behind logo -->
+    <div class="absolute w-44 h-44 rounded-full bg-lavender-500 pointer-events-none"
+         style="animation: glow-pulse 2.2s ease-in-out infinite;"></div>
+
+    <!-- logo tile -->
+    <div id="splashLogo"
+         class="relative w-28 h-28 rounded-3xl bg-lavender-600 shadow-lift flex items-center justify-center"
+         style="opacity:0; animation: logo-enter .75s cubic-bezier(.34,1.56,.64,1) .12s forwards;">
+
+      <!-- steam wisps -->
+      <div class="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-2 pointer-events-none">
+        <div class="w-1 h-6 rounded-full bg-lavender-300" style="animation: steam 1.9s ease-in-out .7s infinite;"></div>
+        <div class="w-1 h-8 rounded-full bg-lavender-300" style="animation: steam 2.1s ease-in-out 1.0s infinite;"></div>
+        <div class="w-1 h-5 rounded-full bg-lavender-300" style="animation: steam 1.7s ease-in-out 1.3s infinite;"></div>
+      </div>
+
+      <!-- inline coffee cup SVG (no dependency on icon script) -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round" class="w-14 h-14">
+        <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
+        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
+        <line x1="6" y1="2" x2="6" y2="4"/>
+        <line x1="10" y1="2" x2="10" y2="4"/>
+        <line x1="14" y1="2" x2="14" y2="4"/>
+      </svg>
+    </div>
+
+    <!-- brand name (typing reveal) -->
+    <h1 id="splashTitle"
+        class="mt-6 text-4xl font-extrabold text-lavender-950 tracking-tight whitespace-nowrap overflow-hidden"
+        style="display:inline-block; max-width:0; opacity:0; animation: text-reveal .55s steps(7,end) .62s forwards;">
+      NexBill
+    </h1>
+
+    <!-- tagline -->
+    <p class="mt-2 text-sm font-semibold text-lavender-500 tracking-[.2em] uppercase"
+       style="opacity:0; animation: fade-up .45s ease 1.05s forwards;">
+      Point of Sale
+    </p>
+
+    <!-- loading bar -->
+    <div class="mt-8 w-52 h-1.5 rounded-full bg-lavender-100 overflow-hidden">
+      <div class="h-full rounded-full bg-gradient-to-r from-lavender-400 via-lavender-600 to-lavender-500"
+           style="width:0; animation: loading-bar 1.7s ease .25s forwards;"></div>
+    </div>
+
+    <!-- status text -->
+    <p id="splashStatus" class="mt-3 text-xs text-slate-400 font-semibold h-4"
+       style="opacity:0; animation: fade-up .35s ease .75s forwards;">
+      Loading system…
+    </p>
+  </div>
+
+  <!-- ========== LOGIN PAGE ========== -->
+  <div id="loginPage" class="relative h-full flex items-center justify-center p-4 opacity-0 pointer-events-none">
+
+    <!-- Close terminal. A till left at the sign-in screen still has to be
+         closable, and there is no header here to hang the power button on. -->
+    <button onclick="closeTerminal()" id="closeTerminalBtn"
+      class="tap absolute top-4 right-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white border border-rose-200 text-rose-600 font-bold text-xs shadow-soft hover:bg-rose-50">
+      <i data-lucide="power" class="w-4 h-4"></i> Close Terminal
+    </button>
+
+    <div class="w-full max-w-md">
+
+      <!-- brand -->
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-lavender-600 shadow-lift mb-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" class="w-10 h-10">
+            <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
+            <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
+            <line x1="6" y1="2" x2="6" y2="4"/>
+            <line x1="10" y1="2" x2="10" y2="4"/>
+            <line x1="14" y1="2" x2="14" y2="4"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-extrabold text-lavender-950 tracking-tight">@(await Brand.NameAsync())</h1>
+        <p class="text-sm text-slate-500 mt-1">Sign in to continue</p>
+      </div>
+
+      <!-- card -->
+      <div class="bg-white rounded-2xl shadow-soft border border-lavender-100 p-8">
+
+        <div id="errorAlert" class="hidden mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold flex items-center gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
+          <span id="errorMsg">Invalid credentials</span>
+        </div>
+
+        <!-- username or phone -->
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Username or Phone</label>
+          <div class="relative">
+            <i data-lucide="user" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-lavender-400 pointer-events-none"></i>
+            <input id="identifier" type="text" placeholder="Username or phone number" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')"
+              class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-lavender-200 bg-lavender-25 text-slate-800 font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-lavender-400 transition">
+          </div>
+        </div>
+
+        <!-- password -->
+        <div class="mb-5">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+          <div class="relative">
+            <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-lavender-400 pointer-events-none"></i>
+            <input id="password" type="password" placeholder="Enter password" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')"
+              class="w-full pl-11 pr-12 py-3.5 rounded-xl border border-lavender-200 bg-lavender-25 text-slate-800 font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-lavender-400 transition">
+            <button onclick="togglePassword()" class="tap absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-lavender-600">
+              <i id="eyeIcon" data-lucide="eye-off" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- open as -->
+        <div class="mb-6">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Open</label>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="selectDestination('billing')" id="destBilling"
+              class="tap dest-btn flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-lavender-500 bg-lavender-50 text-lavender-800 font-bold text-sm transition">
+              <i data-lucide="monitor" class="w-4 h-4"></i> Billing POS
+            </button>
+            <button onclick="selectDestination('admin')" id="destAdmin"
+              class="tap dest-btn flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-lavender-200 bg-white text-slate-500 font-bold text-sm transition">
+              <i data-lucide="shield" class="w-4 h-4"></i> Admin Panel
+            </button>
+          </div>
+          <p class="mt-2 text-[11px] text-slate-400 font-semibold">Admin Panel is for admin and supervisor accounts.</p>
+        </div>
+
+        <!-- sign in -->
+        <button onclick="handleLogin()" id="loginBtn"
+          class="tap w-full py-4 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-extrabold text-base shadow-lift transition flex items-center justify-center gap-2">
+          <i data-lucide="log-in" class="w-5 h-5"></i> Sign In
+        </button>
+      </div>
+
+      <p class="text-center text-xs text-slate-400 mt-6">&copy; 2026 @(await Brand.NameAsync()) System &middot; v3.0</p>
+    </div>
+  </div>
+
+  <!-- ========== CLOSING COVER ==========
+       Painted the instant the power button is pressed and never taken down on the
+       way out. Chrome needs a moment to tear a window down, and whatever is on
+       screen at that moment is what staff see: without this they watched the login
+       form blank out into browser furniture. Same colour as the page canvas, so the
+       hand-off to Chrome's own last repaint is invisible. -->
+  <div id="closingCover" class="hidden fixed inset-0 z-[300] bg-[#f4f2f9] flex flex-col items-center justify-center">
+    <div class="w-24 h-24 rounded-3xl bg-lavender-600 shadow-lift flex items-center justify-center">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round" class="w-12 h-12">
+        <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
+        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
+        <line x1="6" y1="2" x2="6" y2="4"/>
+        <line x1="10" y1="2" x2="10" y2="4"/>
+        <line x1="14" y1="2" x2="14" y2="4"/>
+      </svg>
+    </div>
+    <p class="mt-6 text-lg font-extrabold text-lavender-950 tracking-tight">Closing terminal</p>
+    <div class="mt-5 w-40 h-1.5 rounded-full bg-lavender-100 overflow-hidden">
+      <div class="h-full w-1/3 rounded-full bg-lavender-500" style="animation: loading-bar 1.4s ease forwards;"></div>
+    </div>
+  </div>
+
+  <!-- VIRTUAL KEYBOARD (same as POS page) -->
+  <div id="globalVirtualKeyboard" class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-lavender-200 shadow-2xl p-3 z-[150] translate-y-full transition-transform duration-200">
+    <div class="max-w-4xl mx-auto space-y-1.5">
+      <div class="flex items-center justify-between px-1 pb-1.5 text-xs">
+        <div class="flex items-center gap-2 text-slate-500"><i data-lucide="keyboard" class="w-4 h-4 text-lavender-600"></i>Typing in: <span id="vkTargetLabel" class="font-bold text-lavender-700">Field</span></div>
+        <div class="flex gap-2">
+          <button onclick="virtualKeyClear()" class="tap px-3 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200">Clear</button>
+          <button onclick="closeGlobalVirtualKeyboard()" class="tap px-4 py-1 rounded-lg bg-lavender-600 text-white font-bold">Done</button>
+        </div>
+      </div>
+      <div id="vkRows" class="space-y-1.5"></div>
+    </div>
+  </div>
+
+  <script>
+    // ================= ICONS (safe re-run) =================
+    function drawIcons() { try { if (window.lucide) lucide.createIcons(); } catch (e) {} }
+
+    // ================= SPLASH =================
+    const SPLASH_MS = 2400;   // how long the splash stays before the login page
+    const BASE = '@Url.Content("~/")';
+    let splashDone = false;
+
+    // ================= LAUNCHER-OWNED CUSTOMER DISPLAY =================
+    // On two monitors Start-Kiosk opens the customer screen as its own kiosk
+    // window and marks the till URL with launcher=1, which tells the POS page not
+    // to open a second, popup copy of the same screen.
+    //
+    // That marker only survives one navigation. The till lands on /?launcher=1,
+    // [Authorize] bounces it here, and sign-in then redirects to a bare "/" — so
+    // by the time billing renders the flag is gone and it opens a popup display
+    // on top of the one the launcher already has. Latch it the first time it is
+    // seen instead. sessionStorage is scoped to this tab, which is exactly the
+    // window the launcher owns, and it survives the login hop and every reload,
+    // sign-out and sign-in for the rest of the shift.
+    function launcherOwnsDisplay() {
+      const KEY = 'kiosk.launcherDisplay';
+      const q = new URLSearchParams(location.search);
+
+      // On the login page the flag is inside the ReturnUrl the cookie middleware
+      // built from /?launcher=1, not a parameter of its own.
+      let returnUrl = '';
+      for (const [k, v] of q) if (k.toLowerCase() === 'returnurl') returnUrl = v;
+      const nested = new URLSearchParams(returnUrl.split('?')[1] || '');
+
+      const flagged = q.get('launcher') === '1' || nested.get('launcher') === '1';
+      try {
+        if (flagged) sessionStorage.setItem(KEY, '1');
+        return flagged || sessionStorage.getItem(KEY) === '1';
+      } catch {
+        // Storage walled off (private mode, locked-down profile). The URL is all
+        // there is to go on, so fall back to it.
+        return flagged;
+      }
+    }
+
+    function createParticles() {
+      const box = document.getElementById('particles');
+      const colors = ['#c5b0f0', '#a787e6', '#8c60dc', '#ded2f6'];
+      for (let i = 0; i < 18; i++) {
+        const p = document.createElement('div');
+        p.className = 'splash-particle';
+        const size = Math.random() * 7 + 4;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.left = (Math.random() * 100) + '%';
+        p.style.bottom = '-16px';
+        p.style.animationDuration = (Math.random() * 2.5 + 3) + 's';
+        p.style.animationDelay = (Math.random() * 1.8) + 's';
+        box.appendChild(p);
+      }
+    }
+
+    function cycleStatus() {
+      const el = document.getElementById('splashStatus');
+      const msgs = ['Loading system…', 'Preparing menu…', 'Starting POS…', 'Ready'];
+      let i = 0;
+      const iv = setInterval(() => {
+        if (splashDone || ++i >= msgs.length) { clearInterval(iv); return; }
+        el.textContent = msgs[i];
+      }, 550);
+    }
+
+    function endSplash() {
+      if (splashDone) return;
+      splashDone = true;
+
+      const splash = document.getElementById('splashScreen');
+      const login  = document.getElementById('loginPage');
+
+      splash.style.animation = 'splash-exit .45s ease forwards';
+
+      setTimeout(() => {
+        splash.remove();
+        document.body.classList.remove('overflow-hidden');
+
+        login.classList.remove('opacity-0', 'pointer-events-none');
+        login.style.animation = 'login-enter .55s cubic-bezier(.34,1.56,.64,1) forwards';
+
+        drawIcons();
+        bindVirtualKeyboardToInputs();
+      }, 420);
+    }
+
+    function togglePassword() {
+      const inp = document.getElementById('password');
+      const icon = document.getElementById('eyeIcon');
+      if (inp.type === 'password') { inp.type = 'text';     icon.setAttribute('data-lucide', 'eye'); }
+      else                         { inp.type = 'password'; icon.setAttribute('data-lucide', 'eye-off'); }
+      drawIcons();
+      playBeep('click');
+    }
+
+    // ================= LOGIN =================
+    // The users table is the only account store, so every check happens server
+    // side and this only renders the answer. The role that comes back decides
+    // where to go: cashiers and waiters are sent straight to billing, admins and
+    // supervisors get the chooser.
+    const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    let loginInFlight = false;
+
+    // Which screen to open. Only a hint: the server still checks the role before
+    // honouring it, so picking Admin Panel does not grant anything.
+    let destination = 'billing';
+
+    function selectDestination(which) {
+      destination = which;
+      document.querySelectorAll('.dest-btn').forEach(b => {
+        b.classList.remove('border-lavender-500', 'bg-lavender-50', 'text-lavender-800');
+        b.classList.add('border-lavender-200', 'bg-white', 'text-slate-500');
+      });
+      const active = document.getElementById(which === 'admin' ? 'destAdmin' : 'destBilling');
+      active.classList.add('border-lavender-500', 'bg-lavender-50', 'text-lavender-800');
+      active.classList.remove('border-lavender-200', 'bg-white', 'text-slate-500');
+      playBeep('click');
+    }
+
+    function showLoginError(message) {
+      document.getElementById('errorMsg').textContent = message;
+      document.getElementById('errorAlert').classList.remove('hidden');
+      playBeep('error');
+    }
+
+    function resetLoginButton(idleLabel) {
+      const btn = document.getElementById('loginBtn');
+      loginInFlight = false;
+      btn.disabled = false;
+      btn.classList.remove('opacity-70');
+      btn.innerHTML = idleLabel;
+      drawIcons();
+    }
+
+    async function handleLogin() {
+      // closingTerminal too: Enter is bound to this, and the terminal is on its way out.
+      if (!splashDone || loginInFlight || closingTerminal) return;
+
+      // Either the username or the phone number on the account; the server works
+      // out which one it is.
+      const id = document.getElementById('identifier').value.trim();
+      const p  = document.getElementById('password').value;
+
+      if (!id || !p) {
+        showLoginError('Please enter your username or phone number, and your password');
+        return;
+      }
+
+      const btn = document.getElementById('loginBtn');
+      const idleLabel = btn.innerHTML;
+      loginInFlight = true;
+      btn.disabled = true;
+      btn.classList.add('opacity-70');
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Signing in…';
+      drawIcons();
+
+      let res, data;
+      try {
+        res = await fetch(BASE + 'api/account/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': antiForgeryToken },
+          body: JSON.stringify({ identifier: id, password: p, destination: destination })
+        });
+        data = await res.json().catch(() => ({}));
+      } catch (e) {
+        resetLoginButton(idleLabel);
+        showLoginError('Cannot reach the server. Check the connection.');
+        shakeBtn();
+        return;
+      }
+
+      if (!res.ok) {
+        resetLoginButton(idleLabel);
+        // A rejected attempt leaves the username or phone so it can be corrected,
+        // but never the password.
+        document.getElementById('password').value = '';
+        showLoginError(data.error || 'Sign-in failed');
+        shakeBtn();
+        return;
+      }
+
+      document.getElementById('errorAlert').classList.add('hidden');
+      playBeep('success');
+      closeGlobalVirtualKeyboard();
+
+      btn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i> Welcome, ' + data.displayName + '!';
+      btn.classList.replace('bg-lavender-600', 'bg-mint-600');
+      btn.classList.replace('hover:bg-lavender-700', 'hover:bg-mint-700');
+      drawIcons();
+
+      // The account signed in fine but cannot have the screen it asked for. Say so
+      // before moving on, rather than silently landing somewhere else.
+      if (data.notice) {
+        selectDestination('billing');
+        document.getElementById('errorMsg').textContent = data.notice;
+        document.getElementById('errorAlert').classList.remove('hidden');
+      }
+
+      // replace, not href: the cookie is already issued, so Back must not return
+      // to a form that would ask for the password again.
+      setTimeout(() => window.location.replace(data.redirect), data.notice ? 1600 : 700);
+    }
+
+    // ================= CLOSE TERMINAL =================
+    // Same endpoint the till's power button uses: Chrome will not let a page close
+    // a window it did not open, so the launcher records each window's pid and the
+    // server closes them. Nothing to sign out here — this only shuts the kiosk
+    // windows down, and the service stays up so the next launch is instant.
+    //
+    // No confirmation, unlike the till's power button: there is nothing here to
+    // lose. No cart to discard and no shift to end, so a prompt would only stand
+    // between staff and the one thing this button does.
+    let closingTerminal = false;
+
+    async function closeTerminal() {
+      if (!splashDone || closingTerminal) return;
+
+      closingTerminal = true;
+      playBeep('click');
+      closeGlobalVirtualKeyboard();
+
+      // Cover the screen before anything else, and set the same colour on the root
+      // element: that is the colour Chrome keeps painting once the page is gone, so
+      // the window disappears out of a solid frame instead of a white flash.
+      document.documentElement.style.background = '#f4f2f9';
+      document.getElementById('closingCover').classList.remove('hidden');
+      drawIcons();
+
+      // The POST comes first, deliberately. It is what closes a launcher-started
+      // till — and the customer screen with it — so it must not be cancelled by
+      // window.close() starting to tear this document down around it. keepalive
+      // keeps it in flight even if the window goes first.
+      let launcherSession = false;
+      try {
+        const res = await fetch(BASE + 'api/terminal/close', {
+          method: 'POST',
+          keepalive: true,
+          headers: { 'RequestVerificationToken': antiForgeryToken }
+        });
+        if (res.ok) launcherSession = (await res.json()).launcherSession === true;
+      } catch { /* server already gone, or hosted remotely */ }
+
+      // The windows close from the server side a moment after that response. The
+      // cover stays up for that moment — there is nothing left worth showing.
+      if (launcherSession) return;
+
+      // Nothing for the server to close. A window this page's own script opened can
+      // still close itself, so try that before giving up.
+      window.close();
+
+      // Still here: opened by hand or hosted remotely, and the browser refused.
+      // Take the cover down and say what to press, rather than leaving staff at a
+      // frozen “Closing terminal” screen.
+      setTimeout(() => {
+        document.documentElement.style.background = '';
+        document.getElementById('closingCover').classList.add('hidden');
+        closingTerminal = false;
+        drawIcons();
+        showLoginError('This terminal was not opened by Start-Kiosk, so the browser blocked the close request. Press Alt+F4 to close the window.');
+      }, 500);
+    }
+
+    function shakeBtn() {
+      const btn = document.getElementById('loginBtn');
+      btn.classList.add('animate-shake');
+      setTimeout(() => btn.classList.remove('animate-shake'), 400);
+    }
+
+    // ================= VIRTUAL KEYBOARD (same as POS page) =================
+    let activeInputTarget = null, isShiftActive = false;
+    function buildKeyboard() {
+      const rows = ['1234567890', 'QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM.'];
+      const box = document.getElementById('vkRows');
+      const key = (label, fn, cls = '') => `<button onclick="${fn}" class="tap h-11 rounded-xl border font-bold flex items-center justify-center ${cls || 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-lavender-100'}">${label}</button>`;
+      box.innerHTML = rows.map((r, i) => {
+        let keys = [...r].map(c => key(c, `virtualKeyPress('${c}')`)).join('');
+        if (i === 3) keys = `<button id="vkShiftBtn" onclick="virtualKeyToggleShift()" class="tap h-11 rounded-xl border bg-lavender-100 border-lavender-200 text-lavender-800 flex items-center justify-center"><i data-lucide="arrow-big-up" class="w-5 h-5"></i></button>` + keys + key('<i data-lucide="delete" class="w-5 h-5"></i>', 'virtualKeyBackspace()', 'bg-rose-50 border-rose-200 text-rose-700');
+        const cols = i === 2 ? 9 : 10;
+        return `<div class="grid gap-1.5 ${i === 2 ? 'px-5' : ''}" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${keys}</div>`;
+      }).join('') + `<div class="flex gap-1.5">${key('-', "virtualKeyPress('-')", 'w-16 bg-slate-50 border-slate-200')}<button onclick="virtualKeyPress(' ')" class="tap flex-1 h-11 rounded-xl border bg-slate-50 border-slate-200 text-slate-500 text-sm font-bold tracking-widest">SPACE</button><button onclick="closeGlobalVirtualKeyboard()" class="tap w-32 h-11 rounded-xl bg-lavender-600 text-white font-bold">Enter</button></div>`;
+    }
+    function openGlobalVirtualKeyboard(el) {
+      activeInputTarget = el;
+      document.getElementById('vkTargetLabel').textContent = el.getAttribute('placeholder') || 'Field';
+      document.getElementById('globalVirtualKeyboard').classList.replace('translate-y-full', 'translate-y-0');
+    }
+    function closeGlobalVirtualKeyboard() {
+      document.getElementById('globalVirtualKeyboard').classList.replace('translate-y-0', 'translate-y-full');
+      if (activeInputTarget) activeInputTarget.blur();
+    }
+    function fireInput() { ['input', 'change'].forEach(t => activeInputTarget.dispatchEvent(new Event(t, { bubbles: true }))); }
+    function virtualKeyPress(ch) {
+      if (!activeInputTarget) return;
+      playBeep('click');
+      const c = /[a-z]/i.test(ch) ? (isShiftActive ? ch.toUpperCase() : ch.toLowerCase()) : ch;
+      activeInputTarget.value += c;
+      fireInput();
+      if (isShiftActive) virtualKeyToggleShift();
+    }
+    function virtualKeyBackspace() { if (!activeInputTarget) return; playBeep('delete'); activeInputTarget.value = activeInputTarget.value.slice(0, -1); fireInput(); }
+    function virtualKeyClear() { if (!activeInputTarget) return; activeInputTarget.value = ''; fireInput(); }
+    function virtualKeyToggleShift() {
+      isShiftActive = !isShiftActive;
+      const b = document.getElementById('vkShiftBtn');
+      b.classList.toggle('bg-lavender-600', isShiftActive); b.classList.toggle('text-white', isShiftActive);
+      b.classList.toggle('bg-lavender-100', !isShiftActive);
+    }
+    function bindVirtualKeyboardToInputs() {
+      document.querySelectorAll('#loginPage input').forEach(i => i.addEventListener('focus', () => openGlobalVirtualKeyboard(i)));
+    }
+
+    // ================= SOUND =================
+    let audioCtx = null;
+    function playBeep(type = 'click') {
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        const t = audioCtx.currentTime;
+        const presets = { click: [1200, .03, .06], success: [880, .08, .2], error: [280, .1, .15], delete: [600, .04, .08] };
+        const [freq, vol, dur] = presets[type] || presets.click;
+        o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(.001, t + dur);
+        o.connect(g).connect(audioCtx.destination);
+        o.start(t); o.stop(t + dur);
+      } catch (e) {}
+    }
+
+    // ================= INIT =================
+    document.addEventListener('DOMContentLoaded', () => {
+      // Latch it here, while the ReturnUrl is still on the address bar. Billing
+      // reads the latch, not the URL, so it must be set before we leave.
+      launcherOwnsDisplay();
+
+      buildKeyboard();
+      drawIcons();
+      createParticles();
+      cycleStatus();
+
+      setTimeout(endSplash, SPLASH_MS);
+
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Enter')  { e.preventDefault(); splashDone ? handleLogin() : endSplash(); }
+        if (e.key === 'Escape') { document.activeElement.blur(); closeGlobalVirtualKeyboard(); }
+      });
+    });
+
+    // safety net: redraw icons once everything has loaded
+    window.addEventListener('load', drawIcons);
+  </script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+@model ErrorViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Something went wrong";
+}
+@*
+    Shown by UseExceptionHandler. In kiosk mode there is no address bar and no
+    back button, so this page has to be the whole recovery path: it says what
+    happened in staff language, keeps the request id for the log, and offers the
+    two ways out by hand.
+*@
+<!DOCTYPE html>
+<html lang="en" class="h-full select-none">
+<head>
+    <partial name="_KioskHead" />
+</head>
+<body class="h-screen w-screen overflow-hidden flex items-center justify-center font-sans antialiased p-10">
+
+    <div class="w-full max-w-2xl bg-white rounded-3xl shadow-soft ring-1 ring-lavender-100 overflow-hidden">
+
+        <div class="bg-gradient-to-r from-rose-700 via-rose-600 to-rose-500 px-10 py-8 text-white">
+            <div class="flex items-center gap-5">
+                <div class="w-16 h-16 rounded-2xl bg-white/15 ring-1 ring-white/25 flex items-center justify-center shrink-0">
+                    <svg class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-3xl font-extrabold tracking-tight leading-none">Something went wrong</div>
+                    <div class="text-[11px] text-white/60 uppercase tracking-[0.22em] font-bold mt-2">@(await Brand.NameAsync()) · Terminal Error</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-10 py-8">
+            <p class="text-slate-600 font-medium leading-relaxed">
+                The terminal hit an unexpected error and could not finish that action.
+                <strong class="text-slate-800">Nothing was charged.</strong>
+                Any order still on screen before this happened was not saved — re-ring it
+                after going back.
+            </p>
+
+            @if (Model.ShowRequestId)
+            {
+                <div class="mt-7 rounded-2xl bg-lavender-50 ring-1 ring-lavender-100 px-5 py-4">
+                    <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-lavender-700">Reference</div>
+                    <div class="font-mono text-sm font-bold text-lavender-950 mt-1.5 break-all">@Model.RequestId</div>
+                    <div class="text-xs text-slate-500 font-medium mt-2">Quote this when reporting the fault — it matches the server log entry.</div>
+                </div>
+            }
+
+            <div class="mt-8 flex gap-4">
+                <a href="@Url.Content("~/")"
+                   class="tap flex-1 h-16 rounded-2xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-lg flex items-center justify-center gap-3 shadow-soft">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10Z" />
+                    </svg>
+                    Back to Billing
+                </a>
+                <button type="button" onclick="location.reload()"
+                        class="tap h-16 px-8 rounded-2xl bg-white ring-1 ring-lavender-200 hover:bg-lavender-25 text-lavender-800 font-bold text-lg flex items-center justify-center gap-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6" />
+                    </svg>
+                    Try Again
+                </button>
+            </div>
+
+            <p class="mt-6 text-xs text-slate-400 font-semibold text-center">
+                Still stuck? Close the terminal with <span class="font-mono text-slate-500">Alt+F4</span> and relaunch from the desktop shortcut.
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

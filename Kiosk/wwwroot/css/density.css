@@ -1,0 +1,24 @@
+/*
+  Screen density, mobile first.
+
+  Phones and tablets render 1:1 - their layouts are built for the width they have.
+  From 1024px up the screens read best at what browser zoom calls 90%, so they are
+  drawn at that scale here instead of asking every till to set its zoom by hand.
+
+  The customer display does not load this file: it is a full-screen sign and keeps
+  its own sizes.
+*/
+:root { --ui-zoom: 1; }
+
+@media (min-width: 1024px) {
+  :root { --ui-zoom: .9; }
+}
+
+html { zoom: var(--ui-zoom); }
+
+/* zoom scales viewport units as well, so 100vh would stop 10% short of the
+   window. Divide it back out. dvh, where supported, also keeps a phone's
+   address bar from hiding the bottom of a full-height screen. */
+html .h-screen { height: calc(100vh / var(--ui-zoom)); height: calc(100dvh / var(--ui-zoom)); }
+html .min-h-screen { min-height: calc(100vh / var(--ui-zoom)); min-height: calc(100dvh / var(--ui-zoom)); }
+html .w-screen { width: calc(100vw / var(--ui-zoom)); }
