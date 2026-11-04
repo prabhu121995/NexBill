@@ -33,13 +33,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasPrincipalKey(c => c.ExternalId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        b.Entity<MenuItem>()
-            .HasOne(m => m.SubCategory)
-            .WithMany(c => c.SubMenuItems)
-            .HasForeignKey(m => m.SubCategoryExternalId)
-            .HasPrincipalKey(c => c.ExternalId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         b.Entity<Category>()
             .HasIndex(c => c.ExternalId)
             .IsUnique();

@@ -152,9 +152,8 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         row.UpdatedAt = DateTime.UtcNow;
     }
 
-    // ===================== MAIN CATEGORIES =====================
-    // The left rail on the till. Only level 1 is managed here; an inactive category
-    // drops off the rail along with its items, but its rows stay so past bills and
+    // ===================== CATEGORIES =====================
+    // The left rail on the till. An inactive category drops off the rail along with its items, but its rows stay so past bills and
     // menu items keep pointing at something.
 
     /// <summary>The virtual category the till uses to list every dish.</summary>
@@ -165,7 +164,6 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
     public async Task<IActionResult> Categories()
     {
         var list = await db.Categories
-            .Where(c => c.Level == 1)
             .OrderBy(c => c.SortOrder)
             .Select(c => new
             {
@@ -177,9 +175,8 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
                 isActive = c.IsActive,
                 // The same counts the till's rail shows under each tile.
                 items    = c.ExternalId == AllCategoryId
-                    ? db.MenuItems.Count(m => m.IsActive && m.Category != null && m.Category.IsActive
-                                              && (m.SubCategory == null || m.SubCategory.IsActive))
-                    : c.MenuItems.Count(m => m.IsActive && (m.SubCategory == null || m.SubCategory.IsActive))
+                    ? db.MenuItems.Count(m => m.IsActive && m.Category != null && m.Category.IsActive)
+                    : c.MenuItems.Count(m => m.IsActive)
             })
             .ToListAsync();
 
@@ -191,15 +188,15 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddCategory([FromBody] CategoryRequest req)
     {
-        var level1 = await db.Categories.Where(c => c.Level == 1).ToListAsync();
-        var (name, icon, color, error) = ValidateCategory(req, level1, excludeId: null);
+        var existing = await db.Categories.ToListAsync();
+        var (name, icon, color, error) = ValidateCategory(req, existing, excludeId: null);
         if (error is not null) return error;
 
         // No colour chosen: a random one the other active tiles are not already
         // using, so neighbours on the rail stay tellable apart.
         if (color == "")
         {
-            var taken = level1.Where(c => c.IsActive).Select(c => c.Color.ToLowerInvariant()).ToHashSet();
+            var taken = existing.Where(c => c.IsActive).Select(c => c.Color.ToLowerInvariant()).ToHashSet();
             var free  = Category.Palette.Where(p => !taken.Contains(p)).ToArray();
             var pool  = free.Length > 0 ? free : Category.Palette;
             color = pool[Random.Shared.Next(pool.Length)];
@@ -208,7 +205,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         var code = await NewCategoryCodeAsync(name);
 
         // New categories go in front of "All" so the catch-all stays last on the rail.
-        var all = level1.FirstOrDefault(c => c.ExternalId == AllCategoryId);
+        var all = existing.FirstOrDefault(c => c.ExternalId == AllCategoryId);
         int sort;
         if (all is not null)
         {
@@ -217,7 +214,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         }
         else
         {
-            sort = level1.Count == 0 ? 1 : level1.Max(c => c.SortOrder) + 1;
+            sort = existing.Count == 0 ? 1 : existing.Max(c => c.SortOrder) + 1;
         }
 
         var cat = new Category
@@ -226,7 +223,6 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
             Name       = name,
             Icon       = icon,
             Color      = color,
-            Level      = 1,
             SortOrder  = sort,
             IsActive   = true,
             CreatedBy  = CurrentUserId()
@@ -237,17 +233,17 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         return Ok(new { id = cat.Id, code = cat.ExternalId, name = cat.Name, icon = cat.Icon, color = cat.Color, isActive = cat.IsActive, items = 0 });
     }
 
-    /// <summary>Renames a main category or changes its icon / colour. The code stays, so menu items keep pointing at it.</summary>
+    /// <summary>Renames a category or changes its icon / colour. The code stays, so menu items keep pointing at it.</summary>
     [HttpPut]
     [Route("api/categories/{id:int}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateCategory(int id, [FromBody] CategoryRequest req)
     {
-        var level1 = await db.Categories.Where(c => c.Level == 1).ToListAsync();
-        var cat = level1.FirstOrDefault(c => c.Id == id);
+        var existing = await db.Categories.ToListAsync();
+        var cat = existing.FirstOrDefault(c => c.Id == id);
         if (cat is null) return NotFound(new { error = "Category not found" });
 
-        var (name, icon, color, error) = ValidateCategory(req, level1, excludeId: id);
+        var (name, icon, color, error) = ValidateCategory(req, existing, excludeId: id);
         if (error is not null) return error;
 
         cat.Name      = name;
@@ -266,7 +262,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
     /// shapes. An empty colour means "not chosen".
     /// </summary>
     private (string Name, string Icon, string Color, IActionResult? Error) ValidateCategory(
-        CategoryRequest req, List<Category> level1, int? excludeId)
+        CategoryRequest req, List<Category> existing, int? excludeId)
     {
         var name  = (req.Name ?? "").Trim();
         var icon  = string.IsNullOrWhiteSpace(req.Icon) ? "utensils" : req.Icon.Trim();
@@ -281,7 +277,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         if (color != "" && !Category.IsValidColor(color))
             return (name, icon, color, BadRequest(new { error = "Colour must be a #rrggbb value" }));
 
-        if (level1.Any(c => c.Id != excludeId && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
+        if (existing.Any(c => c.Id != excludeId && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
             return (name, icon, color, Conflict(new { error = $"A category named \"{name}\" already exists" }));
 
         return (name, icon, color, null);
@@ -292,7 +288,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SetCategoryActive(int id, [FromBody] CategoryActiveRequest req)
     {
-        var cat = await db.Categories.FirstOrDefaultAsync(c => c.Id == id && c.Level == 1);
+        var cat = await db.Categories.FirstOrDefaultAsync(c => c.Id == id);
         if (cat is null) return NotFound(new { error = "Category not found" });
 
         cat.IsActive  = req.IsActive;
@@ -305,7 +301,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
 
     /// <summary>
     /// The code is what menu items reference, so it is derived once from the name
-    /// and made unique across both levels - a renamed category keeps its code.
+    /// and made unique - a renamed category keeps its code.
     /// </summary>
     private async Task<string> NewCategoryCodeAsync(string name)
     {
@@ -315,162 +311,6 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         for (var n = 2; await db.Categories.AnyAsync(c => c.ExternalId == code); n++)
             code = $"{baseCode} {n}";
         return code;
-    }
-
-    // ===================== SUB CATEGORIES =====================
-    // Level 2 - the chevron row under the selected main category on the till.
-    // A subcategory belongs to one main category through ParentExternalId, and its
-    // menu items carry both codes, so the two have to be kept in step on a move.
-
-    [HttpGet]
-    [Route("api/subcategories")]
-    public async Task<IActionResult> SubCategories()
-    {
-        var list = await db.Categories
-            .Where(c => c.Level == 2)
-            .OrderBy(c => c.ParentExternalId).ThenBy(c => c.SortOrder)
-            .Select(c => new
-            {
-                id       = c.Id,
-                code     = c.ExternalId,
-                name     = c.Name,
-                parent   = c.ParentExternalId,
-                isActive = c.IsActive,
-                items    = c.SubMenuItems.Count()
-            })
-            .ToListAsync();
-
-        return Ok(list);
-    }
-
-    [HttpPost]
-    [Route("api/subcategories")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddSubCategory([FromBody] SubCategoryRequest req)
-    {
-        var (name, parent, error) = await ValidateSubCategoryAsync(req, excludeId: null);
-        if (error is not null) return error;
-
-        var sort = await db.Categories
-            .Where(c => c.Level == 2 && c.ParentExternalId == parent!.ExternalId)
-            .MaxAsync(c => (int?)c.SortOrder) ?? 0;
-
-        var sub = new Category
-        {
-            ExternalId       = await NewCategoryCodeAsync(name),
-            Name             = name,
-            Icon             = "",
-            Level            = 2,
-            ParentExternalId = parent!.ExternalId,
-            SortOrder        = sort + 1,
-            IsActive         = true,
-            CreatedBy        = CurrentUserId()
-        };
-        db.Categories.Add(sub);
-        await db.SaveChangesAsync();
-
-        return Ok(new { id = sub.Id });
-    }
-
-    [HttpPut]
-    [Route("api/subcategories/{id:int}")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateSubCategory(int id, [FromBody] SubCategoryRequest req)
-    {
-        var sub = await db.Categories.FirstOrDefaultAsync(c => c.Id == id && c.Level == 2);
-        if (sub is null) return NotFound(new { error = "Sub category not found" });
-
-        var (name, parent, error) = await ValidateSubCategoryAsync(req, excludeId: id);
-        if (error is not null) return error;
-
-        var userId = CurrentUserId();
-
-        // Moving to another main category takes its dishes along: an item whose
-        // main category disagreed with its subcategory's parent would show under
-        // one rail tile on the till and be filtered out of the chevron row there.
-        if (sub.ParentExternalId != parent!.ExternalId)
-        {
-            var items = await db.MenuItems.Where(m => m.SubCategoryExternalId == sub.ExternalId).ToListAsync();
-            foreach (var m in items)
-            {
-                m.CategoryExternalId = parent.ExternalId;
-                m.UpdatedBy = userId;
-                m.UpdatedAt = DateTime.UtcNow;
-            }
-
-            sub.SortOrder = (await db.Categories
-                .Where(c => c.Level == 2 && c.ParentExternalId == parent.ExternalId)
-                .MaxAsync(c => (int?)c.SortOrder) ?? 0) + 1;
-            sub.ParentExternalId = parent.ExternalId;
-        }
-
-        sub.Name      = name;
-        sub.UpdatedBy = userId;
-        sub.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync();
-
-        return Ok(new { id = sub.Id });
-    }
-
-    [HttpPost]
-    [Route("api/subcategories/{id:int}/active")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SetSubCategoryActive(int id, [FromBody] CategoryActiveRequest req)
-    {
-        var sub = await db.Categories.FirstOrDefaultAsync(c => c.Id == id && c.Level == 2);
-        if (sub is null) return NotFound(new { error = "Sub category not found" });
-
-        sub.IsActive  = req.IsActive;
-        sub.UpdatedBy = CurrentUserId();
-        sub.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync();
-
-        return Ok(new { id = sub.Id, isActive = sub.IsActive });
-    }
-
-    /// <summary>
-    /// Hard delete, allowed only while no menu item points at it - the foreign key
-    /// is Restrict, and silently orphaning dishes into "Others" would surprise the
-    /// counter. One still in use is meant to be deactivated instead.
-    /// </summary>
-    [HttpDelete]
-    [Route("api/subcategories/{id:int}")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteSubCategory(int id)
-    {
-        var sub = await db.Categories.FirstOrDefaultAsync(c => c.Id == id && c.Level == 2);
-        if (sub is null) return NotFound(new { error = "Sub category not found" });
-
-        var used = await db.MenuItems.CountAsync(m => m.SubCategoryExternalId == sub.ExternalId);
-        if (used > 0)
-            return Conflict(new { error = $"{sub.Name} has {used} menu item(s). Move them or deactivate it instead." });
-
-        db.Categories.Remove(sub);
-        await db.SaveChangesAsync();
-        return Ok(new { id });
-    }
-
-    private async Task<(string Name, Category? Parent, IActionResult? Error)> ValidateSubCategoryAsync(SubCategoryRequest req, int? excludeId)
-    {
-        var name = (req.Name ?? "").Trim();
-        if (name.Length is 0 or > 40)
-            return (name, null, BadRequest(new { error = "Name is required (max 40 characters)" }));
-
-        // "All" is the till's virtual list of every dish, not a real parent.
-        var parent = await db.Categories.FirstOrDefaultAsync(c =>
-            c.Level == 1 && c.ExternalId == req.Parent && c.ExternalId != AllCategoryId);
-        if (parent is null)
-            return (name, null, BadRequest(new { error = "Choose a main category" }));
-
-        // Unique within its main category only: "Starters" can sit under Chinese and Western.
-        var siblings = await db.Categories
-            .Where(c => c.Level == 2 && c.ParentExternalId == parent.ExternalId && c.Id != excludeId)
-            .Select(c => c.Name)
-            .ToListAsync();
-        if (siblings.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)))
-            return (name, null, Conflict(new { error = $"{parent.Name} already has \"{name}\"" }));
-
-        return (name, parent, null);
     }
 
     // ===================== MENU ITEMS =====================
@@ -487,14 +327,13 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
             .OrderBy(m => m.Category!.SortOrder).ThenBy(m => m.Name)
             .Select(m => new
             {
-                id          = m.Id,
-                code        = m.ExternalId,
-                name        = m.Name,
-                price       = m.Price,
-                isVeg       = m.IsVeg,
-                category    = m.CategoryExternalId,
-                subCategory = m.SubCategoryExternalId,
-                isActive    = m.IsActive
+                id       = m.Id,
+                code     = m.ExternalId,
+                name     = m.Name,
+                price    = m.Price,
+                isVeg    = m.IsVeg,
+                category = m.CategoryExternalId,
+                isActive = m.IsActive
             })
             .ToListAsync();
 
@@ -506,7 +345,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
 
         return Ok(items.Select(i => new
         {
-            i.id, i.code, i.name, i.price, i.isVeg, i.category, i.subCategory, i.isActive,
+            i.id, i.code, i.name, i.price, i.isVeg, i.category, i.isActive,
             inUse = used.Contains(i.code)
         }));
     }
@@ -527,14 +366,13 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
 
         var item = new MenuItem
         {
-            ExternalId            = code,
-            Name                  = v.Name,
-            Price                 = v.Price,
-            IsVeg                 = req.IsVeg,
-            CategoryExternalId    = v.Category,
-            SubCategoryExternalId = v.SubCategory,
-            IsActive              = req.IsActive ?? true,
-            CreatedBy             = CurrentUserId()
+            ExternalId         = code,
+            Name               = v.Name,
+            Price              = v.Price,
+            IsVeg              = req.IsVeg,
+            CategoryExternalId = v.Category,
+            IsActive           = req.IsActive ?? true,
+            CreatedBy          = CurrentUserId()
         };
         db.MenuItems.Add(item);
         await db.SaveChangesAsync();
@@ -553,11 +391,10 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         var (v, error) = await ValidateMenuItemAsync(req, excludeId: id);
         if (error is not null) return error;
 
-        item.Name                  = v.Name;
-        item.Price                 = v.Price;
-        item.IsVeg                 = req.IsVeg;
-        item.CategoryExternalId    = v.Category;
-        item.SubCategoryExternalId = v.SubCategory;
+        item.Name               = v.Name;
+        item.Price              = v.Price;
+        item.IsVeg              = req.IsVeg;
+        item.CategoryExternalId = v.Category;
         if (req.IsActive is bool active) item.IsActive = active;
         item.UpdatedBy = CurrentUserId();
         item.UpdatedAt = DateTime.UtcNow;
@@ -600,12 +437,12 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         return Ok(new { id });
     }
 
-    private record MenuItemValues(string Name, decimal Price, string Category, string? SubCategory);
+    private record MenuItemValues(string Name, decimal Price, string Category);
 
     private async Task<(MenuItemValues Values, IActionResult? Error)> ValidateMenuItemAsync(MenuItemRequest req, int? excludeId)
     {
         var name = (req.Name ?? "").Trim();
-        var none = new MenuItemValues(name, 0, "", null);
+        var none = new MenuItemValues(name, 0, "");
 
         if (name.Length is 0 or > 80)
             return (none, BadRequest(new { error = "Name is required (max 80 characters)" }));
@@ -616,23 +453,16 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
 
         // "All" is the till's virtual list of every dish, not a home for one.
         var category = await db.Categories.FirstOrDefaultAsync(c =>
-            c.Level == 1 && c.ExternalId == req.Category && c.ExternalId != AllCategoryId);
+            c.ExternalId == req.Category && c.ExternalId != AllCategoryId);
         if (category is null)
-            return (none, BadRequest(new { error = "Choose a main category" }));
-
-        // Optional, but when given it must sit under the chosen main category - the
-        // till looks for a dish's tab only under its own rail tile.
-        string? sub = string.IsNullOrWhiteSpace(req.SubCategory) ? null : req.SubCategory;
-        if (sub is not null && !await db.Categories.AnyAsync(c =>
-                c.Level == 2 && c.ExternalId == sub && c.ParentExternalId == category.ExternalId))
-            return (none, BadRequest(new { error = $"That sub category does not belong to {category.Name}" }));
+            return (none, BadRequest(new { error = "Choose a category" }));
 
         var clash = await db.MenuItems.AnyAsync(m =>
             m.Id != excludeId && m.CategoryExternalId == category.ExternalId && m.Name == name);
         if (clash)
             return (none, Conflict(new { error = $"{category.Name} already has \"{name}\"" }));
 
-        return (new MenuItemValues(name, req.Price, category.ExternalId, sub), null);
+        return (new MenuItemValues(name, req.Price, category.ExternalId), null);
     }
 
     // ===================== TRANSACTION MODES =====================
@@ -1010,7 +840,6 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
             .Select(m => new { m.ExternalId, m.CategoryExternalId })
             .ToDictionaryAsync(m => m.ExternalId, m => m.CategoryExternalId);
         var cats = await db.Categories
-            .Where(c => c.Level == 1)
             .Select(c => new { c.ExternalId, c.Name, c.Color, c.SortOrder })
             .ToDictionaryAsync(c => c.ExternalId);
 
@@ -1371,25 +1200,14 @@ public class CategoryRequest
     public string? Color { get; set; }
 }
 
-public class SubCategoryRequest
-{
-    public string? Name { get; set; }
-
-    /// <summary>The main category's code (ExternalId).</summary>
-    public string? Parent { get; set; }
-}
-
 public class MenuItemRequest
 {
     public string? Name { get; set; }
     public decimal Price { get; set; }
     public bool IsVeg { get; set; }
 
-    /// <summary>Main category code (ExternalId).</summary>
+    /// <summary>Category code (ExternalId).</summary>
     public string? Category { get; set; }
-
-    /// <summary>Sub category code, or empty for none ("Others" on the till).</summary>
-    public string? SubCategory { get; set; }
 
     /// <summary>Left null on edit to keep the current state.</summary>
     public bool? IsActive { get; set; }

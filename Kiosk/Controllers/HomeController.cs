@@ -62,33 +62,24 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
 
     public async Task<IActionResult> Index()
     {
-        // Only active categories reach the till - main (rail) and sub (chevron row) -
-        // and the dishes under an inactive one are left out too so they cannot
-        // surface under "All", "Others" or search.
-        var cats1 = await db.Categories
-            .Where(c => c.Level == 1 && c.IsActive)
+        // Only active categories reach the till, and the items under an inactive one
+        // are left out too so they cannot surface under "All" or search.
+        var categories = await db.Categories
+            .Where(c => c.IsActive)
             .OrderBy(c => c.SortOrder)
             .Select(c => new { id = c.ExternalId, name = c.Name, icon = c.Icon, color = c.Color })
             .ToListAsync();
 
-        var cats2 = await db.Categories
-            .Where(c => c.Level == 2 && c.IsActive)
-            .OrderBy(c => c.SortOrder)
-            .Select(c => new { id = c.ExternalId, name = c.Name, parent = c.ParentExternalId })
-            .ToListAsync();
-
         var catalog = await db.MenuItems
-            .Where(m => m.IsActive && m.Category != null && m.Category.IsActive
-                        && (m.SubCategory == null || m.SubCategory.IsActive))
+            .Where(m => m.IsActive && m.Category != null && m.Category.IsActive)
             .OrderBy(m => m.Id)
             .Select(m => new
             {
-                id          = m.ExternalId,
-                name        = m.Name,
-                price       = m.Price,
-                category    = m.CategoryExternalId,
-                subCategory = m.SubCategoryExternalId,
-                isVeg       = m.IsVeg
+                id       = m.ExternalId,
+                name     = m.Name,
+                price    = m.Price,
+                category = m.CategoryExternalId,
+                isVeg    = m.IsVeg
             })
             .ToListAsync();
 
@@ -99,8 +90,7 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
 
         var posData = JsonSerializer.Serialize(new
         {
-            categoriesRow1 = cats1,
-            categoriesRow2 = cats2,
+            categories,
             catalog,
             serviceChargePercent = charges.ServiceCharge,
             gstPercent           = charges.Gst

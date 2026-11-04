@@ -3,7 +3,7 @@ namespace Kiosk.Models;
 public class Category : AuditableEntity
 {
     /// <summary>
-    /// Colours a main category can take. The first 14 are the order the till used to
+    /// Colours a category can take. The first 14 are the order the till used to
     /// hand out by rail position, so backfilled rows keep the colour they already
     /// showed. All are dark enough for white text on the selected tile.
     /// </summary>
@@ -20,17 +20,13 @@ public class Category : AuditableEntity
     public string Icon { get; set; } = string.Empty;
 
     /// <summary>
-    /// Main categories only: a #rrggbb tint for the rail tile, sub category tabs and
-    /// dish cards on the till. Empty on sub categories, which take their parent's.
+    /// A #rrggbb tint for the rail tile and the item cards under it on the till.
     /// </summary>
     public string Color { get; set; } = string.Empty;
 
-    public int Level { get; set; } = 1;
-    public string? ParentExternalId { get; set; }
     public int SortOrder { get; set; }
 
     public ICollection<MenuItem> MenuItems { get; set; } = [];
-    public ICollection<MenuItem> SubMenuItems { get; set; } = [];
 
     /// <summary>True for a lowercase or uppercase #rrggbb value - the only shape the till's styling accepts.</summary>
     public static bool IsValidColor(string? c) =>

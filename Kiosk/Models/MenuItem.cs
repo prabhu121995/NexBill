@@ -10,7 +10,4 @@ public class MenuItem : AuditableEntity
 
     public string CategoryExternalId { get; set; } = string.Empty;
     public Category? Category { get; set; }
-
-    public string? SubCategoryExternalId { get; set; }
-    public Category? SubCategory { get; set; }
 }

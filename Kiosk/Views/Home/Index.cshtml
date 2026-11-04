@@ -56,9 +56,6 @@
     .cut { --c: 14px; clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c))); }
     .cut-frame { padding: 1.5px; }
     .cut-frame > .cut { --c: 13.4px; }
-    .chev { --n: 12px; clip-path: polygon(0 0, calc(100% - var(--n)) 0, 100% 50%, calc(100% - var(--n)) 100%, 0 100%, var(--n) 50%); margin-left: -4px; padding-left: calc(var(--n) + 12px); padding-right: calc(var(--n) + 10px); }
-    .chev.first { clip-path: polygon(0 0, calc(100% - var(--n)) 0, 100% 50%, calc(100% - var(--n)) 100%, 0 100%); margin-left: 0; padding-left: 14px; }
-    .chev-frame { padding: 1.5px; }
     .tree-section { position: relative; padding-left: 26px; }
     .tree-section::before { content: ''; position: absolute; left: 8px; top: 14px; bottom: 0; width: 2px; background: linear-gradient(#c5b0f0, #ece5fa); border-radius: 2px; }
     .tree-node { position: absolute; left: 2px; top: 6px; width: 14px; height: 14px; border-radius: 4px; transform: rotate(45deg); background: #fff; border: 2px solid #7540cc; }
@@ -173,13 +170,13 @@
 
     <!-- CATEGORY RAIL -->
     <nav class="w-[84px] lg:w-[104px] shrink-0 bg-white border-r border-lavender-100 flex flex-col">
-      <div id="categoryRow1" class="flex-1 overflow-y-auto no-scrollbar py-3 pl-[10px] pr-2 space-y-2"></div>
+      <div id="categoryRail" class="flex-1 overflow-y-auto no-scrollbar py-3 pl-[10px] pr-2 space-y-2"></div>
     </nav>
 
     <!-- MENU AREA -->
     <section class="flex-1 min-w-0 flex flex-col">
       <div class="px-3 lg:px-5 pt-3 lg:pt-4 pb-3 shrink-0">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="min-w-0">
             <div id="levelPath" class="flex items-center gap-1.5 text-xs font-bold flex-wrap"></div>
             <div class="flex items-baseline gap-2 mt-1">
@@ -192,13 +189,6 @@
             <button id="vegFilterVeg" onclick="setVegFilter('veg')" class="tap px-3 py-1.5 rounded-lg flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-600"></span>Veg</button>
             <button id="vegFilterNon" onclick="setVegFilter('nonveg')" class="tap px-3 py-1.5 rounded-lg flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-600"></span>Non-veg</button>
           </div>
-        </div>
-        <div id="level2Wrap" class="relative flex items-stretch gap-2">
-          <div class="shrink-0 flex flex-col items-center justify-center w-6">
-            <span class="w-2.5 h-2.5 rounded-full bg-lavender-600 ring-4 ring-lavender-100"></span>
-            <span class="flex-1 w-0.5 bg-lavender-300 mt-1"></span>
-          </div>
-          <div id="categoryRow2" class="flex-1 flex gap-0 overflow-x-auto no-scrollbar py-1"></div>
         </div>
       </div>
       <div class="flex-1 overflow-y-auto px-3 pb-3 lg:px-5 lg:pb-5">
@@ -774,8 +764,7 @@
     const BASE = '@Url.Content("~/")';
 
     const _posData = @Html.Raw(ViewData["PosData"]);
-    const INITIAL_CATEGORIES_ROW1 = _posData.categoriesRow1;
-    const INITIAL_CATEGORIES_ROW2 = _posData.categoriesRow2;
+    const INITIAL_CATEGORIES = _posData.categories;
     const INITIAL_MENU_CATALOG = _posData.catalog;
 
     // Rates from config_terminal_setting. The source of truth is the database, so
@@ -784,13 +773,11 @@
     const CONFIG_SERVICE_CHARGE = _posData.serviceChargePercent;
     const CONFIG_GST = _posData.gstPercent;
 
-    INITIAL_MENU_CATALOG.forEach(i => { if (i.subCategory === null) delete i.subCategory; });
-
     const AppState = {
       orderMode: 'dinein', tableNo: 'T5', persons: 2, seqNo: @(ViewData["NextSeq"]),
       customer: 'Walk-in', phone: '',
-      activeCategory: INITIAL_CATEGORIES_ROW1[0]?.id || 'TIFFIN',
-      activeSubCategory: null, activeFilterQuery: '', vegFilter: 'all', lastDishId: null,
+      activeCategory: INITIAL_CATEGORIES[0]?.id || 'ALL',
+      activeFilterQuery: '', vegFilter: 'all', lastDishId: null,
       selectedCartIndex: -1, cart: [],
       openOrderId: null,   // set once saved unpaid, so Pay settles that row
       waiterId: null,      // staff the bill is credited to; null for counter sales
@@ -800,7 +787,7 @@
       discountPercent: 0, serviceChargePercent: CONFIG_SERVICE_CHARGE, gstPercent: CONFIG_GST, incdtl: 0,
       currency: '$', soundEnabled: true, pendingOrders: [],
       showPaymentQr: false, payNowType: 'uen', payNowProxy: '', merchantName: '',
-      categoriesRow1: INITIAL_CATEGORIES_ROW1, categoriesRow2: INITIAL_CATEGORIES_ROW2, catalog: INITIAL_MENU_CATALOG
+      categories: INITIAL_CATEGORIES, catalog: INITIAL_MENU_CATALOG
     };
 
     const money = v => `${AppState.currency}${v.toFixed(2)}`;
@@ -820,12 +807,12 @@
     }
 
     const CAT_TINTS = ['#7540cc','#0e9f6e','#d97706','#e11d48','#2563eb','#0891b2','#9333ea','#ca8a04','#db2777','#16a34a','#ea580c','#4f46e5','#0d9488','#64748b'];
-    // Each main category carries the colour set for it in the admin panel; it tints
-    // the rail tile, the sub category tabs, the path and every dish card under it.
+    // Each category carries the colour set for it in the admin panel; it tints
+    // the rail tile, the path and every item card under it.
     // The positional palette is only a fallback for a row that has none yet.
     function catTint(catId) {
-      const i = AppState.categoriesRow1.findIndex(c => c.id === catId);
-      const color = i < 0 ? '' : AppState.categoriesRow1[i].color;
+      const i = AppState.categories.findIndex(c => c.id === catId);
+      const color = i < 0 ? '' : AppState.categories[i].color;
       return /^#[0-9a-f]{6}$/i.test(color || '') ? color : CAT_TINTS[(i < 0 ? 0 : i) % CAT_TINTS.length];
     }
 
@@ -836,9 +823,9 @@
     }
 
     function renderCategories() {
-      const rail = document.getElementById('categoryRow1');
+      const rail = document.getElementById('categoryRail');
       rail.innerHTML = '';
-      AppState.categoriesRow1.forEach(cat => {
+      AppState.categories.forEach(cat => {
         const active = AppState.activeCategory === cat.id;
         const count = itemsInCategory(cat.id).length;
         const tint = catTint(cat.id);
@@ -853,49 +840,14 @@
         btn.onclick = () => selectCategory(cat.id);
         rail.appendChild(btn);
       });
-      renderLevel2();
       renderLevelPath();
-    }
-
-    function subsForCategory(catId) {
-      const inCat = itemsInCategory(catId);
-      return AppState.categoriesRow2.filter(s => inCat.some(i => i.subCategory === s.id));
-    }
-
-    function renderLevel2() {
-      const row2 = document.getElementById('categoryRow2');
-      const wrap = document.getElementById('level2Wrap');
-      row2.innerHTML = '';
-      const inCat = itemsInCategory(AppState.activeCategory);
-      const subs = subsForCategory(AppState.activeCategory);
-      if (subs.length === 0 || AppState.activeFilterQuery) { wrap.classList.add('hidden'); return; }
-      wrap.classList.remove('hidden');
-      const tint = catTint(AppState.activeCategory);
-      const card = (id, label, n, first) => {
-        const on = AppState.activeSubCategory === id;
-        const frame = document.createElement('button');
-        frame.className = `tap chev-frame chev ${first ? 'first' : ''} shrink-0 !p-[1.5px]`;
-        frame.style.background = on ? tint : '#ded2f6';
-        frame.innerHTML = `
-          <span class="chev ${first ? 'first' : ''} h-12 flex flex-col justify-center text-left ${on ? 'text-white' : 'bg-white text-slate-700'}" style="margin-left:0;${on ? `background:${tint}` : ''}">
-            <span class="text-[13px] font-extrabold leading-tight whitespace-nowrap">${escapeHtml(label)}</span>
-            <span class="text-[10px] font-semibold ${on ? 'text-white/75' : 'text-slate-400'}">${n} items</span>
-          </span>`;
-        frame.onclick = () => selectSubCategory(id);
-        row2.appendChild(frame);
-      };
-      card(null, 'All', inCat.length, true);
-      subs.forEach(s => card(s.id, s.name, inCat.filter(i => i.subCategory === s.id).length));
-      const others = inCat.filter(i => !i.subCategory).length;
-      if (others) card('__OTHER', 'Others', others);
     }
 
     function renderLevelPath() {
       const el = document.getElementById('levelPath');
-      const cat = AppState.categoriesRow1.find(c => c.id === AppState.activeCategory);
-      const sub = AppState.categoriesRow2.find(s => s.id === AppState.activeSubCategory);
+      const cat = AppState.categories.find(c => c.id === AppState.activeCategory);
       const dish = AppState.catalog.find(d => d.id === AppState.lastDishId);
-      const dishInPath = dish && (AppState.activeCategory === 'ALL' || dish.category === AppState.activeCategory) && (!AppState.activeSubCategory || dish.subCategory === AppState.activeSubCategory);
+      const dishInPath = dish && (AppState.activeCategory === 'ALL' || dish.category === AppState.activeCategory);
       const tint = catTint(AppState.activeCategory);
       const step = (n, label, state) => {
         const styles = { done: `background:${tint};color:#fff`, idle: 'background:#f1f5f9;color:#94a3b8' };
@@ -906,19 +858,16 @@
       const arrow = '<i data-lucide="chevron-right" class="w-3.5 h-3.5 text-lavender-300"></i>';
       el.innerHTML =
         step(1, cat ? cat.name : cap(AppState.activeCategory), 'done') + arrow +
-        step(2, sub ? sub.name : (AppState.activeSubCategory === '__OTHER' ? 'Others' : 'All'), AppState.activeSubCategory ? 'done' : 'idle') + arrow +
-        step(3, dishInPath ? cap(dish.name) : 'Select dish', dishInPath ? 'done' : 'idle');
+        step(2, dishInPath ? cap(dish.name) : 'Select item', dishInPath ? 'done' : 'idle');
     }
 
     function selectCategory(catId) {
       AppState.activeCategory = catId;
-      AppState.activeSubCategory = null;
       AppState.activeFilterQuery = '';
       document.getElementById('quickDishFilterInput').value = '';
       playBeep('click');
       renderCategories(); renderDishGrid();
     }
-    function selectSubCategory(id) { AppState.activeSubCategory = id; playBeep('click'); renderCategories(); renderDishGrid(); }
 
     function setVegFilter(v) {
       AppState.vegFilter = v;
@@ -929,7 +878,7 @@
       });
       renderDishGrid();
     }
-    function handleQuickDishFilter(q) { AppState.activeFilterQuery = q.toLowerCase().trim(); renderLevel2(); renderDishGrid(); }
+    function handleQuickDishFilter(q) { AppState.activeFilterQuery = q.toLowerCase().trim(); renderDishGrid(); }
 
     // ================= DISH GRID =================
     function renderDishGrid() {
@@ -938,13 +887,10 @@
       const q = AppState.activeFilterQuery;
       let items = q ? AppState.catalog.filter(i => i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q))
                     : itemsInCategory(AppState.activeCategory);
-      if (!q && AppState.activeSubCategory) {
-        items = AppState.activeSubCategory === '__OTHER' ? items.filter(i => !i.subCategory) : items.filter(i => i.subCategory === AppState.activeSubCategory);
-      }
       if (AppState.vegFilter === 'veg') items = items.filter(i => i.isVeg);
       if (AppState.vegFilter === 'nonveg') items = items.filter(i => !i.isVeg);
 
-      const cat = AppState.categoriesRow1.find(c => c.id === AppState.activeCategory);
+      const cat = AppState.categories.find(c => c.id === AppState.activeCategory);
       document.getElementById('dishGridCategoryLabel').textContent = q ? `Results for "${q}"` : (cat ? cat.name : cap(AppState.activeCategory));
       document.getElementById('dishGridCountLabel').textContent = `${items.length} dishes`;
 
@@ -953,23 +899,17 @@
         renderLevelPath(); lucide.createIcons(); return;
       }
 
-      const groupByCategory = q || AppState.activeCategory === 'ALL';
       const groups = [];
-      const keyOf = d => groupByCategory ? d.category : (d.subCategory || '__OTHER');
       items.forEach(d => {
-        let g = groups.find(x => x.key === keyOf(d));
-        if (!g) { g = { key: keyOf(d), items: [] }; groups.push(g); }
+        let g = groups.find(x => x.key === d.category);
+        if (!g) { g = { key: d.category, items: [] }; groups.push(g); }
         g.items.push(d);
       });
-      const labelOf = key => {
-        if (groupByCategory) { const c = AppState.categoriesRow1.find(x => x.id === key); return c ? c.name : cap(key); }
-        if (key === '__OTHER') return 'Others';
-        const s = AppState.categoriesRow2.find(x => x.id === key); return s ? s.name : cap(key);
-      };
-      const parentLabel = groupByCategory ? 'Menu' : (cat ? cat.name : '');
+      const labelOf = key => { const c = AppState.categories.find(x => x.id === key); return c ? c.name : cap(key); };
+      const parentLabel = 'Menu';
 
       groups.forEach(g => {
-        const tint = catTint(groupByCategory ? g.key : AppState.activeCategory);
+        const tint = catTint(g.key);
         const section = document.createElement('section');
         section.className = 'tree-section';
         section.innerHTML = `

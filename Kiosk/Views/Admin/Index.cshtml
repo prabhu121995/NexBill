@@ -133,9 +133,6 @@
         <button onclick="showSection('categories')" data-nav="categories" class="nav-item tap w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 text-left transition-all">
           <i data-lucide="layout-list" class="w-[18px] h-[18px]"></i> Categories
         </button>
-        <button onclick="showSection('subcategories')" data-nav="subcategories" class="nav-item tap w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 text-left transition-all">
-          <i data-lucide="list-tree" class="w-[18px] h-[18px]"></i> Sub Categories
-        </button>
         <button onclick="showSection('menu')" data-nav="menu" class="nav-item tap w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 text-left transition-all">
           <i data-lucide="coffee" class="w-[18px] h-[18px]"></i> Menu Items
         </button>
@@ -303,34 +300,6 @@
           </div>
         </div>
 
-        <!-- ===== SUB CATEGORIES ===== -->
-        <div id="sec-subcategories" class="section-page">
-          <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 mb-5">
-            <div class="flex flex-wrap items-center gap-2">
-              <select id="subParentFilter" onchange="renderSubCategories()" class="px-3.5 py-2 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
-                <option value="">All main categories</option>
-              </select>
-              <button onclick="filterSubCategories('all', this)" class="tap sub-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-lavender-600 text-white">All <span id="subCountAll" class="opacity-70"></span></button>
-              <button onclick="filterSubCategories('active', this)" class="tap sub-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Active <span id="subCountActive" class="opacity-70"></span></button>
-              <button onclick="filterSubCategories('inactive', this)" class="tap sub-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Inactive <span id="subCountInactive" class="opacity-70"></span></button>
-            </div>
-            <button onclick="openSubModal()" class="tap px-4 py-2.5 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-xs flex items-center gap-2 shadow-lift w-full sm:w-auto justify-center">
-              <i data-lucide="plus" class="w-4 h-4"></i> Add Sub Category
-            </button>
-          </div>
-          <p class="text-xs text-slate-400 font-semibold mb-4">Sub categories are the row of tabs under a main category on the POS. Only active ones are shown, and the items in an inactive one are hidden from the till. A sub category can only be deleted once no menu items use it.</p>
-          <div class="bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm min-w-[680px]">
-                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-lavender-100">
-                  <th class="text-left px-4 sm:px-5 py-3">Sub Category</th><th class="text-left px-4 sm:px-5 py-3">Main Category</th><th class="text-left px-4 sm:px-5 py-3">Code</th><th class="text-right px-4 sm:px-5 py-3">Items</th><th class="text-left px-4 sm:px-5 py-3">Status</th><th class="text-center px-4 sm:px-5 py-3">Active</th><th class="text-right px-4 sm:px-5 py-3">Action</th>
-                </tr></thead>
-                <tbody id="subCategoriesBody"><tr><td colspan="7" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
         <!-- ===== TRANSACTION MODES ===== -->
         <div id="sec-transactionmodes" class="section-page">
           <div class="flex justify-end mb-5">
@@ -359,9 +328,6 @@
               <input id="menuSearch" oninput="renderMenu()" placeholder="Search dishes or codes&#8230;" class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-lavender-200 bg-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400">
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <select id="menuSubFilter" onchange="renderMenu()" class="px-3 py-2.5 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
-                <option value="">All sub categories</option>
-              </select>
               <select id="menuStatusFilter" onchange="renderMenu()" class="px-3 py-2.5 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
                 <option value="all">All status</option><option value="active">Active</option><option value="inactive">Inactive</option>
               </select>
@@ -373,7 +339,7 @@
               </button>
             </div>
           </div>
-          @* Main category chips - built from the database, coloured like their rail tiles. *@
+          @* Category chips - built from the database, coloured like their rail tiles. *@
           <div id="menuCatChips" class="flex gap-2 overflow-x-auto pb-2 mb-3"></div>
           <p id="menuSummary" class="text-xs text-slate-400 font-semibold mb-3"></p>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4" id="menuGrid">
@@ -715,13 +681,8 @@
             </div>
           </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Main Category</label>
-            <select id="itemCat" onchange="fillItemSubs()" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></select>
-          </div>
-          <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Sub Category</label>
-            <select id="itemSub" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></select>
-          </div>
+        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Category</label>
+          <select id="itemCat" onchange="updateItemHint()" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></select>
         </div>
         <label class="flex items-center justify-between p-3 bg-lavender-25 rounded-xl border border-lavender-100 gap-4 cursor-pointer">
           <span class="min-w-0"><span class="block text-sm font-bold text-lavender-950">Active</span><span class="block text-xs text-slate-400">Shown on the POS</span></span>
@@ -765,24 +726,6 @@
     </div>
   </div>
 
-  <!-- ========== ADD / EDIT SUB CATEGORY MODAL ========== -->
-  <div id="subModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-    <div class="bg-white rounded-2xl shadow-lift w-full max-w-md p-5 sm:p-6 fade-in">
-      <div class="flex items-center justify-between mb-5">
-        <h3 id="subModalTitle" class="text-lg font-extrabold text-lavender-950">Add Sub Category</h3>
-        <button onclick="closeSubModal()" class="tap w-8 h-8 rounded-lg bg-lavender-50 flex items-center justify-center text-lavender-600 hover:bg-lavender-100"><i data-lucide="x" class="w-4 h-4"></i></button>
-      </div>
-      <div class="space-y-3">
-        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Main Category</label>
-          <select id="subParent" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></select>
-        </div>
-        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Sub Category Name</label><input id="subName" maxlength="40" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition" placeholder="e.g. Idly"></div>
-        <p id="subMoveNote" class="hidden text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 font-semibold"></p>
-        <button id="subSaveBtn" onclick="saveSubCategory()" class="tap w-full py-3 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-sm shadow-lift flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> <span id="subSaveLabel">Add Sub Category</span></button>
-      </div>
-    </div>
-  </div>
-
   <!-- ========== ADD / EDIT TRANSACTION MODE MODAL ========== -->
   <div id="modeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
     <div class="bg-white rounded-2xl shadow-lift w-full max-w-md p-5 sm:p-6 fade-in">
@@ -801,7 +744,7 @@
   <div id="confirmModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
     <div class="bg-white rounded-2xl shadow-lift w-full max-w-sm p-5 sm:p-6 fade-in text-center">
       <div class="w-12 h-12 mx-auto rounded-full bg-rose-50 flex items-center justify-center text-rose-500 mb-3"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
-      <h3 id="confirmTitle" class="text-base font-extrabold text-lavender-950">Delete sub category?</h3>
+      <h3 id="confirmTitle" class="text-base font-extrabold text-lavender-950">Delete?</h3>
       <p id="confirmMsg" class="text-sm text-slate-500 font-semibold mt-1"></p>
       <div class="mt-5 grid grid-cols-2 gap-2">
         <button onclick="closeConfirm()" class="tap py-2.5 rounded-xl bg-lavender-50 text-lavender-700 font-bold text-sm hover:bg-lavender-100">Cancel</button>
@@ -932,8 +875,7 @@
     // ===================== NAVIGATION =====================
     const sectionMeta = {
       dashboard: { title:'Dashboard', sub:'Overview of today\'s performance' },
-      categories:{ title:'Categories', sub:'Main food categories shown on the POS' },
-      subcategories:{ title:'Sub Categories', sub:'The tabs under each main category on the POS' },
+      categories:{ title:'Categories', sub:'Categories shown on the POS' },
       transactionmodes:{ title:'Transaction Modes', sub:'The modes offered on cash in and cash out entries' },
       menu:      { title:'Menu Items', sub:'Manage your menu catalogue' },
       orders:    { title:'Orders', sub:'Track and manage all orders' },
@@ -962,7 +904,6 @@
       document.getElementById('refreshWrap').classList.toggle('hidden', id !== 'dashboard');
       if (id === 'dashboard') loadDashboard();
       if (id === 'categories') loadCategories();
-      if (id === 'subcategories') loadSubCategories();
       if (id === 'transactionmodes') loadModes();
       if (id === 'menu') loadMenu();
       if (id === 'orders') loadOrdersSection();
@@ -1760,7 +1701,7 @@
     }
 
     // ===================== CATEGORIES =====================
-    // Level 1 categories - the POS left rail. Read and written through the API so
+    // Categories - the POS left rail. Read and written through the API so
     // the panel always reflects the database rather than a copy in the page.
     const CATS_ENDPOINT = '@Url.Action("Categories", "Admin")';
     // The server's palette (Category.Palette), so the picker offers exactly what it accepts and backfills from.
@@ -1969,206 +1910,18 @@
     }
     document.getElementById('newCatName').addEventListener('keydown', e => { if (e.key === 'Enter') saveCategory(); });
 
-    // ===================== SUB CATEGORIES =====================
-    // Level 2 - the chevron tabs under a main category on the till. Main
-    // categories are re-read alongside so the parent names and dropdowns are current.
-    const SUBS_ENDPOINT = '@Url.Action("SubCategories", "Admin")';
-    let SUBS = [];
-    let subFilter = 'all';
-    let subEditing = null;   // the row being edited, or null when adding
-    let subBusy = false;
-
     const parentOf = code => CATEGORIES.find(c => c.code === code);
-    // "All" is the till's virtual list of every dish, so nothing can sit under it.
+    // "All" is the till's virtual list of every item, so nothing can sit under it.
     const realParents = () => CATEGORIES.filter(c => c.code !== 'ALL');
-
-    async function loadSubCategories() {
-      try {
-        [CATEGORIES, SUBS] = await Promise.all([catFetch(CATS_ENDPOINT), catFetch(SUBS_ENDPOINT)]);
-        fillParentFilter();
-        renderSubCategories();
-      } catch (e) {
-        if (e.message !== 'auth')
-          document.getElementById('subCategoriesBody').innerHTML = `<tr><td colspan="7" class="px-5 py-8 text-center text-xs font-bold text-rose-500">Could not load sub categories</td></tr>`;
-      }
-    }
 
     function parentOptions(selected) {
       return realParents().map(c =>
         `<option value="${esc(c.code)}" ${c.code === selected ? 'selected' : ''}>${esc(c.name)}${c.isActive ? '' : ' (inactive)'}</option>`).join('');
     }
 
-    function fillParentFilter() {
-      const sel = document.getElementById('subParentFilter');
-      const keep = sel.value;
-      sel.innerHTML = '<option value="">All main categories</option>' + parentOptions(keep);
-      if (keep && !parentOf(keep)) sel.value = '';
-    }
-
-    function filterSubCategories(f, btn) {
-      subFilter = f;
-      document.querySelectorAll('.sub-filter-btn').forEach(b => { b.classList.remove('bg-lavender-600','text-white'); b.classList.add('bg-white','text-slate-500','border','border-lavender-200'); });
-      btn.classList.add('bg-lavender-600','text-white'); btn.classList.remove('bg-white','text-slate-500','border','border-lavender-200');
-      renderSubCategories();
-      playBeep('click');
-    }
-
-    function renderSubCategories() {
-      const parent = document.getElementById('subParentFilter').value;
-      const inParent = parent ? SUBS.filter(s => s.parent === parent) : SUBS;
-      const active = inParent.filter(s => s.isActive).length;
-      setText('subCountAll', inParent.length);
-      setText('subCountActive', active);
-      setText('subCountInactive', inParent.length - active);
-
-      const list = subFilter === 'all' ? inParent : inParent.filter(s => s.isActive === (subFilter === 'active'));
-      const body = document.getElementById('subCategoriesBody');
-      if (!list.length) {
-        body.innerHTML = `<tr><td colspan="7" class="px-5 py-8 text-center text-xs font-bold text-slate-400">No ${subFilter === 'all' ? '' : subFilter + ' '}sub categories</td></tr>`;
-        return;
-      }
-
-      // Sub categories take their parent's colour, as their tabs do on the till.
-      body.innerHTML = list.map(s => {
-        const p = parentOf(s.parent);
-        const tint = p && p.isActive ? tintOf(p) : '#94a3b8';
-        return `<tr class="table-row border-b border-lavender-50 last:border-0 ${s.isActive ? '' : 'opacity-60'}">
-          <td class="px-4 sm:px-5 py-3 font-extrabold text-lavender-950">${esc(s.name)}</td>
-          <td class="px-4 sm:px-5 py-3">
-            <span class="inline-flex items-center gap-2 font-bold text-slate-600">
-              <span class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:${tint}18;color:${tint}"><i data-lucide="${esc(p?.icon || 'utensils')}" class="w-3.5 h-3.5"></i></span>
-              ${esc(p ? p.name : s.parent)}${p && !p.isActive ? ' <span class="text-[10px] font-extrabold text-slate-400 uppercase">(inactive)</span>' : ''}
-            </span>
-          </td>
-          <td class="px-4 sm:px-5 py-3 font-mono text-xs font-bold text-slate-400">${esc(s.code)}</td>
-          <td class="px-4 sm:px-5 py-3 text-right font-bold text-slate-600 font-mono">${s.items}</td>
-          <td class="px-4 sm:px-5 py-3">${s.isActive
-            ? '<span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border bg-mint-50 text-mint-700 border-mint-200">Active</span>'
-            : '<span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border bg-slate-100 text-slate-500 border-slate-200">Inactive</span>'}</td>
-          <td class="px-4 sm:px-5 py-3 text-center">
-            <button onclick="toggleSubCategory(${s.id})" title="${s.isActive ? 'Deactivate' : 'Activate'}" aria-pressed="${s.isActive}"
-                    class="w-11 h-6 rounded-full ${s.isActive ? 'bg-lavender-600' : 'bg-slate-300'} relative transition-colors inline-block align-middle">
-              <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${s.isActive ? 'translate-x-5' : ''}"></span>
-            </button>
-          </td>
-          <td class="px-4 sm:px-5 py-3 text-right whitespace-nowrap">
-            <button onclick="openSubModal(${s.id})" title="Edit" class="tap w-8 h-8 rounded-lg bg-lavender-50 text-lavender-700 hover:bg-lavender-100 inline-flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-            <button onclick="confirmDeleteSub(${s.id})" title="${s.items ? 'In use - deactivate instead' : 'Delete'}"
-                    class="tap w-8 h-8 rounded-lg inline-flex items-center justify-center ${s.items ? 'bg-slate-50 text-slate-300 cursor-not-allowed' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'}"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-          </td>
-        </tr>`;
-      }).join('');
-      drawIcons();
-    }
-
-    async function toggleSubCategory(id) {
-      const s = SUBS.find(x => x.id === id);
-      if (!s || subBusy) return;
-      subBusy = true;
-      playBeep('click');
-      try {
-        const saved = await catFetch(`${SUBS_ENDPOINT}/${id}/active`, { method: 'POST', body: JSON.stringify({ isActive: !s.isActive }) });
-        s.isActive = saved.isActive;
-        renderSubCategories();
-        showToast(`${s.name} ${s.isActive ? 'activated' : 'deactivated'}`);
-      } catch (e) {
-        if (e.message !== 'auth') showToast(e.message || 'Could not reach the database', 'error');
-      } finally {
-        subBusy = false;
-      }
-    }
-
-    function openSubModal(id) {
-      subEditing = id ? SUBS.find(s => s.id === id) : null;
-      const defaultParent = subEditing?.parent || document.getElementById('subParentFilter').value || realParents()[0]?.code;
-      if (!defaultParent) { showToast('Add a main category first', 'error'); return; }
-
-      document.getElementById('subModalTitle').textContent = subEditing ? 'Edit Sub Category' : 'Add Sub Category';
-      document.getElementById('subSaveLabel').textContent = subEditing ? 'Save Changes' : 'Add Sub Category';
-      document.getElementById('subParent').innerHTML = parentOptions(defaultParent);
-      document.getElementById('subName').value = subEditing?.name || '';
-      updateMoveNote();
-
-      const m = document.getElementById('subModal');
-      m.classList.remove('hidden'); m.classList.add('flex');
-      drawIcons();
-      setTimeout(() => document.getElementById('subName').focus(), 50);
-    }
-    function closeSubModal() {
-      const m = document.getElementById('subModal');
-      m.classList.add('hidden'); m.classList.remove('flex');
-      subEditing = null;
-    }
-
-    // Moving a sub category that has dishes takes them along to the new main
-    // category - said up front so it is not a surprise on the till.
-    function updateMoveNote() {
-      const note = document.getElementById('subMoveNote');
-      const to = document.getElementById('subParent').value;
-      if (subEditing && subEditing.items > 0 && to !== subEditing.parent) {
-        note.textContent = `Its ${subEditing.items} menu item(s) will move to ${parentOf(to)?.name || to} as well.`;
-        note.classList.remove('hidden');
-      } else {
-        note.classList.add('hidden');
-      }
-    }
-    document.getElementById('subParent').addEventListener('change', updateMoveNote);
-
-    async function saveSubCategory() {
-      const name = document.getElementById('subName').value.trim();
-      const parent = document.getElementById('subParent').value;
-      if (!name) { showToast('Enter a sub category name', 'error'); return; }
-      if (subBusy) return;
-      subBusy = true;
-      const btn = document.getElementById('subSaveBtn');
-      btn.disabled = true;
-      const editing = subEditing;
-      try {
-        await catFetch(editing ? `${SUBS_ENDPOINT}/${editing.id}` : SUBS_ENDPOINT,
-                       { method: editing ? 'PUT' : 'POST', body: JSON.stringify({ name, parent }) });
-        closeSubModal();
-        await loadSubCategories();
-        showToast(editing ? `${name} updated` : `${name} added`);
-      } catch (e) {
-        if (e.message !== 'auth') showToast(e.message || 'Could not reach the database', 'error');
-      } finally {
-        subBusy = false;
-        btn.disabled = false;
-      }
-    }
-    document.getElementById('subName').addEventListener('keydown', e => { if (e.key === 'Enter') saveSubCategory(); });
-
-    function confirmDeleteSub(id) {
-      const s = SUBS.find(x => x.id === id);
-      if (!s) return;
-      if (s.items > 0) { showToast(`${s.name} has ${s.items} item(s). Deactivate it instead.`, 'error'); return; }
-      setText('confirmTitle', 'Delete sub category?');
-      document.getElementById('confirmMsg').textContent = `"${s.name}" under ${parentOf(s.parent)?.name || s.parent} will be removed permanently.`;
-      document.getElementById('confirmOkBtn').onclick = () => deleteSubCategory(id);
-      const m = document.getElementById('confirmModal');
-      m.classList.remove('hidden'); m.classList.add('flex');
-      drawIcons();
-    }
     function closeConfirm() {
       const m = document.getElementById('confirmModal');
       m.classList.add('hidden'); m.classList.remove('flex');
-    }
-
-    async function deleteSubCategory(id) {
-      const s = SUBS.find(x => x.id === id);
-      if (subBusy) return;
-      subBusy = true;
-      try {
-        await catFetch(`${SUBS_ENDPOINT}/${id}`, { method: 'DELETE' });
-        closeConfirm();
-        await loadSubCategories();
-        showToast(`${s?.name || 'Sub category'} deleted`);
-      } catch (e) {
-        closeConfirm();
-        if (e.message !== 'auth') showToast(e.message || 'Could not reach the database', 'error');
-      } finally {
-        subBusy = false;
-      }
     }
 
     // ===================== TRANSACTION MODES =====================
@@ -2310,16 +2063,14 @@
     document.querySelectorAll('.till-currency').forEach(el => el.textContent = TILL_CURRENCY);
 
     let ITEMS = [];
-    let menuCat = '';          // main category code, '' for all
+    let menuCat = '';          // category code, '' for all
     let itemEditing = null;    // the row being edited, or null when adding
     let itemVeg = true;
     let itemBusy = false;
 
-    const subOf = code => SUBS.find(s => s.code === code);
-
     async function loadMenu() {
       try {
-        [CATEGORIES, SUBS, ITEMS] = await Promise.all([catFetch(CATS_ENDPOINT), catFetch(SUBS_ENDPOINT), catFetch(ITEMS_ENDPOINT)]);
+        [CATEGORIES, ITEMS] = await Promise.all([catFetch(CATS_ENDPOINT), catFetch(ITEMS_ENDPOINT)]);
         if (menuCat && !parentOf(menuCat)) menuCat = '';
         renderMenu();
       } catch (e) {
@@ -2330,7 +2081,6 @@
 
     function selectMenuCat(code) {
       menuCat = code;
-      document.getElementById('menuSubFilter').value = '';
       renderMenu();
       playBeep('click');
     }
@@ -2348,28 +2098,15 @@
                                      ITEMS.filter(i => i.category === c.code).length)).join('');
     }
 
-    function fillMenuSubFilter() {
-      const sel = document.getElementById('menuSubFilter');
-      const keep = sel.value;
-      const subs = menuCat ? SUBS.filter(s => s.parent === menuCat) : SUBS;
-      sel.innerHTML = '<option value="">All sub categories</option>' +
-        (menuCat ? '<option value="__NONE">No sub category</option>' : '') +
-        subs.map(s => `<option value="${esc(s.code)}">${esc(s.name)}${menuCat ? '' : ' - ' + esc(parentOf(s.parent)?.name || s.parent)}</option>`).join('');
-      sel.value = [...sel.options].some(o => o.value === keep) ? keep : '';
-    }
-
     function renderMenu() {
       renderMenuChips();
-      fillMenuSubFilter();
 
       const q      = document.getElementById('menuSearch').value.trim().toLowerCase();
-      const sub    = document.getElementById('menuSubFilter').value;
       const status = document.getElementById('menuStatusFilter').value;
       const veg    = document.getElementById('menuVegFilter').value;
 
       const list = ITEMS.filter(i =>
         (!menuCat || i.category === menuCat) &&
-        (!sub || (sub === '__NONE' ? !i.subCategory : i.subCategory === sub)) &&
         (status === 'all' || i.isActive === (status === 'active')) &&
         (veg === 'all' || i.isVeg === (veg === 'veg')) &&
         (!q || i.name.toLowerCase().includes(q) || i.code.toLowerCase().includes(q)));
@@ -2385,10 +2122,9 @@
 
       grid.innerHTML = list.map(it => {
         const p = parentOf(it.category);
-        const s = subOf(it.subCategory);
         const tint = p ? tintOf(p) : '#94a3b8';
         // Why a dish is off the till even though it is switched on.
-        const hiddenBy = !it.isActive ? '' : p && !p.isActive ? `${p.name} is inactive` : s && !s.isActive ? `${s.name} is inactive` : '';
+        const hiddenBy = !it.isActive ? '' : p && !p.isActive ? `${p.name} is inactive` : '';
         return `<div class="bg-white rounded-2xl border border-lavender-100 shadow-soft flex flex-col overflow-hidden hover:shadow-glow hover:border-lavender-200 transition-all duration-200 ${it.isActive ? '' : 'opacity-60'}">
           <div class="h-1.5" style="background:${tint}"></div>
           <div class="p-4 flex flex-col flex-1">
@@ -2402,7 +2138,6 @@
             <h4 class="mt-2 text-sm font-extrabold text-lavender-950 leading-snug">${esc(it.name)}</h4>
             <div class="mt-1.5 flex flex-wrap gap-1">
               <span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase" style="background:${tint}18;color:${tint}">${esc(p?.name || it.category)}</span>
-              ${s ? `<span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase bg-slate-100 text-slate-500">${esc(s.name)}</span>` : ''}
             </div>
             ${hiddenBy ? `<p class="mt-1.5 text-[10px] font-bold text-amber-600 flex items-center gap-1"><i data-lucide="eye-off" class="w-3 h-3"></i> Hidden on POS: ${esc(hiddenBy)}</p>` : ''}
             <div class="mt-auto pt-3 flex items-end justify-between gap-2">
@@ -2447,32 +2182,21 @@
       document.getElementById('itemNonVegBtn').className = `tap py-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-1.5 ${v ? off : on}`;
     }
 
-    function fillItemSubs(selected) {
-      const cat = document.getElementById('itemCat').value;
-      const subs = SUBS.filter(s => s.parent === cat);
-      document.getElementById('itemSub').innerHTML =
-        '<option value="">None (shows under Others)</option>' +
-        subs.map(s => `<option value="${esc(s.code)}" ${s.code === selected ? 'selected' : ''}>${esc(s.name)}${s.isActive ? '' : ' (inactive)'}</option>`).join('');
-      updateItemHint();
-    }
-
     // Saving an active dish under a switched-off category is allowed, but it will
     // not appear on the till until that category is on again - said up front.
     function updateItemHint() {
       const p = parentOf(document.getElementById('itemCat').value);
-      const s = subOf(document.getElementById('itemSub').value);
-      const why = p && !p.isActive ? p.name : s && !s.isActive ? s.name : '';
+      const why = p && !p.isActive ? p.name : '';
       const hint = document.getElementById('itemHint');
       hint.textContent = why ? `${why} is inactive, so this item will stay hidden on the POS until it is switched on.` : '';
       hint.classList.toggle('hidden', !why);
     }
-    document.getElementById('itemSub').addEventListener('change', updateItemHint);
 
     async function openMenuModal(id) {
       // The dropdowns need categories even if the section was never opened.
-      if (!CATEGORIES.length || !SUBS.length) await loadMenu();
+      if (!CATEGORIES.length) await loadMenu();
       const parents = realParents();
-      if (!parents.length) { showToast('Add a main category first', 'error'); return; }
+      if (!parents.length) { showToast('Add a category first', 'error'); return; }
 
       itemEditing = id ? ITEMS.find(i => i.id === id) : null;
       setText('itemModalTitle', itemEditing ? 'Edit Menu Item' : 'Add Menu Item');
@@ -2484,8 +2208,7 @@
 
       const cat = itemEditing?.category || menuCat || parents[0].code;
       document.getElementById('itemCat').innerHTML = parentOptions(cat);
-      const sub = itemEditing ? itemEditing.subCategory : document.getElementById('menuSubFilter').value;
-      fillItemSubs(sub && sub !== '__NONE' ? sub : '');
+      updateItemHint();
 
       const m = document.getElementById('menuModal');
       m.classList.remove('hidden'); m.classList.add('flex');
@@ -2511,9 +2234,8 @@
       const editing = itemEditing;
       const body = {
         name, price, isVeg: itemVeg,
-        category:    document.getElementById('itemCat').value,
-        subCategory: document.getElementById('itemSub').value,
-        isActive:    document.getElementById('itemActive').checked
+        category: document.getElementById('itemCat').value,
+        isActive: document.getElementById('itemActive').checked
       };
       try {
         await catFetch(editing ? `${ITEMS_ENDPOINT}/${editing.id}` : ITEMS_ENDPOINT,

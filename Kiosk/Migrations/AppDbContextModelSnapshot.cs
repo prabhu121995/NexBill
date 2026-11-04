@@ -121,14 +121,8 @@ namespace Kiosk.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
-                    b.Property<int>("Level")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ParentExternalId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("SortOrder")
@@ -289,9 +283,6 @@ namespace Kiosk.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(10,2)");
 
-                    b.Property<string>("SubCategoryExternalId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime");
 
@@ -304,8 +295,6 @@ namespace Kiosk.Migrations
 
                     b.HasIndex("ExternalId")
                         .IsUnique();
-
-                    b.HasIndex("SubCategoryExternalId");
 
                     b.ToTable("MenuItems");
                 });
@@ -1111,15 +1100,7 @@ namespace Kiosk.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Kiosk.Models.Category", "SubCategory")
-                        .WithMany("SubMenuItems")
-                        .HasForeignKey("SubCategoryExternalId")
-                        .HasPrincipalKey("ExternalId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("Category");
-
-                    b.Navigation("SubCategory");
                 });
 
             modelBuilder.Entity("Kiosk.Models.Order", b =>
@@ -1232,8 +1213,6 @@ namespace Kiosk.Migrations
             modelBuilder.Entity("Kiosk.Models.Category", b =>
                 {
                     b.Navigation("MenuItems");
-
-                    b.Navigation("SubMenuItems");
                 });
 
             modelBuilder.Entity("Kiosk.Models.HeldOrder", b =>
