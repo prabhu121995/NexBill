@@ -16,16 +16,16 @@
 
     <div class="w-full max-w-xl text-center">
 
-        <div class="font-mono text-[7rem] leading-none font-bold text-lavender-200 select-none">@Model.Code</div>
+        <div class="font-mono text-[7rem] leading-none font-bold text-brand-200 select-none">@Model.Code</div>
 
-        <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-lavender-950">@Model.Title</h1>
+        <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-brand-950">@Model.Title</h1>
         <p class="mt-4 text-slate-600 font-medium leading-relaxed">@Model.Detail</p>
 
         <div class="mt-10 flex gap-4 justify-center">
             @if (Model.BackToLogin)
             {
                 <a href="@Url.Content("~/login")"
-                   class="tap h-16 px-10 rounded-2xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-lg flex items-center justify-center gap-3 shadow-soft">
+                   class="tap h-16 px-10 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-lg flex items-center justify-center gap-3 shadow-soft">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />
                     </svg>
@@ -35,7 +35,7 @@
             else
             {
                 <a href="@Url.Content("~/")"
-                   class="tap h-16 px-10 rounded-2xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-lg flex items-center justify-center gap-3 shadow-soft">
+                   class="tap h-16 px-10 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-lg flex items-center justify-center gap-3 shadow-soft">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10Z" />
                     </svg>

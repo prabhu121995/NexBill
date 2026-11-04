@@ -507,7 +507,7 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
         {
             from = start.ToString("yyyy-MM-dd"),
             to   = end.ToString("yyyy-MM-dd"),
-            asOf = clock.LocalNow.ToString("dd-MM-yyyy hh:mm tt"),
+            asOf = clock.FormatNow(),
             summary = new
             {
                 salesTotal,
@@ -615,7 +615,7 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
                 amount        = r.Amount,
                 remarks       = r.Remarks,
                 by            = names.GetValueOrDefault(r.CreatedBy) ?? "System",
-                localTime     = clock.ToLocal(r.CreatedAt).ToString("dd MMM, hh:mm tt")
+                localTime     = clock.FormatShortDateTime(r.CreatedAt)
             })
         });
     }
@@ -980,7 +980,7 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
         var total = await db.Orders.CountAsync();
         return Ok(new
         {
-            businessDate = today.ToString("dd MMM yyyy"),
+            businessDate = clock.FormatDate(today),
             toArchive    = total - openToday,
             openToday,
             heldCarts    = await db.HeldOrders.CountAsync()

@@ -8,6 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Customer Display</title>
   <partial name="_AppIcons" />
+  <partial name="_ShopClock" />
   <script src="~/lib/tailwind/tailwind.min.js"></script>
   <script src="~/lib/qrcodejs/qrcode.min.js"></script>
   <link rel="stylesheet" href="~/lib/fonts/fonts.css" />
@@ -20,7 +21,7 @@
             digital: ['"Chakra Petch"', 'sans-serif'],
           },
           colors: {
-            lavender: { 50:'#f6f3fc', 100:'#ece5fa', 200:'#ded2f6', 300:'#c5b0f0', 500:'#8c60dc', 600:'#7540cc', 700:'#6432b4', 800:'#522995', 950:'#231046' },
+            brand: { 50:'#f9f9f3', 100:'#f1f2e5', 200:'#e4e6d1', 300:'#d0d3b1', 500:'#828746', 600:'#74793f', 700:'#5e6133', 800:'#474a26', 950:'#202211' },
             mint: { 50:'#edfcf5', 500:'#10b981', 600:'#059669' }
           }
         }
@@ -28,11 +29,16 @@
     }
   </script>
   <style>
+    /* White-first page with two faint orange glows - the glass cards need something soft behind them to frost. */
+    .app-bg { background-color: #fdfdf9; background-image: radial-gradient(55rem 38rem at -8% -12%, rgba(184,188,138,.32), transparent 60%), radial-gradient(48rem 38rem at 108% 112%, rgba(208,211,177,.38), transparent 60%), radial-gradient(40rem 30rem at 55% 45%, rgba(241,242,229,.55), transparent 70%); background-attachment: fixed; }
+    .glass { background: linear-gradient(135deg, rgba(255,255,255,.74), rgba(255,255,255,.4)); -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%); border: 1px solid rgba(255,255,255,.95); box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(255,255,255,.35), 0 10px 30px -12px rgba(116,121,63,.22); }
+    /* Modals and the login card: more opaque, so form text stays easy to read over whatever is behind. */
+    .glass-strong { background: rgba(255,255,255,.84); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); border: 1px solid rgba(255,255,255,.85); box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 18px 48px -16px rgba(32,34,17,.28); }
     body {
       background:
-        radial-gradient(1100px 520px at 8% -12%, #ece5fa 0%, transparent 62%),
+        radial-gradient(1100px 520px at 8% -12%, #f1f2e5 0%, transparent 62%),
         radial-gradient(900px 480px at 108% 112%, #e4f6ef 0%, transparent 60%),
-        #f4f2f9;
+        #fdfdf9;
     }
     .row-in { animation: rowIn .28s cubic-bezier(.16,1,.3,1) both; }
     @@keyframes rowIn { from { opacity:0; transform:translateY(16px) scale(.985); } to { opacity:1; transform:none; } }
@@ -44,13 +50,13 @@
     @@keyframes glow { 0%,100%{opacity:.45} 50%{opacity:.85} }
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #ded2f6; border-radius: 8px; }
+    ::-webkit-scrollbar-thumb { background: #e4e6d1; border-radius: 8px; }
   </style>
 </head>
 <body class="h-screen w-screen overflow-hidden flex flex-col font-sans antialiased select-none">
 
   <!-- HEADER -->
-  <header class="h-24 bg-gradient-to-r from-lavender-950 via-lavender-800 to-lavender-600 text-white flex items-center justify-between px-12 shrink-0 shadow-xl relative overflow-hidden">
+  <header class="h-24 bg-gradient-to-r from-brand-800 via-brand-700 to-brand-600 text-white flex items-center justify-between px-12 shrink-0 shadow-xl relative overflow-hidden">
     <div class="absolute inset-0 opacity-25 pointer-events-none" style="background:radial-gradient(620px 220px at 18% 0%, #fff, transparent 70%)"></div>
     <div class="relative flex items-center gap-5">
       <div class="w-14 h-14 rounded-2xl bg-white/15 ring-1 ring-white/25 flex items-center justify-center">
@@ -68,26 +74,26 @@
   </header>
 
   <!-- FULLSCREEN HINT -->
-  <div id="fsHint" class="hidden fixed inset-x-0 bottom-0 z-50 bg-lavender-950/90 text-white text-center py-3 text-sm font-bold">
+  <div id="fsHint" class="hidden fixed inset-x-0 bottom-0 z-50 bg-brand-950/90 text-white text-center py-3 text-sm font-bold">
     Click anywhere to go fullscreen &nbsp;·&nbsp; or press F11
   </div>
 
   <!-- IDLE SCREEN -->
   <div id="idleScreen" class="flex-1 flex flex-col items-center justify-center gap-9">
     <div class="relative">
-      <div class="absolute -inset-5 rounded-[2.75rem] bg-lavender-300 blur-3xl glow"></div>
-      <div class="relative w-36 h-36 rounded-[2.25rem] bg-white ring-1 ring-lavender-200 shadow-2xl flex items-center justify-center">
-        <svg class="w-20 h-20 text-lavender-600" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <div class="absolute -inset-5 rounded-[2.75rem] bg-brand-300 blur-3xl glow"></div>
+      <div class="relative w-36 h-36 rounded-[2.25rem] bg-white ring-1 ring-brand-200 shadow-2xl flex items-center justify-center">
+        <svg class="w-20 h-20 text-brand-600" fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
       </div>
     </div>
     <div class="text-center">
-      <h1 class="text-7xl font-extrabold text-lavender-900 tracking-tight mb-4">Welcome</h1>
+      <h1 class="text-7xl font-extrabold text-brand-900 tracking-tight mb-4">Welcome</h1>
       <p class="text-slate-400 font-semibold text-2xl">Your order will appear here</p>
     </div>
     <div class="flex gap-3">
-      <span class="w-3 h-3 rounded-full bg-lavender-300 animate-bounce" style="animation-delay:0ms"></span>
-      <span class="w-3 h-3 rounded-full bg-lavender-500 animate-bounce" style="animation-delay:150ms"></span>
-      <span class="w-3 h-3 rounded-full bg-lavender-700 animate-bounce" style="animation-delay:300ms"></span>
+      <span class="w-3 h-3 rounded-full bg-brand-300 animate-bounce" style="animation-delay:0ms"></span>
+      <span class="w-3 h-3 rounded-full bg-brand-500 animate-bounce" style="animation-delay:150ms"></span>
+      <span class="w-3 h-3 rounded-full bg-brand-700 animate-bounce" style="animation-delay:300ms"></span>
     </div>
   </div>
 
@@ -112,13 +118,13 @@
    <div class="flex-1 flex flex-col min-w-0 min-h-0">
 
     <!-- Order meta bar -->
-    <div class="px-12 py-5 bg-white/75 backdrop-blur border-b border-lavender-100 flex items-center gap-5 shrink-0">
+    <div class="px-12 py-5 bg-white/75 backdrop-blur border-b border-brand-100 flex items-center gap-5 shrink-0">
       <div class="flex items-baseline gap-3">
         <span class="text-xs font-bold text-slate-400 uppercase tracking-[0.18em]">Order</span>
-        <span id="cd-seqNo" class="font-digital font-bold text-4xl text-lavender-800 leading-none">#1</span>
+        <span id="cd-seqNo" class="font-digital font-bold text-4xl text-brand-800 leading-none">#1</span>
       </div>
       <div class="h-7 w-px bg-slate-200"></div>
-      <span id="cd-mode" class="text-sm font-bold text-lavender-800 bg-lavender-100 ring-1 ring-lavender-200 px-4 py-1.5 rounded-full">Dine In</span>
+      <span id="cd-mode" class="text-sm font-bold text-brand-800 bg-brand-100 ring-1 ring-brand-200 px-4 py-1.5 rounded-full">Dine In</span>
       <span id="cd-table" class="text-sm font-bold text-slate-700 bg-slate-100 ring-1 ring-slate-200 px-4 py-1.5 rounded-full">T5</span>
       <span id="cd-items" class="text-base font-bold text-slate-400 ml-auto">0 items</span>
     </div>
@@ -127,7 +133,7 @@
     <div class="flex-1 overflow-y-auto px-12 py-6 space-y-3.5" id="cd-cartList"></div>
 
     <!-- Totals footer -->
-    <div class="shrink-0 bg-white border-t border-lavender-100 px-12 pt-6 pb-7" style="box-shadow:0 -10px 34px -14px rgba(35,16,70,.16)">
+    <div class="shrink-0 bg-white/75 backdrop-blur-xl border-t border-brand-100 px-12 pt-6 pb-7" style="box-shadow:0 -10px 34px -14px rgba(32,34,17,.16)">
       <div class="flex justify-end mb-5">
         <div class="w-[440px] space-y-2.5 text-lg">
           <div class="flex justify-between">
@@ -149,7 +155,7 @@
         </div>
       </div>
 
-      <div class="rounded-3xl bg-gradient-to-r from-lavender-950 via-lavender-800 to-lavender-600 text-white px-9 py-6 flex items-center justify-between shadow-xl relative overflow-hidden">
+      <div class="rounded-3xl bg-gradient-to-r from-brand-800 via-brand-700 to-brand-600 text-white px-9 py-6 flex items-center justify-between shadow-xl relative overflow-hidden">
         <div class="absolute inset-0 opacity-20 pointer-events-none" style="background:radial-gradient(420px 160px at 12% 0%, #fff, transparent 70%)"></div>
         <div class="relative">
           <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-white/55">Amount Payable</div>
@@ -161,22 +167,22 @@
    </div>
 
    <!-- RIGHT: payment QR (only when enabled in Terminal Settings) -->
-   <aside id="cd-qrPanel" class="hidden w-[480px] shrink-0 border-l border-lavender-100 bg-white/70 backdrop-blur flex-col items-center justify-center px-10 gap-7">
+   <aside id="cd-qrPanel" class="hidden w-[480px] shrink-0 border-l border-brand-100 bg-white/70 backdrop-blur flex-col items-center justify-center px-10 gap-7">
      <div class="text-center">
-       <h2 class="text-4xl font-extrabold text-lavender-900 tracking-tight">Scan to Pay</h2>
+       <h2 class="text-4xl font-extrabold text-brand-900 tracking-tight">Scan to Pay</h2>
        <p class="text-slate-400 font-semibold text-lg mt-2">PayNow &middot; any Singapore banking app</p>
      </div>
 
      <div class="relative">
-       <div class="absolute -inset-4 rounded-[2rem] bg-lavender-200 blur-2xl opacity-60"></div>
-       <div class="relative bg-white p-6 rounded-[1.75rem] ring-1 ring-lavender-200 shadow-xl">
+       <div class="absolute -inset-4 rounded-[2rem] bg-brand-200 blur-2xl opacity-60"></div>
+       <div class="relative bg-white p-6 rounded-[1.75rem] ring-1 ring-brand-200 shadow-xl">
          <div id="cd-qrBox" class="w-[300px] h-[300px] flex items-center justify-center"></div>
        </div>
      </div>
 
      <div class="text-center">
        <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Amount</div>
-       <div id="cd-qrAmount" class="font-digital font-bold text-6xl text-lavender-900 leading-none mt-1.5">$0.00</div>
+       <div id="cd-qrAmount" class="font-digital font-bold text-6xl text-brand-900 leading-none mt-1.5">$0.00</div>
      </div>
 
      <p id="cd-qrWarning" class="hidden text-center text-sm font-bold text-amber-600 bg-amber-50 ring-1 ring-amber-200 rounded-xl px-4 py-2.5">
@@ -192,7 +198,7 @@
     const CONFIG_GST = @ViewData["GstPercent"];
 
     const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
-    const money = (v, sym) => `${sym || '$'}${Number(v).toFixed(2)}`;
+    const money = (v, sym) => `${sym || SHOP_TIME.currency}${Number(v).toFixed(2)}`;
 
     // ---------------- PayNow QR (EMVCo merchant-presented / SGQR) ----------------
     // PayNow is not a URI scheme: it is an EMVCo TLV payload terminated by a
@@ -275,14 +281,14 @@
         text: payload,
         width: 300,
         height: 300,
-        colorDark: '#231046',
+        colorDark: '#202211',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
       });
     }
 
     // Stable per-dish colour so the same item always gets the same avatar tint.
-    const AVATAR_TINTS = ['#7540cc','#0e9f6e','#d97706','#e11d48','#2563eb','#0891b2','#9333ea','#16a34a','#ea580c','#4f46e5'];
+    const AVATAR_TINTS = ['#74793f','#0e9f6e','#d97706','#e11d48','#2563eb','#0891b2','#9333ea','#16a34a','#ea580c','#4f46e5'];
     function avatarTint(name) {
       let h = 0;
       for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 9973;
@@ -293,9 +299,9 @@
     function updateClock() {
       const now = new Date();
       document.getElementById('clockDisplay').textContent =
-        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        shopTime(now, { seconds: true });
       document.getElementById('dateDisplay').textContent =
-        now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' });
+        shopDate(now, { weekday: 'long', day: 'numeric', month: 'short' });
     }
     setInterval(updateClock, 1000); updateClock();
 
@@ -319,7 +325,7 @@
 
     function renderCart(data) {
       const { cart, totals, seqNo, orderMode, tableNo, currency } = data;
-      const sym = currency || '$';
+      const sym = currency || SHOP_TIME.currency;
 
       if (!cart || cart.length === 0) {
         if (thankYouTimer) { showScreen('thankYou'); return; }
@@ -354,18 +360,18 @@
         if (!row) {
           row = document.createElement('div');
           row.dataset.id = key;
-          row.className = 'row-in flex items-center gap-6 bg-white rounded-3xl px-7 py-5 ring-1 ring-lavender-100 shadow-sm';
+          row.className = 'row-in flex items-center gap-6 bg-white rounded-3xl px-7 py-5 ring-1 ring-brand-100 shadow-sm';
           list.appendChild(row);
         }
         row.innerHTML = `
           <div class="relative shrink-0">
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl shadow-sm"
                  style="background:${avatarTint(item.name)}">${cap(item.name).charAt(0)}</div>
-            <span class="absolute -bottom-2 -right-2 min-w-[30px] h-[30px] px-2 rounded-full bg-lavender-950 text-white text-sm font-extrabold flex items-center justify-center ring-[3px] ring-white">${item.qty}</span>
+            <span class="absolute -bottom-2 -right-2 min-w-[30px] h-[30px] px-2 rounded-full bg-brand-950 text-white text-sm font-extrabold flex items-center justify-center ring-[3px] ring-white">${item.qty}</span>
           </div>
           <div class="flex-1 min-w-0">
             <div class="font-bold text-slate-900 text-2xl leading-tight truncate">${cap(item.name)}${item.foc ? ' <span class="align-middle text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md font-extrabold ml-2">FOC</span>' : ''}</div>
-            ${item.modifier ? `<div class="text-base text-lavender-600 italic truncate mt-1">&#8627; ${item.modifier}</div>` : ''}
+            ${item.modifier ? `<div class="text-base text-brand-600 italic truncate mt-1">&#8627; ${item.modifier}</div>` : ''}
             <div class="text-sm text-slate-400 font-semibold mt-1">${money(item.rPrice, sym)} each</div>
           </div>
           <div class="shrink-0 font-digital font-bold text-4xl ${item.foc ? 'text-amber-500 line-through' : 'text-slate-900'}">${money(lineTotal, sym)}</div>`;

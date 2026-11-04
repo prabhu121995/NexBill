@@ -1,0 +1,64 @@
+@inject Kiosk.Services.BusinessClock ShopClock
+@{
+    // 12-hour unless the configured time format is a 24-hour one (HH).
+    var hour12 = !ShopClock.Country.TimeFormat.Contains("HH");
+}
+@*
+    The shop's clock and currency for the screens, from Pos:Country in
+    appsettings.json (Singapore when it is left out).
+
+    Every time on a page goes through these helpers, so it reads in the shop's
+    zone and the country's format whatever zone or language the till PC, or the
+    server, happens to be set to. The instant still comes from the device
+    (new Date()) or the server's UTC timestamps - only how it is shown is fixed.
+*@
+<script>
+  // Written as JSON, not through Razor's HTML encoding, which would turn the rupee
+  // sign into the literal text "&#x20B9;" inside a script.
+  const SHOP_TIME = Object.freeze(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new
+  {
+      country      = ShopClock.Country.Name,
+      zone         = ShopClock.IanaZone,
+      locale       = ShopClock.Culture.Name,
+      hour12,
+      currency     = ShopClock.Country.CurrencySymbol,
+      currencyCode = ShopClock.Country.CurrencyCode
+  })));
+
+  /// A Date from a Date, epoch ms or ISO string. The server sends UTC; a string
+  /// without a zone marker is read as UTC too, never as the browser's local time.
+  function shopParse(v) {
+    if (v instanceof Date) return v;
+    if (typeof v === 'string' && /T\d{2}:\d{2}/.test(v) && !/(Z|[+-]\d{2}:?\d{2})$/i.test(v)) v += 'Z';
+    return new Date(v);
+  }
+
+  /// Time of day in the shop's zone, e.g. 02:30 PM. { seconds: true } adds seconds.
+  function shopTime(v, opts = {}) {
+    const d = shopParse(v);
+    if (isNaN(d)) return '';
+    return d.toLocaleTimeString(SHOP_TIME.locale, {
+      timeZone: SHOP_TIME.zone, hour12: SHOP_TIME.hour12, hour: '2-digit', minute: '2-digit',
+      ...(opts.seconds ? { second: '2-digit' } : {})
+    });
+  }
+
+  /// A date in the shop's zone. Pass Intl options to choose the parts shown.
+  function shopDate(v, opts = { day: '2-digit', month: 'short', year: 'numeric' }) {
+    const d = shopParse(v);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString(SHOP_TIME.locale, { timeZone: SHOP_TIME.zone, ...opts });
+  }
+
+  /// The shop's calendar date as yyyy-MM-dd - for comparing with the server's business dates.
+  function shopDateKey(v) {
+    const d = shopParse(v);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-CA', { timeZone: SHOP_TIME.zone, year: 'numeric', month: '2-digit', day: '2-digit' });
+  }
+
+  /// Numbers grouped the country's way (1,00,000 in India, 100,000 in Singapore).
+  function shopNumber(n, opts) {
+    return (Number(n) || 0).toLocaleString(SHOP_TIME.locale, opts);
+  }
+</script>

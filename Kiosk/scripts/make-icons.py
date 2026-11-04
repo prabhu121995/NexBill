@@ -1,7 +1,8 @@
 """Write every icon size Windows and the browser want, from one 4096px master.
 
-    python scripts/make-icons.py wwwroot                 # the drawn cup mark
-    python scripts/make-icons.py wwwroot cafe-logo.png   # a real logo instead
+    python scripts/make-icons.py wwwroot                 # the drawn storefront mark
+    python scripts/make-icons.py wwwroot --theme=night   # same mark, another theme tile
+    python scripts/make-icons.py wwwroot shop-logo.png   # a real logo instead
 
 Outputs, all from that one master so they cannot drift apart:
 
@@ -13,14 +14,15 @@ Outputs, all from that one master so they cannot drift apart:
     icons/apple-touch-icon.png  iPad used as a customer display
 
 PUTTING A REAL LOGO IN: pass it as the second argument - a square PNG of 512px
-or more, transparent background. It is centred on the same lavender tile, so one
-cafe's logo and the next look like the same product. Pass --plain after it to
+or more, transparent background. It is centred on the same olive tile, so one
+shop's logo and the next look like the same product. Pass --plain after it to
 drop the tile and use the artwork edge to edge. Export SVG to PNG first; Pillow
 does not read SVG. Then publish, and re-run Install-Kiosk.ps1 on each terminal.
 
-The drawn mark below is only so a fresh checkout has something better than the
-stock .NET icon. Its palette is the lavender from the Tailwind config in the
-views - keep them in step if the theme changes.
+TILE COLOUR: --theme= picks the tile gradient - olive (the default, the app's own
+#828746), orange, blue, teal, green, red, charcoal, or the older lavender, deep,
+night and mint. Olive is the `brand` colour in tailwind.config in the views -
+keep it in step if the theme changes. The awning stripes take a shade of the tile's colour.
 """
 import os
 import sys
@@ -34,9 +36,29 @@ DEST = args[0] if args else "wwwroot"
 SOURCE = args[1] if len(args) > 1 else None
 PLAIN = "--plain" in flags
 
-# lavender-500 -> lavender-700, same values as tailwind.config in every view.
-TOP = (140, 96, 220)
-BOTTOM = (100, 50, 180)
+def hex_rgb(h):
+    return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+
+
+# Tile gradient top -> bottom, then the awning stripe, each a Tailwind shade.
+THEMES = {
+    "olive":    ("#828746", "#5e6133", "#74793f"),  # brand-500 -> 700, the app's own colour
+    "orange":   ("#f97316", "#b43c0c", "#d0480c"),
+    "blue":     ("#3b82f6", "#1d4ed8", "#2563eb"),  # blue-500 -> 700
+    "teal":     ("#14b8a6", "#0f766e", "#0d9488"),  # teal-500 -> 700
+    "green":    ("#16a34a", "#166534", "#16a34a"),  # green-600 -> 800
+    "red":      ("#ef4444", "#b91c1c", "#dc2626"),  # red-500 -> 700
+    "charcoal": ("#475569", "#1e293b", "#475569"),  # slate-600 -> 800
+    "lavender": ("#8c60dc", "#6432b4", "#7540cc"),  # the app's earlier theme
+    "deep":     ("#7540cc", "#432279", "#7540cc"),
+    "night":    ("#522995", "#231046", "#522995"),
+    "mint":     ("#10b981", "#047857", "#059669"),
+}
+THEME = next((f.split("=", 1)[1] for f in flags if f.startswith("--theme=")), "olive")
+if THEME not in THEMES:
+    sys.exit(f"unknown --theme={THEME}; choose from {', '.join(THEMES)}")
+
+TOP, BOTTOM, ACCENT = (hex_rgb(h) for h in THEMES[THEME])
 GLYPH = (255, 255, 255)
 
 # Drawn 4x over the largest output (1024) so that downsampling, not PIL's own
@@ -49,7 +71,7 @@ ICO_SIZES = [16, 20, 24, 32, 40, 48, 64, 128, 256]
 
 
 def gradient(size, radius_frac):
-    """The rounded tile: a vertical lavender gradient behind a rounded mask."""
+    """The rounded tile: a vertical gradient behind a rounded mask."""
     tile = Image.new("RGB", (1, size))
     px = tile.load()
     for y in range(size):
@@ -67,43 +89,46 @@ def gradient(size, radius_frac):
     return tile
 
 
-def cup(size, scale):
-    """The cup, saucer and handle, as a white layer on transparent.
+def storefront(size, scale):
+    """Awning, walls and door, as a layer on transparent - the shop the till runs.
 
     `scale` shrinks the glyph without moving its centre, so the maskable variant
-    can keep everything inside Android's 80% safe zone.
+    can keep everything inside Android's 80% safe zone. Coordinates are in a
+    0-100 box, the same one the design mock-ups were drawn in.
     """
     layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
 
     def x(f):
-        return round(size * (0.5 + (f - 0.5) * scale))
+        return round(size * (0.5 + (f / 100 - 0.5) * scale))
 
     y = x  # square canvas, so one mapping serves both axes
 
     def w(f):
-        return max(round(size * f * scale), 1)
+        return max(round(size * f / 100 * scale), 1)
 
-    # Body: flat rim, rounded base. Deliberately heavy - at 16px the silhouette
-    # is all that survives, so it has to carry the icon on its own.
-    d.rounded_rectangle((x(0.25), y(0.35), x(0.62), y(0.67)),
-                        radius=w(0.11), corners=(False, False, True, True), fill=GLYPH)
+    # Walls: open at the top, where the awning sits on them.
+    d.line([(x(28), y(46)), (x(28), y(76)), (x(72), y(76)), (x(72), y(46))],
+           fill=GLYPH, width=w(6), joint="curve")
 
-    # Handle: an arc, not a ring. It sweeps past vertical at both ends so the
-    # tips land back inside the body - at -72/72 they stopped short and the
-    # handle read as a separate "D" floating beside the cup.
-    d.arc((x(0.56), y(0.41), x(0.80), y(0.60)), start=-130, end=130,
-          fill=GLYPH, width=w(0.055))
+    # Door, standing on the floor line.
+    d.rounded_rectangle((x(44), y(58), x(56), y(76)), radius=w(1.5), fill=GLYPH)
 
-    # Saucer, with a gap under the cup so the two shapes stay distinct.
-    d.rounded_rectangle((x(0.17), y(0.72), x(0.78), y(0.775)),
-                        radius=w(0.028), fill=GLYPH)
+    # Awning: a flared band with a scalloped hem. At 16px only this silhouette
+    # survives, so it is the widest, heaviest part of the mark.
+    d.polygon([(x(25), y(22)), (x(75), y(22)), (x(81), y(40)), (x(19), y(40))], fill=GLYPH)
+    for left, right in ((19, 36), (36, 50), (50, 64), (64, 81)):
+        d.pieslice((x(left), y(33), x(right), y(47)), start=0, end=180, fill=GLYPH)
+
+    # Stripes on the awning.
+    for top, bottom in ((36, 35), (50, 50), (64, 65)):
+        d.line([(x(top), y(22)), (x(bottom), y(40))], fill=ACCENT, width=w(3))
 
     return layer
 
 
 def logo(size, scale):
-    """A supplied logo, fitted into the same square the drawn cup occupies.
+    """A supplied logo, fitted into the same square the drawn mark occupies.
 
     Aspect ratio is kept and the result centred, so a wide wordmark comes out
     letterboxed rather than squashed - squashing is the one thing nobody would
@@ -134,7 +159,7 @@ def master(radius_frac=0.225, scale=1.0):
         return art
 
     art = gradient(MASTER, radius_frac)
-    art.alpha_composite(logo(MASTER, scale) if SOURCE else cup(MASTER, scale))
+    art.alpha_composite(logo(MASTER, scale) if SOURCE else storefront(MASTER, scale))
     return art
 
 
@@ -149,7 +174,7 @@ if SOURCE:
             print(f"  warning: {probe.width}x{probe.height} is small for a 256px icon "
                   f"- the large sizes will look soft. 512px or more is better.")
 else:
-    print("source: drawn cup mark")
+    print(f"source: drawn storefront mark, {THEME} tile")
 
 rounded = master()
 os.makedirs(os.path.join(DEST, "icons"), exist_ok=True)

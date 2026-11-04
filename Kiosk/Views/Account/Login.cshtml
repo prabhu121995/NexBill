@@ -22,24 +22,29 @@
             digital: ['"Chakra Petch"', 'sans-serif'],
           },
           colors: {
-            lavender: { 25:'#fbfaff',50:'#f6f3fc',100:'#ece5fa',200:'#ded2f6',300:'#c5b0f0',400:'#a787e6',500:'#8c60dc',600:'#7540cc',700:'#6432b4',800:'#522995',900:'#432279',950:'#231046' },
+            brand: { 25:'#fcfdfa',50:'#f9f9f3',100:'#f1f2e5',200:'#e4e6d1',300:'#d0d3b1',400:'#b8bc8a',500:'#828746',600:'#74793f',700:'#5e6133',800:'#474a26',900:'#37391e',950:'#202211' },
             mint: { 50:'#edfcf5',100:'#d3f7e6',200:'#a7eecb',500:'#10b981',600:'#059669',700:'#047857' }
           },
           boxShadow: {
-            'soft': '0 1px 2px rgba(35,16,70,.04), 0 4px 16px -4px rgba(35,16,70,.08)',
-            'lift': '0 10px 30px -8px rgba(117,64,204,.28)',
+            'soft': '0 1px 2px rgba(32,34,17,.04), 0 4px 16px -4px rgba(32,34,17,.08)',
+            'lift': '0 10px 30px -8px rgba(116,121,63,.28)',
           },
         }
       }
     }
   </script>
   <style>
+    /* White-first page with two faint orange glows - the glass cards need something soft behind them to frost. */
+    .app-bg { background-color: #fdfdf9; background-image: radial-gradient(55rem 38rem at -8% -12%, rgba(184,188,138,.32), transparent 60%), radial-gradient(48rem 38rem at 108% 112%, rgba(208,211,177,.38), transparent 60%), radial-gradient(40rem 30rem at 55% 45%, rgba(241,242,229,.55), transparent 70%); background-attachment: fixed; }
+    .glass { background: linear-gradient(135deg, rgba(255,255,255,.74), rgba(255,255,255,.4)); -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%); border: 1px solid rgba(255,255,255,.95); box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(255,255,255,.35), 0 10px 30px -12px rgba(116,121,63,.22); }
+    /* Modals and the login card: more opaque, so form text stays easy to read over whatever is behind. */
+    .glass-strong { background: rgba(255,255,255,.84); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); border: 1px solid rgba(255,255,255,.85); box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 18px 48px -16px rgba(32,34,17,.28); }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #ded2f6; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb { background: #e4e6d1; border-radius: 6px; }
     .tap { touch-action: manipulation; transition: transform .1s ease, background-color .15s, border-color .15s, box-shadow .15s; }
     .tap:active { transform: scale(.96); }
-    .tap:focus-visible { outline: 2px solid #7540cc; outline-offset: 2px; }
+    .tap:focus-visible { outline: 2px solid #74793f; outline-offset: 2px; }
 
     /* ===== SPLASH ANIMATIONS ===== */
     @@keyframes float-particle {
@@ -81,12 +86,6 @@
       0%, 100% { transform: scale(1);   opacity: .12; }
       50%      { transform: scale(1.45); opacity: .28; }
     }
-    @@keyframes steam {
-      0%   { transform: translateY(4px) scaleX(1);  opacity: 0; }
-      20%  { opacity: .55; }
-      60%  { transform: translateY(-16px) scaleX(1.4); opacity: .3; }
-      100% { transform: translateY(-34px) scaleX(.5);  opacity: 0; }
-    }
     .splash-particle {
       position: absolute; border-radius: 50%; pointer-events: none;
       animation: float-particle linear infinite;
@@ -96,59 +95,46 @@
   </style>
 </head>
 
-<body class="h-full bg-[#f4f2f9] font-sans overflow-hidden">
+<body class="h-full app-bg font-sans overflow-hidden">
 
   @Html.AntiForgeryToken()
 
   <!-- ========== SPLASH SCREEN ========== -->
-  <div id="splashScreen" onclick="endSplash()" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#f4f2f9] cursor-pointer">
+  <div id="splashScreen" onclick="endSplash()" class="fixed inset-0 z-[200] flex flex-col items-center justify-center app-bg cursor-pointer">
 
     <!-- floating particles -->
     <div id="particles" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
 
     <!-- glow ring behind logo -->
-    <div class="absolute w-44 h-44 rounded-full bg-lavender-500 pointer-events-none"
+    <div class="absolute w-44 h-44 rounded-full bg-brand-500 pointer-events-none"
          style="animation: glow-pulse 2.2s ease-in-out infinite;"></div>
 
     <!-- logo tile -->
     <div id="splashLogo"
-         class="relative w-28 h-28 rounded-3xl bg-lavender-600 shadow-lift flex items-center justify-center"
+         class="relative w-28 h-28 rounded-3xl bg-brand-600 shadow-lift flex items-center justify-center"
          style="opacity:0; animation: logo-enter .75s cubic-bezier(.34,1.56,.64,1) .12s forwards;">
 
-      <!-- steam wisps -->
-      <div class="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-2 pointer-events-none">
-        <div class="w-1 h-6 rounded-full bg-lavender-300" style="animation: steam 1.9s ease-in-out .7s infinite;"></div>
-        <div class="w-1 h-8 rounded-full bg-lavender-300" style="animation: steam 2.1s ease-in-out 1.0s infinite;"></div>
-        <div class="w-1 h-5 rounded-full bg-lavender-300" style="animation: steam 1.7s ease-in-out 1.3s infinite;"></div>
-      </div>
 
-      <!-- inline coffee cup SVG (no dependency on icon script) -->
-      <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8"
-           stroke-linecap="round" stroke-linejoin="round" class="w-14 h-14">
-        <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
-        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
-        <line x1="6" y1="2" x2="6" y2="4"/>
-        <line x1="10" y1="2" x2="10" y2="4"/>
-        <line x1="14" y1="2" x2="14" y2="4"/>
-      </svg>
+      <!-- inline app mark, as scripts/app-icon.svg (no dependency on icon script) -->
+      <svg viewBox="14.5 14.5 71 71" class="w-14 h-14" aria-hidden="true"><defs><mask id="nbNLogin1"><rect x="0" y="0" width="100" height="100" fill="#fff"/><path d="M39 63V36.5h6.6l9.8 14.8V36.5H62V63h-6.6l-9.8-14.8V63z" fill="#000"/></mask></defs><g mask="url(#nbNLogin1)"><path d="M50 16.5C58.5 21 67 23.2 75 23.2V47C75 65.5 64.5 77.5 50 84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M50 16.5V84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#e7e9d6" stroke="#e7e9d6" stroke-width="3" stroke-linejoin="round"/></g></svg>
     </div>
 
     <!-- brand name (typing reveal) -->
     <h1 id="splashTitle"
-        class="mt-6 text-4xl font-extrabold text-lavender-950 tracking-tight whitespace-nowrap overflow-hidden"
+        class="mt-6 text-4xl font-extrabold text-brand-950 tracking-tight whitespace-nowrap overflow-hidden"
         style="display:inline-block; max-width:0; opacity:0; animation: text-reveal .55s steps(7,end) .62s forwards;">
       NexBill
     </h1>
 
     <!-- tagline -->
-    <p class="mt-2 text-sm font-semibold text-lavender-500 tracking-[.2em] uppercase"
+    <p class="mt-2 text-sm font-semibold text-brand-500 tracking-[.2em] uppercase"
        style="opacity:0; animation: fade-up .45s ease 1.05s forwards;">
       Point of Sale
     </p>
 
     <!-- loading bar -->
-    <div class="mt-8 w-52 h-1.5 rounded-full bg-lavender-100 overflow-hidden">
-      <div class="h-full rounded-full bg-gradient-to-r from-lavender-400 via-lavender-600 to-lavender-500"
+    <div class="mt-8 w-52 h-1.5 rounded-full bg-brand-100 overflow-hidden">
+      <div class="h-full rounded-full bg-gradient-to-r from-brand-400 via-brand-600 to-brand-500"
            style="width:0; animation: loading-bar 1.7s ease .25s forwards;"></div>
     </div>
 
@@ -173,22 +159,15 @@
 
       <!-- brand -->
       <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-lavender-600 shadow-lift mb-4">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8"
-               stroke-linecap="round" stroke-linejoin="round" class="w-10 h-10">
-            <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
-            <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
-            <line x1="6" y1="2" x2="6" y2="4"/>
-            <line x1="10" y1="2" x2="10" y2="4"/>
-            <line x1="14" y1="2" x2="14" y2="4"/>
-          </svg>
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-brand-600 shadow-lift mb-4">
+          <svg viewBox="14.5 14.5 71 71" class="w-10 h-10" aria-hidden="true"><defs><mask id="nbNLogin2"><rect x="0" y="0" width="100" height="100" fill="#fff"/><path d="M39 63V36.5h6.6l9.8 14.8V36.5H62V63h-6.6l-9.8-14.8V63z" fill="#000"/></mask></defs><g mask="url(#nbNLogin2)"><path d="M50 16.5C58.5 21 67 23.2 75 23.2V47C75 65.5 64.5 77.5 50 84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M50 16.5V84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#e7e9d6" stroke="#e7e9d6" stroke-width="3" stroke-linejoin="round"/></g></svg>
         </div>
-        <h1 class="text-2xl font-extrabold text-lavender-950 tracking-tight">@(await Brand.NameAsync())</h1>
+        <h1 class="text-2xl font-extrabold text-brand-950 tracking-tight">@(await Brand.NameAsync())</h1>
         <p class="text-sm text-slate-500 mt-1">Sign in to continue</p>
       </div>
 
       <!-- card -->
-      <div class="bg-white rounded-2xl shadow-soft border border-lavender-100 p-8">
+      <div class="glass-strong rounded-2xl shadow-soft border border-brand-100 p-8">
 
         <div id="errorAlert" class="hidden mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold flex items-center gap-2">
           <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>
@@ -199,9 +178,9 @@
         <div class="mb-4">
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Username or Phone</label>
           <div class="relative">
-            <i data-lucide="user" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-lavender-400 pointer-events-none"></i>
+            <i data-lucide="user" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 pointer-events-none"></i>
             <input id="identifier" type="text" placeholder="Username or phone number" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')"
-              class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-lavender-200 bg-lavender-25 text-slate-800 font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-lavender-400 transition">
+              class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-brand-200 bg-brand-25 text-slate-800 font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition">
           </div>
         </div>
 
@@ -209,10 +188,10 @@
         <div class="mb-5">
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
           <div class="relative">
-            <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-lavender-400 pointer-events-none"></i>
+            <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400 pointer-events-none"></i>
             <input id="password" type="password" placeholder="Enter password" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')"
-              class="w-full pl-11 pr-12 py-3.5 rounded-xl border border-lavender-200 bg-lavender-25 text-slate-800 font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-lavender-400 transition">
-            <button onclick="togglePassword()" class="tap absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-lavender-600">
+              class="w-full pl-11 pr-12 py-3.5 rounded-xl border border-brand-200 bg-brand-25 text-slate-800 font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition">
+            <button onclick="togglePassword()" class="tap absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-brand-600">
               <i id="eyeIcon" data-lucide="eye-off" class="w-5 h-5"></i>
             </button>
           </div>
@@ -223,11 +202,11 @@
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Open</label>
           <div class="grid grid-cols-2 gap-3">
             <button onclick="selectDestination('billing')" id="destBilling"
-              class="tap dest-btn flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-lavender-500 bg-lavender-50 text-lavender-800 font-bold text-sm transition">
+              class="tap dest-btn flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-brand-500 bg-brand-50 text-brand-800 font-bold text-sm transition">
               <i data-lucide="monitor" class="w-4 h-4"></i> Billing POS
             </button>
             <button onclick="selectDestination('admin')" id="destAdmin"
-              class="tap dest-btn flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-lavender-200 bg-white text-slate-500 font-bold text-sm transition">
+              class="tap dest-btn flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-brand-200 bg-white text-slate-500 font-bold text-sm transition">
               <i data-lucide="shield" class="w-4 h-4"></i> Admin Panel
             </button>
           </div>
@@ -236,7 +215,7 @@
 
         <!-- sign in -->
         <button onclick="handleLogin()" id="loginBtn"
-          class="tap w-full py-4 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-extrabold text-base shadow-lift transition flex items-center justify-center gap-2">
+          class="tap w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-base shadow-lift transition flex items-center justify-center gap-2">
           <i data-lucide="log-in" class="w-5 h-5"></i> Sign In
         </button>
       </div>
@@ -251,31 +230,24 @@
        screen at that moment is what staff see: without this they watched the login
        form blank out into browser furniture. Same colour as the page canvas, so the
        hand-off to Chrome's own last repaint is invisible. -->
-  <div id="closingCover" class="hidden fixed inset-0 z-[300] bg-[#f4f2f9] flex flex-col items-center justify-center">
-    <div class="w-24 h-24 rounded-3xl bg-lavender-600 shadow-lift flex items-center justify-center">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8"
-           stroke-linecap="round" stroke-linejoin="round" class="w-12 h-12">
-        <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
-        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
-        <line x1="6" y1="2" x2="6" y2="4"/>
-        <line x1="10" y1="2" x2="10" y2="4"/>
-        <line x1="14" y1="2" x2="14" y2="4"/>
-      </svg>
+  <div id="closingCover" class="hidden fixed inset-0 z-[300] app-bg flex flex-col items-center justify-center">
+    <div class="w-24 h-24 rounded-3xl bg-brand-600 shadow-lift flex items-center justify-center">
+      <svg viewBox="14.5 14.5 71 71" class="w-12 h-12" aria-hidden="true"><defs><mask id="nbNLogin3"><rect x="0" y="0" width="100" height="100" fill="#fff"/><path d="M39 63V36.5h6.6l9.8 14.8V36.5H62V63h-6.6l-9.8-14.8V63z" fill="#000"/></mask></defs><g mask="url(#nbNLogin3)"><path d="M50 16.5C58.5 21 67 23.2 75 23.2V47C75 65.5 64.5 77.5 50 84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M50 16.5V84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#e7e9d6" stroke="#e7e9d6" stroke-width="3" stroke-linejoin="round"/></g></svg>
     </div>
-    <p class="mt-6 text-lg font-extrabold text-lavender-950 tracking-tight">Closing terminal</p>
-    <div class="mt-5 w-40 h-1.5 rounded-full bg-lavender-100 overflow-hidden">
-      <div class="h-full w-1/3 rounded-full bg-lavender-500" style="animation: loading-bar 1.4s ease forwards;"></div>
+    <p class="mt-6 text-lg font-extrabold text-brand-950 tracking-tight">Closing terminal</p>
+    <div class="mt-5 w-40 h-1.5 rounded-full bg-brand-100 overflow-hidden">
+      <div class="h-full w-1/3 rounded-full bg-brand-500" style="animation: loading-bar 1.4s ease forwards;"></div>
     </div>
   </div>
 
   <!-- VIRTUAL KEYBOARD (same as POS page) -->
-  <div id="globalVirtualKeyboard" class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-lavender-200 shadow-2xl p-3 z-[150] translate-y-full transition-transform duration-200">
+  <div id="globalVirtualKeyboard" class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-brand-200 shadow-2xl p-3 z-[150] translate-y-full transition-transform duration-200">
     <div class="max-w-4xl mx-auto space-y-1.5">
       <div class="flex items-center justify-between px-1 pb-1.5 text-xs">
-        <div class="flex items-center gap-2 text-slate-500"><i data-lucide="keyboard" class="w-4 h-4 text-lavender-600"></i>Typing in: <span id="vkTargetLabel" class="font-bold text-lavender-700">Field</span></div>
+        <div class="flex items-center gap-2 text-slate-500"><i data-lucide="keyboard" class="w-4 h-4 text-brand-600"></i>Typing in: <span id="vkTargetLabel" class="font-bold text-brand-700">Field</span></div>
         <div class="flex gap-2">
           <button onclick="virtualKeyClear()" class="tap px-3 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200">Clear</button>
-          <button onclick="closeGlobalVirtualKeyboard()" class="tap px-4 py-1 rounded-lg bg-lavender-600 text-white font-bold">Done</button>
+          <button onclick="closeGlobalVirtualKeyboard()" class="tap px-4 py-1 rounded-lg bg-brand-600 text-white font-bold">Done</button>
         </div>
       </div>
       <div id="vkRows" class="space-y-1.5"></div>
@@ -326,7 +298,7 @@
 
     function createParticles() {
       const box = document.getElementById('particles');
-      const colors = ['#c5b0f0', '#a787e6', '#8c60dc', '#ded2f6'];
+      const colors = ['#d0d3b1', '#b8bc8a', '#828746', '#e4e6d1'];
       for (let i = 0; i < 18; i++) {
         const p = document.createElement('div');
         p.className = 'splash-particle';
@@ -397,12 +369,12 @@
     function selectDestination(which) {
       destination = which;
       document.querySelectorAll('.dest-btn').forEach(b => {
-        b.classList.remove('border-lavender-500', 'bg-lavender-50', 'text-lavender-800');
-        b.classList.add('border-lavender-200', 'bg-white', 'text-slate-500');
+        b.classList.remove('border-brand-500', 'bg-brand-50', 'text-brand-800');
+        b.classList.add('border-brand-200', 'bg-white', 'text-slate-500');
       });
       const active = document.getElementById(which === 'admin' ? 'destAdmin' : 'destBilling');
-      active.classList.add('border-lavender-500', 'bg-lavender-50', 'text-lavender-800');
-      active.classList.remove('border-lavender-200', 'bg-white', 'text-slate-500');
+      active.classList.add('border-brand-500', 'bg-brand-50', 'text-brand-800');
+      active.classList.remove('border-brand-200', 'bg-white', 'text-slate-500');
       playBeep('click');
     }
 
@@ -473,8 +445,8 @@
       closeGlobalVirtualKeyboard();
 
       btn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i> Welcome, ' + data.displayName + '!';
-      btn.classList.replace('bg-lavender-600', 'bg-mint-600');
-      btn.classList.replace('hover:bg-lavender-700', 'hover:bg-mint-700');
+      btn.classList.replace('bg-brand-600', 'bg-mint-600');
+      btn.classList.replace('hover:bg-brand-700', 'hover:bg-mint-700');
       drawIcons();
 
       // The account signed in fine but cannot have the screen it asked for. Say so
@@ -511,7 +483,7 @@
       // Cover the screen before anything else, and set the same colour on the root
       // element: that is the colour Chrome keeps painting once the page is gone, so
       // the window disappears out of a solid frame instead of a white flash.
-      document.documentElement.style.background = '#f4f2f9';
+      document.documentElement.style.background = '#fdfdf9';
       document.getElementById('closingCover').classList.remove('hidden');
       drawIcons();
 
@@ -560,13 +532,13 @@
     function buildKeyboard() {
       const rows = ['1234567890', 'QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM.'];
       const box = document.getElementById('vkRows');
-      const key = (label, fn, cls = '') => `<button onclick="${fn}" class="tap h-11 rounded-xl border font-bold flex items-center justify-center ${cls || 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-lavender-100'}">${label}</button>`;
+      const key = (label, fn, cls = '') => `<button onclick="${fn}" class="tap h-11 rounded-xl border font-bold flex items-center justify-center ${cls || 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-brand-100'}">${label}</button>`;
       box.innerHTML = rows.map((r, i) => {
         let keys = [...r].map(c => key(c, `virtualKeyPress('${c}')`)).join('');
-        if (i === 3) keys = `<button id="vkShiftBtn" onclick="virtualKeyToggleShift()" class="tap h-11 rounded-xl border bg-lavender-100 border-lavender-200 text-lavender-800 flex items-center justify-center"><i data-lucide="arrow-big-up" class="w-5 h-5"></i></button>` + keys + key('<i data-lucide="delete" class="w-5 h-5"></i>', 'virtualKeyBackspace()', 'bg-rose-50 border-rose-200 text-rose-700');
+        if (i === 3) keys = `<button id="vkShiftBtn" onclick="virtualKeyToggleShift()" class="tap h-11 rounded-xl border bg-brand-100 border-brand-200 text-brand-800 flex items-center justify-center"><i data-lucide="arrow-big-up" class="w-5 h-5"></i></button>` + keys + key('<i data-lucide="delete" class="w-5 h-5"></i>', 'virtualKeyBackspace()', 'bg-rose-50 border-rose-200 text-rose-700');
         const cols = i === 2 ? 9 : 10;
         return `<div class="grid gap-1.5 ${i === 2 ? 'px-5' : ''}" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${keys}</div>`;
-      }).join('') + `<div class="flex gap-1.5">${key('-', "virtualKeyPress('-')", 'w-16 bg-slate-50 border-slate-200')}<button onclick="virtualKeyPress(' ')" class="tap flex-1 h-11 rounded-xl border bg-slate-50 border-slate-200 text-slate-500 text-sm font-bold tracking-widest">SPACE</button><button onclick="closeGlobalVirtualKeyboard()" class="tap w-32 h-11 rounded-xl bg-lavender-600 text-white font-bold">Enter</button></div>`;
+      }).join('') + `<div class="flex gap-1.5">${key('-', "virtualKeyPress('-')", 'w-16 bg-slate-50 border-slate-200')}<button onclick="virtualKeyPress(' ')" class="tap flex-1 h-11 rounded-xl border bg-slate-50 border-slate-200 text-slate-500 text-sm font-bold tracking-widest">SPACE</button><button onclick="closeGlobalVirtualKeyboard()" class="tap w-32 h-11 rounded-xl bg-brand-600 text-white font-bold">Enter</button></div>`;
     }
     function openGlobalVirtualKeyboard(el) {
       activeInputTarget = el;
@@ -591,8 +563,8 @@
     function virtualKeyToggleShift() {
       isShiftActive = !isShiftActive;
       const b = document.getElementById('vkShiftBtn');
-      b.classList.toggle('bg-lavender-600', isShiftActive); b.classList.toggle('text-white', isShiftActive);
-      b.classList.toggle('bg-lavender-100', !isShiftActive);
+      b.classList.toggle('bg-brand-600', isShiftActive); b.classList.toggle('text-white', isShiftActive);
+      b.classList.toggle('bg-brand-100', !isShiftActive);
     }
     function bindVirtualKeyboardToInputs() {
       document.querySelectorAll('#loginPage input').forEach(i => i.addEventListener('focus', () => openGlobalVirtualKeyboard(i)));

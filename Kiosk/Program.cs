@@ -49,6 +49,16 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 var app = builder.Build();
 
+// The shop's country (Pos:Country) decides the clock and how dates read - not the
+// server's. Resolved here so a missing or unknown country stops startup instead of
+// failing on the first bill, and set as the app's culture so nothing formatted
+// server-side picks up the host's language or calendar.
+var shopClock = app.Services.GetRequiredService<Kiosk.Services.BusinessClock>();
+System.Globalization.CultureInfo.DefaultThreadCurrentCulture = shopClock.Culture;
+System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = shopClock.Culture;
+System.Globalization.CultureInfo.CurrentCulture = shopClock.Culture;
+System.Globalization.CultureInfo.CurrentUICulture = shopClock.Culture;
+
 app.UseKioskForwardedHeaders();
 
 // Configure the HTTP request pipeline.

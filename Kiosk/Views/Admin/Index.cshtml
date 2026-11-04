@@ -11,6 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>@(await Brand.NameAsync()) — Admin Control</title>
   <partial name="_AppIcons" />
+  <partial name="_ShopClock" />
   <script src="~/lib/tailwind/tailwind.min.js"></script>
   <script src="~/lib/lucide/lucide.min.js"></script>
   <link rel="stylesheet" href="~/lib/fonts/fonts.css" />
@@ -25,28 +26,33 @@
             digital: ['"Chakra Petch"', 'sans-serif'],
           },
           colors: {
-            lavender: { 25:'#fbfaff',50:'#f6f3fc',100:'#ece5fa',200:'#ded2f6',300:'#c5b0f0',400:'#a787e6',500:'#8c60dc',600:'#7540cc',700:'#6432b4',800:'#522995',900:'#432279',950:'#231046' },
+            brand: { 25:'#fcfdfa',50:'#f9f9f3',100:'#f1f2e5',200:'#e4e6d1',300:'#d0d3b1',400:'#b8bc8a',500:'#828746',600:'#74793f',700:'#5e6133',800:'#474a26',900:'#37391e',950:'#202211' },
             mint: { 50:'#edfcf5',100:'#d3f7e6',200:'#a7eecb',500:'#10b981',600:'#059669',700:'#047857' },
             amber: { 50:'#fffbeb',100:'#fef3c7',500:'#f59e0b',600:'#d97706',700:'#b45309' },
             rose: { 50:'#fff1f2',100:'#ffe4e6',500:'#f43f5e',600:'#e11d48',700:'#be123c' },
             sky: { 50:'#f0f9ff',100:'#e0f2fe',500:'#0ea5e9',600:'#0284c7',700:'#0369a1' }
           },
           boxShadow: {
-            'soft': '0 1px 2px rgba(35,16,70,.04), 0 4px 16px -4px rgba(35,16,70,.08)',
-            'lift': '0 10px 30px -8px rgba(117,64,204,.28)',
-            'glow': '0 0 20px rgba(117,64,204,.15)',
+            'soft': '0 1px 2px rgba(32,34,17,.04), 0 4px 16px -4px rgba(32,34,17,.08)',
+            'lift': '0 10px 30px -8px rgba(116,121,63,.28)',
+            'glow': '0 0 20px rgba(116,121,63,.15)',
           },
         }
       }
     }
   </script>
   <style>
+    /* White-first page with two faint orange glows - the glass cards need something soft behind them to frost. */
+    .app-bg { background-color: #fdfdf9; background-image: radial-gradient(55rem 38rem at -8% -12%, rgba(184,188,138,.32), transparent 60%), radial-gradient(48rem 38rem at 108% 112%, rgba(208,211,177,.38), transparent 60%), radial-gradient(40rem 30rem at 55% 45%, rgba(241,242,229,.55), transparent 70%); background-attachment: fixed; }
+    .glass { background: linear-gradient(135deg, rgba(255,255,255,.74), rgba(255,255,255,.4)); -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%); border: 1px solid rgba(255,255,255,.95); box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(255,255,255,.35), 0 10px 30px -12px rgba(116,121,63,.22); }
+    /* Modals and the login card: more opaque, so form text stays easy to read over whatever is behind. */
+    .glass-strong { background: rgba(255,255,255,.84); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); border: 1px solid rgba(255,255,255,.85); box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 18px 48px -16px rgba(32,34,17,.28); }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #ded2f6; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb { background: #e4e6d1; border-radius: 6px; }
     .tap { touch-action: manipulation; transition: transform .1s ease, background-color .15s, border-color .15s, box-shadow .15s; }
     .tap:active { transform: scale(.96); }
-    .tap:focus-visible { outline: 2px solid #7540cc; outline-offset: 2px; }
+    .tap:focus-visible { outline: 2px solid #74793f; outline-offset: 2px; }
 
     @@keyframes fade-in { 0%{opacity:0;transform:translateY(12px)} 100%{opacity:1;transform:translateY(0)} }
     @@keyframes slide-in-left { 0%{opacity:0;transform:translateX(-20px)} 100%{opacity:1;transform:translateX(0)} }
@@ -66,10 +72,10 @@
     .section-page { display: none; }
     .section-page.active { display: block; }
 
-    .nav-item.active { background: rgba(117,64,204,.12); color: #7540cc; border-right: 3px solid #7540cc; }
+    .nav-item.active { background: rgba(116,121,63,.12); color: #74793f; border-right: 3px solid #74793f; }
     .stat-card { transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s; }
-    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px -8px rgba(117,64,204,.2); }
-    .table-row:hover { background: #fbfaff; }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px -8px rgba(116,121,63,.2); }
+    .table-row:hover { background: #fcfdfa; }
 
     /* Refresh button: the icon spins only while a fetch is in flight, so the
        dashboard always shows whether the figures on screen are being re-read. */
@@ -98,7 +104,7 @@
   </style>
 </head>
 
-<body class="h-full bg-[#f4f2f9] font-sans overflow-hidden">
+<body class="h-full app-bg font-sans overflow-hidden">
 
   <form id="logoutForm" method="post" action="@Url.Action("Logout", "Account")" class="hidden">@Html.AntiForgeryToken()</form>
   <!-- Mobile sidebar overlay -->
@@ -107,22 +113,19 @@
   <div class="h-full flex">
 
     <!-- ========== SIDEBAR ========== -->
-    <aside id="sidebar" class="w-64 bg-white border-r border-lavender-100 flex flex-col flex-shrink-0 shadow-soft z-30">
+    <aside id="sidebar" class="w-64 bg-white/70 backdrop-blur-xl border-r border-brand-100 flex flex-col flex-shrink-0 shadow-soft z-30">
 
       <!-- brand -->
-      <div class="p-5 border-b border-lavender-100 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-lavender-500 to-lavender-700 shadow-lift flex items-center justify-center flex-shrink-0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-            <path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
-            <line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/>
-          </svg>
+      <div class="p-5 border-b border-brand-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-lift flex items-center justify-center flex-shrink-0">
+          <svg viewBox="14.5 14.5 71 71" class="w-5 h-5" aria-hidden="true"><defs><mask id="nbNAdmin1"><rect x="0" y="0" width="100" height="100" fill="#fff"/><path d="M39 63V36.5h6.6l9.8 14.8V36.5H62V63h-6.6l-9.8-14.8V63z" fill="#000"/></mask></defs><g mask="url(#nbNAdmin1)"><path d="M50 16.5C58.5 21 67 23.2 75 23.2V47C75 65.5 64.5 77.5 50 84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M50 16.5V84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#e7e9d6" stroke="#e7e9d6" stroke-width="3" stroke-linejoin="round"/></g></svg>
         </div>
         <div>
-          <h1 class="text-base font-extrabold text-lavender-950 leading-tight">@(await Brand.NameAsync())</h1>
-          <p class="text-[10px] font-bold text-lavender-400 uppercase tracking-widest">Admin Panel</p>
+          <h1 class="text-base font-extrabold text-brand-950 leading-tight">@(await Brand.NameAsync())</h1>
+          <p class="text-[10px] font-bold text-brand-400 uppercase tracking-widest">Admin Panel</p>
         </div>
         <!-- close btn on mobile -->
-        <button onclick="toggleSidebar()" class="lg:hidden ml-auto tap w-8 h-8 rounded-lg bg-lavender-50 flex items-center justify-center text-lavender-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <button onclick="toggleSidebar()" class="lg:hidden ml-auto tap w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
       <!-- nav -->
@@ -134,14 +137,14 @@
           <i data-lucide="layout-list" class="w-[18px] h-[18px]"></i> Categories
         </button>
         <button onclick="showSection('menu')" data-nav="menu" class="nav-item tap w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 text-left transition-all">
-          <i data-lucide="coffee" class="w-[18px] h-[18px]"></i> Menu Items
+          <i data-lucide="package" class="w-[18px] h-[18px]"></i> Menu Items
         </button>
         <button onclick="showSection('transactionmodes')" data-nav="transactionmodes" class="nav-item tap w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 text-left transition-all">
           <i data-lucide="arrow-left-right" class="w-[18px] h-[18px]"></i> Transaction Modes
         </button>
         <button onclick="showSection('orders')" data-nav="orders" class="nav-item tap w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 text-left transition-all">
           <i data-lucide="receipt" class="w-[18px] h-[18px]"></i> Orders
-          <span class="ml-auto px-2 py-0.5 rounded-full bg-lavender-100 text-lavender-700 text-[11px] font-extrabold">24</span>
+          <span class="ml-auto px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 text-[11px] font-extrabold">24</span>
         </button>
         <button onclick="showSection('staff')" data-nav="staff" class="nav-item tap w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 text-left transition-all">
           <i data-lucide="users" class="w-[18px] h-[18px]"></i> Users &amp; Roles
@@ -160,8 +163,8 @@
       </nav>
 
       <!-- bottom -->
-      <div class="p-3 border-t border-lavender-100 space-y-1">
-        <a href="@Url.Action("Index", "Home")" onclick="event.preventDefault(); window.location.replace(this.href)" class="tap w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-lavender-50 transition">
+      <div class="p-3 border-t border-brand-100 space-y-1">
+        <a href="@Url.Action("Index", "Home")" onclick="event.preventDefault(); window.location.replace(this.href)" class="tap w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-brand-50 transition">
           <i data-lucide="monitor" class="w-[18px] h-[18px]"></i> Open POS
         </a>
         <button onclick="signOut()" class="tap w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-rose-500 hover:bg-rose-50 transition text-left">
@@ -174,14 +177,14 @@
     <main class="flex-1 flex flex-col overflow-hidden min-w-0">
 
       <!-- top bar -->
-      <header class="h-14 sm:h-16 bg-white border-b border-lavender-100 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 shadow-soft z-20">
+      <header class="h-14 sm:h-16 bg-white/70 backdrop-blur-xl border-b border-brand-100 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 shadow-soft z-20">
         <div class="flex items-center gap-3">
           <!-- hamburger on mobile -->
-          <button onclick="toggleSidebar()" class="lg:hidden tap w-9 h-9 rounded-xl bg-lavender-50 flex items-center justify-center text-lavender-600 hover:bg-lavender-100 flex-shrink-0">
+          <button onclick="toggleSidebar()" class="lg:hidden tap w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600 hover:bg-brand-100 flex-shrink-0">
             <i data-lucide="menu" class="w-5 h-5"></i>
           </button>
           <div>
-            <h2 id="pageTitle" class="text-base sm:text-lg font-extrabold text-lavender-950">Dashboard</h2>
+            <h2 id="pageTitle" class="text-base sm:text-lg font-extrabold text-brand-950">Dashboard</h2>
             <p id="pageSubtitle" class="text-[11px] sm:text-xs text-slate-400 font-semibold hidden sm:block">Overview of today's performance</p>
           </div>
         </div>
@@ -189,17 +192,17 @@
           <div id="refreshWrap" class="flex items-center gap-2">
             <span id="syncedAt" class="hidden md:inline text-[10px] font-bold text-slate-400 whitespace-nowrap"></span>
             <button id="refreshBtn" type="button" onclick="loadDashboard(true)" title="Refresh from database"
-                    class="tap w-9 h-9 rounded-xl bg-lavender-50 flex items-center justify-center text-lavender-600 hover:bg-lavender-100 flex-shrink-0">
+                    class="tap w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600 hover:bg-brand-100 flex-shrink-0">
               <i data-lucide="refresh-cw" class="w-[18px] h-[18px]"></i>
               <span class="sr-only">Refresh</span>
             </button>
           </div>
-          <span id="liveClock" class="text-xs sm:text-sm font-mono font-bold text-lavender-600 bg-lavender-50 px-2.5 sm:px-3 py-1.5 rounded-lg"></span>
+          <span id="liveClock" class="text-xs sm:text-sm font-mono font-bold text-brand-600 bg-brand-50 px-2.5 sm:px-3 py-1.5 rounded-lg"></span>
           <div class="hidden sm:flex flex-col items-end leading-tight">
-            <span class="text-xs font-extrabold text-lavender-950">@displayName</span>
-            <span class="text-[10px] font-bold text-lavender-400 uppercase tracking-wider">@roleName</span>
+            <span class="text-xs font-extrabold text-brand-950">@displayName</span>
+            <span class="text-[10px] font-bold text-brand-400 uppercase tracking-wider">@roleName</span>
           </div>
-          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-lavender-500 to-lavender-700 flex items-center justify-center text-white font-bold text-sm shadow-lift" title="@displayName">@initial</div>
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-sm shadow-lift" title="@displayName">@initial</div>
         </div>
       </header>
 
@@ -211,62 +214,62 @@
 
           <!-- stat cards -->
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-6">
-            <div class="stat-card bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
+            <div class="stat-card glass rounded-2xl p-4 sm:p-5 shadow-soft">
               <div class="flex items-center justify-between mb-2 sm:mb-3">
                 <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Today Revenue</span>
                 <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-mint-50 flex items-center justify-center"><i data-lucide="indian-rupee" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-mint-600"></i></div>
               </div>
-              <p id="kpiRevenue" class="text-xl sm:text-2xl font-extrabold text-lavender-950 font-digital">&#8212;</p>
+              <p id="kpiRevenue" class="text-xl sm:text-2xl font-extrabold text-brand-950 font-digital">&#8212;</p>
               <p id="kpiRevenueNote" class="text-[10px] sm:text-xs font-bold text-slate-400 mt-1 flex items-center gap-1">Loading&#8230;</p>
             </div>
-            <div class="stat-card bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
+            <div class="stat-card glass rounded-2xl p-4 sm:p-5 shadow-soft">
               <div class="flex items-center justify-between mb-2 sm:mb-3">
                 <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Orders</span>
-                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-lavender-50 flex items-center justify-center"><i data-lucide="shopping-bag" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-lavender-600"></i></div>
+                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-brand-50 flex items-center justify-center"><i data-lucide="shopping-bag" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-600"></i></div>
               </div>
-              <p id="kpiOrders" class="text-xl sm:text-2xl font-extrabold text-lavender-950 font-digital">&#8212;</p>
+              <p id="kpiOrders" class="text-xl sm:text-2xl font-extrabold text-brand-950 font-digital">&#8212;</p>
               <p id="kpiOrdersNote" class="text-[10px] sm:text-xs font-bold text-slate-400 mt-1 flex items-center gap-1">Loading&#8230;</p>
             </div>
-            <div class="stat-card bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
+            <div class="stat-card glass rounded-2xl p-4 sm:p-5 shadow-soft">
               <div class="flex items-center justify-between mb-2 sm:mb-3">
                 <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Avg Order</span>
                 <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 flex items-center justify-center"><i data-lucide="calculator" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600"></i></div>
               </div>
-              <p id="kpiAvgOrder" class="text-xl sm:text-2xl font-extrabold text-lavender-950 font-digital">&#8212;</p>
+              <p id="kpiAvgOrder" class="text-xl sm:text-2xl font-extrabold text-brand-950 font-digital">&#8212;</p>
               <p class="text-[10px] sm:text-xs font-bold text-slate-400 mt-1">Per settled bill</p>
             </div>
-            <div class="stat-card bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
+            <div class="stat-card glass rounded-2xl p-4 sm:p-5 shadow-soft">
               <div class="flex items-center justify-between mb-2 sm:mb-3">
                 <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Active Staff</span>
                 <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-50 flex items-center justify-center"><i data-lucide="users" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600"></i></div>
               </div>
-              <p id="kpiStaff" class="text-xl sm:text-2xl font-extrabold text-lavender-950 font-digital">&#8212;</p>
+              <p id="kpiStaff" class="text-xl sm:text-2xl font-extrabold text-brand-950 font-digital">&#8212;</p>
               <p id="kpiStaffNote" class="text-[10px] sm:text-xs font-bold text-slate-400 mt-1">On shift today</p>
             </div>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
             <!-- hourly chart -->
-            <div class="lg:col-span-2 bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
-              <h3 class="text-sm font-extrabold text-lavender-950 mb-4">Hourly Sales</h3>
+            <div class="lg:col-span-2 glass rounded-2xl p-4 sm:p-5 shadow-soft">
+              <h3 class="text-sm font-extrabold text-brand-950 mb-4">Hourly Sales</h3>
               <div class="flex items-end gap-1.5 sm:gap-2 h-36 sm:h-40" id="hourlyChart"></div>
             </div>
             <!-- top items -->
-            <div class="bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
-              <h3 class="text-sm font-extrabold text-lavender-950 mb-4">Top Sellers</h3>
+            <div class="glass rounded-2xl p-4 sm:p-5 shadow-soft">
+              <h3 class="text-sm font-extrabold text-brand-950 mb-4">Top Sellers</h3>
               <div class="space-y-3" id="topSellers"></div>
             </div>
           </div>
 
           <!-- recent orders -->
-          <div class="mt-4 bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
-            <div class="px-4 sm:px-5 py-3 sm:py-4 border-b border-lavender-100 flex items-center justify-between">
-              <h3 class="text-sm font-extrabold text-lavender-950">Recent Orders</h3>
-              <button onclick="showSection('orders')" class="tap text-xs font-bold text-lavender-600 hover:text-lavender-700">View All &rarr;</button>
+          <div class="mt-4 glass rounded-2xl shadow-soft overflow-hidden">
+            <div class="px-4 sm:px-5 py-3 sm:py-4 border-b border-brand-100 flex items-center justify-between">
+              <h3 class="text-sm font-extrabold text-brand-950">Recent Orders</h3>
+              <button onclick="showSection('orders')" class="tap text-xs font-bold text-brand-600 hover:text-brand-700">View All &rarr;</button>
             </div>
             <div class="overflow-x-auto">
               <table class="w-full text-sm min-w-[540px]">
-                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-lavender-50">
+                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-50">
                   <th class="text-left px-4 sm:px-5 py-2.5">Order</th><th class="text-left px-4 sm:px-5 py-2.5">Items</th><th class="text-left px-4 sm:px-5 py-2.5">Time</th><th class="text-left px-4 sm:px-5 py-2.5">Status</th><th class="text-right px-4 sm:px-5 py-2.5">Total</th>
                 </tr></thead>
                 <tbody id="recentOrdersBody"></tbody>
@@ -279,19 +282,19 @@
         <div id="sec-categories" class="section-page">
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
             <div class="flex flex-wrap gap-2">
-              <button onclick="filterCategories('all', this)" class="tap cat-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-lavender-600 text-white">All <span id="catCountAll" class="opacity-70"></span></button>
-              <button onclick="filterCategories('active', this)" class="tap cat-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Active <span id="catCountActive" class="opacity-70"></span></button>
-              <button onclick="filterCategories('inactive', this)" class="tap cat-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Inactive <span id="catCountInactive" class="opacity-70"></span></button>
+              <button onclick="filterCategories('all', this)" class="tap cat-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white">All <span id="catCountAll" class="opacity-70"></span></button>
+              <button onclick="filterCategories('active', this)" class="tap cat-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Active <span id="catCountActive" class="opacity-70"></span></button>
+              <button onclick="filterCategories('inactive', this)" class="tap cat-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Inactive <span id="catCountInactive" class="opacity-70"></span></button>
             </div>
-            <button onclick="openCategoryModal()" class="tap px-4 py-2.5 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-xs flex items-center gap-2 shadow-lift w-full sm:w-auto justify-center">
+            <button onclick="openCategoryModal()" class="tap px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs flex items-center gap-2 shadow-lift w-full sm:w-auto justify-center">
               <i data-lucide="plus" class="w-4 h-4"></i> Add Category
             </button>
           </div>
           <p class="text-xs text-slate-400 font-semibold mb-4">Only active categories appear on the POS rail. Deactivating one also hides its items from the till; tills pick up changes on their next page load.</p>
-          <div class="bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
+          <div class="glass rounded-2xl shadow-soft overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full text-sm min-w-[600px]">
-                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-lavender-100">
+                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-100">
                   <th class="text-left px-4 sm:px-5 py-3">Category</th><th class="text-left px-4 sm:px-5 py-3">Code</th><th class="text-right px-4 sm:px-5 py-3">Items</th><th class="text-left px-4 sm:px-5 py-3">Status</th><th class="text-center px-4 sm:px-5 py-3">Active</th><th class="text-right px-4 sm:px-5 py-3">Action</th>
                 </tr></thead>
                 <tbody id="categoriesBody"><tr><td colspan="6" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
@@ -303,15 +306,15 @@
         <!-- ===== TRANSACTION MODES ===== -->
         <div id="sec-transactionmodes" class="section-page">
           <div class="flex justify-end mb-5">
-            <button onclick="openModeModal()" class="tap px-4 py-2.5 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-xs flex items-center gap-2 shadow-lift w-full sm:w-auto justify-center">
+            <button onclick="openModeModal()" class="tap px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs flex items-center gap-2 shadow-lift w-full sm:w-auto justify-center">
               <i data-lucide="plus" class="w-4 h-4"></i> Add Transaction Mode
             </button>
           </div>
           <p class="text-xs text-slate-400 font-semibold mb-4">These fill the Mode dropdown in the till's Transactions popup. Only active ones are offered. A mode can only be deleted once no transaction uses it.</p>
-          <div class="bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
+          <div class="glass rounded-2xl shadow-soft overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full text-sm min-w-[520px]">
-                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-lavender-100">
+                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-100">
                   <th class="text-left px-4 sm:px-5 py-3">Mode</th><th class="text-right px-4 sm:px-5 py-3">Transactions</th><th class="text-left px-4 sm:px-5 py-3">Status</th><th class="text-center px-4 sm:px-5 py-3">Active</th><th class="text-right px-4 sm:px-5 py-3">Action</th>
                 </tr></thead>
                 <tbody id="modesBody"><tr><td colspan="5" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
@@ -325,16 +328,16 @@
           <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-4">
             <div class="relative flex-1 max-w-md">
               <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-              <input id="menuSearch" oninput="renderMenu()" placeholder="Search dishes or codes&#8230;" class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-lavender-200 bg-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400">
+              <input id="menuSearch" oninput="renderMenu()" placeholder="Search dishes or codes&#8230;" class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-brand-200 bg-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400">
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <select id="menuStatusFilter" onchange="renderMenu()" class="px-3 py-2.5 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
+              <select id="menuStatusFilter" onchange="renderMenu()" class="px-3 py-2.5 rounded-xl border border-brand-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-400">
                 <option value="all">All status</option><option value="active">Active</option><option value="inactive">Inactive</option>
               </select>
-              <select id="menuVegFilter" onchange="renderMenu()" class="px-3 py-2.5 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
+              <select id="menuVegFilter" onchange="renderMenu()" class="px-3 py-2.5 rounded-xl border border-brand-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-400">
                 <option value="all">Veg &amp; non-veg</option><option value="veg">Veg only</option><option value="nonveg">Non-veg only</option>
               </select>
-              <button onclick="openMenuModal()" class="tap px-4 py-2.5 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-xs flex items-center gap-2 shadow-lift justify-center">
+              <button onclick="openMenuModal()" class="tap px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs flex items-center gap-2 shadow-lift justify-center">
                 <i data-lucide="plus" class="w-4 h-4"></i> Add Item
               </button>
             </div>
@@ -351,54 +354,54 @@
         <div id="sec-orders" class="section-page">
           <!-- two sources: settled/open bills (Orders table) and parked carts (HeldOrders table) -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div class="inline-flex p-1 rounded-xl bg-lavender-50 border border-lavender-100 self-start">
+            <div class="inline-flex p-1 rounded-xl bg-brand-50 border border-brand-100 self-start">
               <button onclick="setOrderTab('orders')" data-otab="orders" class="tap order-tab-btn px-4 py-2 rounded-lg text-xs font-extrabold flex items-center gap-1.5"><i data-lucide="receipt" class="w-3.5 h-3.5"></i> Orders <span id="ordersTabCount" class="opacity-70"></span></button>
               <button onclick="setOrderTab('held')" data-otab="held" class="tap order-tab-btn px-4 py-2 rounded-lg text-xs font-extrabold flex items-center gap-1.5"><i data-lucide="pause-circle" class="w-3.5 h-3.5"></i> Held <span id="heldTabCount" class="opacity-70"></span></button>
             </div>
             <div class="flex items-center gap-2">
               <div class="relative">
                 <i data-lucide="phone" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-                <input id="ordersPhone" type="search" inputmode="tel" maxlength="20" oninput="onPhoneSearch()" placeholder="Search phone&#8230;" class="w-40 sm:w-44 pl-8 pr-3 py-2 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
+                <input id="ordersPhone" type="search" inputmode="tel" maxlength="20" oninput="onPhoneSearch()" placeholder="Search phone&#8230;" class="w-40 sm:w-44 pl-8 pr-3 py-2 rounded-xl border border-brand-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-400">
               </div>
               <div id="ordersDateWrap" class="flex items-center gap-2">
-                <input id="ordersDate" type="date" required value="@ViewData["Today"]" max="@ViewData["Today"]" onchange="onOrdersDate()" class="px-3 py-2 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
+                <input id="ordersDate" type="date" required value="@ViewData["Today"]" max="@ViewData["Today"]" onchange="onOrdersDate()" class="px-3 py-2 rounded-xl border border-brand-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-400">
               </div>
-              <button onclick="loadOrdersSection(true)" title="Refresh" class="tap w-9 h-9 rounded-xl bg-white border border-lavender-200 flex items-center justify-center text-lavender-600 hover:bg-lavender-50"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+              <button onclick="loadOrdersSection(true)" title="Refresh" class="tap w-9 h-9 rounded-xl bg-white border border-brand-200 flex items-center justify-center text-brand-600 hover:bg-brand-50"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
             </div>
           </div>
 
           <div id="ordersPane">
             <div class="flex flex-wrap gap-2 mb-4">
-              <button onclick="filterOrders('all', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-lavender-600 text-white">All <span data-ocount="all" class="opacity-70"></span></button>
-              <button onclick="filterOrders('ordered', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Open <span data-ocount="ordered" class="opacity-70"></span></button>
-              <button onclick="filterOrders('completed', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Paid <span data-ocount="completed" class="opacity-70"></span></button>
-              <button onclick="filterOrders('merged', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Merged <span data-ocount="merged" class="opacity-70"></span></button>
+              <button onclick="filterOrders('all', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white">All <span data-ocount="all" class="opacity-70"></span></button>
+              <button onclick="filterOrders('ordered', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Open <span data-ocount="ordered" class="opacity-70"></span></button>
+              <button onclick="filterOrders('completed', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Paid <span data-ocount="completed" class="opacity-70"></span></button>
+              <button onclick="filterOrders('merged', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Merged <span data-ocount="merged" class="opacity-70"></span></button>
             </div>
-            <div class="bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
+            <div class="glass rounded-2xl shadow-soft overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-sm min-w-[760px]">
-                  <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-lavender-100">
+                  <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-100">
                     <th class="text-left px-4 sm:px-5 py-3">Order #</th><th class="text-left px-4 sm:px-5 py-3">Customer</th><th class="text-left px-4 sm:px-5 py-3">Table</th><th class="text-left px-4 sm:px-5 py-3">Waiter</th><th class="text-left px-4 sm:px-5 py-3">Time</th><th class="text-left px-4 sm:px-5 py-3">Status</th><th class="text-right px-4 sm:px-5 py-3">Total</th><th class="text-right px-4 sm:px-5 py-3">Items</th>
                   </tr></thead>
                   <tbody id="ordersBody"><tr><td colspan="8" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
                 </table>
               </div>
-              <div id="ordersPager" class="border-t border-lavender-100"></div>
+              <div id="ordersPager" class="border-t border-brand-100"></div>
             </div>
           </div>
 
           <div id="heldPane" class="hidden">
             <p class="text-xs text-slate-400 font-semibold mb-4">Carts parked with Hold on any till. They are not bills yet, so they carry no order number and are not counted in takings.</p>
-            <div class="bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
+            <div class="glass rounded-2xl shadow-soft overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-sm min-w-[760px]">
-                  <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-lavender-100">
+                  <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-100">
                     <th class="text-left px-4 sm:px-5 py-3">Hold #</th><th class="text-left px-4 sm:px-5 py-3">Customer</th><th class="text-left px-4 sm:px-5 py-3">Table</th><th class="text-left px-4 sm:px-5 py-3">Waiter</th><th class="text-left px-4 sm:px-5 py-3">Till</th><th class="text-left px-4 sm:px-5 py-3">Held</th><th class="text-right px-4 sm:px-5 py-3">Total</th><th class="text-right px-4 sm:px-5 py-3">Items</th>
                   </tr></thead>
                   <tbody id="heldBody"><tr><td colspan="8" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
                 </table>
               </div>
-              <div id="heldPager" class="border-t border-lavender-100"></div>
+              <div id="heldPager" class="border-t border-brand-100"></div>
             </div>
           </div>
         </div>
@@ -408,13 +411,13 @@
            (config_role). Add and edit open in the off-canvas drawer below. *@
         <div id="sec-staff" class="section-page">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div class="inline-flex p-1 rounded-xl bg-lavender-50 border border-lavender-100 self-start">
+            <div class="inline-flex p-1 rounded-xl bg-brand-50 border border-brand-100 self-start">
               <button onclick="setStaffTab('users')" data-stab="users" class="tap staff-tab-btn px-4 py-2 rounded-lg text-xs font-extrabold flex items-center gap-1.5"><i data-lucide="user" class="w-3.5 h-3.5"></i> Users <span id="usersTabCount" class="opacity-70"></span></button>
               <button onclick="setStaffTab('roles')" data-stab="roles" class="tap staff-tab-btn px-4 py-2 rounded-lg text-xs font-extrabold flex items-center gap-1.5"><i data-lucide="shield" class="w-3.5 h-3.5"></i> Roles <span id="rolesTabCount" class="opacity-70"></span></button>
             </div>
             <div class="flex items-center gap-2">
-              <button onclick="loadStaffSection(true)" title="Refresh" class="tap w-9 h-9 rounded-xl bg-white border border-lavender-200 flex items-center justify-center text-lavender-600 hover:bg-lavender-50"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
-              <button id="staffAddBtn" onclick="staffTab === 'users' ? openUserDrawer() : openRoleDrawer()" class="tap px-4 py-2.5 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-xs flex items-center gap-2 shadow-lift justify-center">
+              <button onclick="loadStaffSection(true)" title="Refresh" class="tap w-9 h-9 rounded-xl bg-white border border-brand-200 flex items-center justify-center text-brand-600 hover:bg-brand-50"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+              <button id="staffAddBtn" onclick="staffTab === 'users' ? openUserDrawer() : openRoleDrawer()" class="tap px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs flex items-center gap-2 shadow-lift justify-center">
                 <i data-lucide="plus" class="w-4 h-4"></i> <span id="staffAddLabel">Add User</span>
               </button>
             </div>
@@ -423,24 +426,24 @@
           <div id="usersPane">
             <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 mb-4">
               <div class="flex flex-wrap items-center gap-2">
-                <button onclick="filterUsers('all', this)" class="tap user-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-lavender-600 text-white">All <span id="userCountAll" class="opacity-70"></span></button>
-                <button onclick="filterUsers('active', this)" class="tap user-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Active <span id="userCountActive" class="opacity-70"></span></button>
-                <button onclick="filterUsers('inactive', this)" class="tap user-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Inactive <span id="userCountInactive" class="opacity-70"></span></button>
+                <button onclick="filterUsers('all', this)" class="tap user-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white">All <span id="userCountAll" class="opacity-70"></span></button>
+                <button onclick="filterUsers('active', this)" class="tap user-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Active <span id="userCountActive" class="opacity-70"></span></button>
+                <button onclick="filterUsers('inactive', this)" class="tap user-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Inactive <span id="userCountInactive" class="opacity-70"></span></button>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <div class="relative flex-1 min-w-[220px]">
                   <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                  <input id="userSearch" oninput="renderUsers()" placeholder="Search name, username or phone&#8230;" class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-lavender-200 bg-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400">
+                  <input id="userSearch" oninput="renderUsers()" placeholder="Search name, username or phone&#8230;" class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-brand-200 bg-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400">
                 </div>
-                <select id="userRoleFilter" onchange="renderUsers()" class="px-3 py-2.5 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
+                <select id="userRoleFilter" onchange="renderUsers()" class="px-3 py-2.5 rounded-xl border border-brand-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-400">
                   <option value="">All roles</option>
                 </select>
               </div>
             </div>
-            <div class="bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
+            <div class="glass rounded-2xl shadow-soft overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-sm min-w-[760px]">
-                  <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-lavender-100">
+                  <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-100">
                     <th class="text-left px-4 sm:px-5 py-3">User</th><th class="text-left px-4 sm:px-5 py-3">Phone</th><th class="text-left px-4 sm:px-5 py-3">Role</th><th class="text-left px-4 sm:px-5 py-3">Last Sign-in</th><th class="text-center px-4 sm:px-5 py-3">Active</th><th class="text-right px-4 sm:px-5 py-3">Action</th>
                   </tr></thead>
                   <tbody id="usersBody"><tr><td colspan="6" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
@@ -451,15 +454,15 @@
 
           <div id="rolesPane" class="hidden">
             <div class="flex flex-wrap items-center gap-2 mb-4">
-              <button onclick="filterRoles('all', this)" class="tap role-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-lavender-600 text-white">All <span id="roleCountAll" class="opacity-70"></span></button>
-              <button onclick="filterRoles('active', this)" class="tap role-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Active <span id="roleCountActive" class="opacity-70"></span></button>
-              <button onclick="filterRoles('inactive', this)" class="tap role-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Inactive <span id="roleCountInactive" class="opacity-70"></span></button>
+              <button onclick="filterRoles('all', this)" class="tap role-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white">All <span id="roleCountAll" class="opacity-70"></span></button>
+              <button onclick="filterRoles('active', this)" class="tap role-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Active <span id="roleCountActive" class="opacity-70"></span></button>
+              <button onclick="filterRoles('inactive', this)" class="tap role-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Inactive <span id="roleCountInactive" class="opacity-70"></span></button>
             </div>
             <p class="text-xs text-slate-400 font-semibold mb-4">A role decides where its staff land after sign-in. Admin and Supervisor can open this panel; every other role opens Billing POS. Waiters do not sign in at all - they are only picked on the bill in the till's waiter list. Switching a role off stops its staff from signing in (or, for Waiter, hides them from the picker). Built-in roles can be renamed but not deleted.</p>
-            <div class="bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
+            <div class="glass rounded-2xl shadow-soft overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-sm min-w-[680px]">
-                  <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-lavender-100">
+                  <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-100">
                     <th class="text-left px-4 sm:px-5 py-3">Role</th><th class="text-left px-4 sm:px-5 py-3">Code</th><th class="text-left px-4 sm:px-5 py-3">Access</th><th class="text-right px-4 sm:px-5 py-3">Users</th><th class="text-center px-4 sm:px-5 py-3">Active</th><th class="text-right px-4 sm:px-5 py-3">Action</th>
                   </tr></thead>
                   <tbody id="rolesBody"><tr><td colspan="6" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
@@ -475,41 +478,41 @@
         <div id="sec-attendance" class="section-page">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div class="flex flex-wrap items-center gap-2">
-              <button onclick="filterAttendance('all', this)" class="tap att-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-lavender-600 text-white">All <span data-acount="all" class="opacity-70"></span></button>
-              <button onclick="filterAttendance('LOGIN', this)" class="tap att-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Sign-ins <span data-acount="LOGIN" class="opacity-70"></span></button>
-              <button onclick="filterAttendance('PUNCH', this)" class="tap att-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-lavender-200">Waiters <span data-acount="PUNCH" class="opacity-70"></span></button>
+              <button onclick="filterAttendance('all', this)" class="tap att-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white">All <span data-acount="all" class="opacity-70"></span></button>
+              <button onclick="filterAttendance('LOGIN', this)" class="tap att-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Sign-ins <span data-acount="LOGIN" class="opacity-70"></span></button>
+              <button onclick="filterAttendance('PUNCH', this)" class="tap att-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Waiters <span data-acount="PUNCH" class="opacity-70"></span></button>
             </div>
             <div class="flex items-center gap-2">
-              <button onclick="shiftAttendanceDate(-1)" title="Previous day" class="tap w-9 h-9 rounded-xl bg-white border border-lavender-200 flex items-center justify-center text-lavender-600 hover:bg-lavender-50"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-              <input id="attDate" type="date" required value="@ViewData["Today"]" max="@ViewData["Today"]" onchange="loadAttendance()" class="px-3 py-2 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
-              <button onclick="shiftAttendanceDate(1)" title="Next day" class="tap w-9 h-9 rounded-xl bg-white border border-lavender-200 flex items-center justify-center text-lavender-600 hover:bg-lavender-50"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
-              <button onclick="loadAttendance(true)" title="Refresh" class="tap w-9 h-9 rounded-xl bg-white border border-lavender-200 flex items-center justify-center text-lavender-600 hover:bg-lavender-50"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+              <button onclick="shiftAttendanceDate(-1)" title="Previous day" class="tap w-9 h-9 rounded-xl bg-white border border-brand-200 flex items-center justify-center text-brand-600 hover:bg-brand-50"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+              <input id="attDate" type="date" required value="@ViewData["Today"]" max="@ViewData["Today"]" onchange="loadAttendance()" class="px-3 py-2 rounded-xl border border-brand-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-400">
+              <button onclick="shiftAttendanceDate(1)" title="Next day" class="tap w-9 h-9 rounded-xl bg-white border border-brand-200 flex items-center justify-center text-brand-600 hover:bg-brand-50"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+              <button onclick="loadAttendance(true)" title="Refresh" class="tap w-9 h-9 rounded-xl bg-white border border-brand-200 flex items-center justify-center text-brand-600 hover:bg-brand-50"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
             </div>
           </div>
 
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
-            <div class="bg-white rounded-2xl border border-lavender-100 p-4 shadow-soft">
+            <div class="glass rounded-2xl p-4 shadow-soft">
               <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Staff in</p>
-              <p id="attStaff" class="text-2xl font-extrabold text-lavender-950 mt-1">&#8212;</p>
+              <p id="attStaff" class="text-2xl font-extrabold text-brand-950 mt-1">&#8212;</p>
             </div>
-            <div class="bg-white rounded-2xl border border-lavender-100 p-4 shadow-soft">
+            <div class="glass rounded-2xl p-4 shadow-soft">
               <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">On shift now</p>
               <p id="attOnShift" class="text-2xl font-extrabold text-mint-600 mt-1">&#8212;</p>
             </div>
-            <div class="bg-white rounded-2xl border border-lavender-100 p-4 shadow-soft">
+            <div class="glass rounded-2xl p-4 shadow-soft">
               <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total hours</p>
-              <p id="attHours" class="text-2xl font-extrabold text-lavender-950 mt-1">&#8212;</p>
+              <p id="attHours" class="text-2xl font-extrabold text-brand-950 mt-1">&#8212;</p>
             </div>
-            <div class="bg-white rounded-2xl border border-lavender-100 p-4 shadow-soft">
+            <div class="glass rounded-2xl p-4 shadow-soft">
               <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">No logout</p>
               <p id="attMissed" class="text-2xl font-extrabold text-amber-600 mt-1">&#8212;</p>
             </div>
           </div>
 
-          <div class="bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
+          <div class="glass rounded-2xl shadow-soft overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full text-sm min-w-[760px]">
-                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-lavender-100">
+                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-100">
                   <th class="text-left px-4 sm:px-5 py-3">Staff</th><th class="text-left px-4 sm:px-5 py-3">Role</th><th class="text-left px-4 sm:px-5 py-3">First In</th><th class="text-left px-4 sm:px-5 py-3">Last Out</th><th class="text-right px-4 sm:px-5 py-3">Hours</th><th class="text-right px-4 sm:px-5 py-3">Times In</th><th class="text-left px-4 sm:px-5 py-3">Status</th>
                 </tr></thead>
                 <tbody id="attBody"><tr><td colspan="7" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
@@ -531,10 +534,10 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <label for="rptFrom" class="text-[11px] font-bold text-slate-400 uppercase">From</label>
-              <input id="rptFrom" type="date" required value="@ViewData["Today"]" max="@ViewData["Today"]" onchange="onReportDates(this)" class="px-3 py-2 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
+              <input id="rptFrom" type="date" required value="@ViewData["Today"]" max="@ViewData["Today"]" onchange="onReportDates(this)" class="px-3 py-2 rounded-xl border border-brand-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-400">
               <label for="rptTo" class="text-[11px] font-bold text-slate-400 uppercase">To</label>
-              <input id="rptTo" type="date" required value="@ViewData["Today"]" max="@ViewData["Today"]" onchange="onReportDates(this)" class="px-3 py-2 rounded-xl border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
-              <button type="button" onclick="loadReports(true)" title="Refresh from database" class="tap w-9 h-9 rounded-xl bg-lavender-50 flex items-center justify-center text-lavender-600 hover:bg-lavender-100 flex-shrink-0">
+              <input id="rptTo" type="date" required value="@ViewData["Today"]" max="@ViewData["Today"]" onchange="onReportDates(this)" class="px-3 py-2 rounded-xl border border-brand-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-400">
+              <button type="button" onclick="loadReports(true)" title="Refresh from database" class="tap w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600 hover:bg-brand-100 flex-shrink-0">
                 <i data-lucide="refresh-cw" class="w-4 h-4"></i><span class="sr-only">Refresh</span>
               </button>
             </div>
@@ -542,33 +545,33 @@
 
           <!-- summary -->
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
-            <div class="bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
+            <div class="glass rounded-2xl p-4 sm:p-5 shadow-soft">
               <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Revenue</span>
-              <p id="rptRevenue" class="text-xl sm:text-2xl font-extrabold text-lavender-950 font-digital mt-1">&#8212;</p>
+              <p id="rptRevenue" class="text-xl sm:text-2xl font-extrabold text-brand-950 font-digital mt-1">&#8212;</p>
               <p id="rptRevenueNote" class="text-[10px] sm:text-xs font-bold text-slate-400 mt-1">&nbsp;</p>
             </div>
-            <div class="bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
+            <div class="glass rounded-2xl p-4 sm:p-5 shadow-soft">
               <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Orders</span>
-              <p id="rptOrders" class="text-xl sm:text-2xl font-extrabold text-lavender-950 font-digital mt-1">&#8212;</p>
+              <p id="rptOrders" class="text-xl sm:text-2xl font-extrabold text-brand-950 font-digital mt-1">&#8212;</p>
               <p class="text-[10px] sm:text-xs font-bold text-slate-400 mt-1">Settled bills</p>
             </div>
-            <div class="bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
+            <div class="glass rounded-2xl p-4 sm:p-5 shadow-soft">
               <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Avg Order</span>
-              <p id="rptAvg" class="text-xl sm:text-2xl font-extrabold text-lavender-950 font-digital mt-1">&#8212;</p>
+              <p id="rptAvg" class="text-xl sm:text-2xl font-extrabold text-brand-950 font-digital mt-1">&#8212;</p>
               <p class="text-[10px] sm:text-xs font-bold text-slate-400 mt-1">Per settled bill</p>
             </div>
-            <div class="bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
+            <div class="glass rounded-2xl p-4 sm:p-5 shadow-soft">
               <span class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Items Sold</span>
-              <p id="rptItems" class="text-xl sm:text-2xl font-extrabold text-lavender-950 font-digital mt-1">&#8212;</p>
+              <p id="rptItems" class="text-xl sm:text-2xl font-extrabold text-brand-950 font-digital mt-1">&#8212;</p>
               <p class="text-[10px] sm:text-xs font-bold text-slate-400 mt-1">Excluding FOC</p>
             </div>
           </div>
 
           <!-- hourly trend -->
-          <div class="bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft mb-5">
+          <div class="glass rounded-2xl p-4 sm:p-5 shadow-soft mb-5">
             <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
               <div>
-                <h3 class="text-sm font-extrabold text-lavender-950">Hourly Trend</h3>
+                <h3 class="text-sm font-extrabold text-brand-950">Hourly Trend</h3>
                 <p id="rptHourlySub" class="text-xs text-slate-400 font-semibold">By the hour the bill was rung</p>
               </div>
               <span class="text-[11px] font-bold text-slate-500">Bar height = amount</span>
@@ -580,30 +583,30 @@
 
           <!-- breakdowns -->
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-            <div class="bg-white rounded-2xl border border-lavender-100 p-4 sm:p-5 shadow-soft">
-              <h3 class="text-sm font-extrabold text-lavender-950 mb-1">Category Breakdown</h3>
+            <div class="glass rounded-2xl p-4 sm:p-5 shadow-soft">
+              <h3 class="text-sm font-extrabold text-brand-950 mb-1">Category Breakdown</h3>
               <p class="text-xs text-slate-400 font-semibold mb-4">Line value before discount, service charge and tax</p>
               <div class="space-y-3" id="rptCategories"></div>
             </div>
-            <div class="bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
+            <div class="glass rounded-2xl shadow-soft overflow-hidden">
               <div class="px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
-                <h3 class="text-sm font-extrabold text-lavender-950 mb-1">Cashier Wise</h3>
+                <h3 class="text-sm font-extrabold text-brand-950 mb-1">Cashier Wise</h3>
                 <p class="text-xs text-slate-400 font-semibold">Who took the payment</p>
               </div>
               <table class="w-full text-sm">
-                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-y border-lavender-100">
+                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-y border-brand-100">
                   <th class="text-left px-4 sm:px-5 py-2.5">Cashier</th><th class="text-right px-3 py-2.5">Orders</th><th class="text-right px-4 sm:px-5 py-2.5">Amount</th>
                 </tr></thead>
                 <tbody id="rptCashiers"></tbody>
               </table>
             </div>
-            <div class="bg-white rounded-2xl border border-lavender-100 shadow-soft overflow-hidden">
+            <div class="glass rounded-2xl shadow-soft overflow-hidden">
               <div class="px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
-                <h3 class="text-sm font-extrabold text-lavender-950 mb-1">Waiter Wise</h3>
+                <h3 class="text-sm font-extrabold text-brand-950 mb-1">Waiter Wise</h3>
                 <p class="text-xs text-slate-400 font-semibold">Waiter picked on the bill</p>
               </div>
               <table class="w-full text-sm">
-                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-y border-lavender-100">
+                <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-y border-brand-100">
                   <th class="text-left px-4 sm:px-5 py-2.5">Waiter</th><th class="text-right px-3 py-2.5">Orders</th><th class="text-right px-3 py-2.5">Pax</th><th class="text-right px-4 sm:px-5 py-2.5">Amount</th>
                 </tr></thead>
                 <tbody id="rptWaiters"></tbody>
@@ -617,43 +620,43 @@
           @{ var store = (StoreInfo)ViewData["Store"]!; }
           <div class="space-y-4">
 
-            <div class="bg-white rounded-2xl border border-lavender-100 p-5 sm:p-6 shadow-soft">
-              <h3 class="text-sm font-extrabold text-lavender-950 mb-4 flex items-center gap-2"><i data-lucide="store" class="w-4 h-4 text-lavender-500"></i> Store Info</h3>
+            <div class="glass rounded-2xl p-5 sm:p-6 shadow-soft">
+              <h3 class="text-sm font-extrabold text-brand-950 mb-4 flex items-center gap-2"><i data-lucide="store" class="w-4 h-4 text-brand-500"></i> Store Info</h3>
               @* The config_store row. App Name is view only - the seed sets it. *@
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">App Name</label><input value="@store.AppName" readonly tabindex="-1" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-slate-50 text-sm font-semibold text-slate-400 cursor-not-allowed"></div>
-                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Store Name</label><input id="setStoreName" maxlength="100" value="@store.StoreName" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></div>
-                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Address</label><input id="setAddress" maxlength="250" value="@store.Address" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></div>
-                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Phone</label><input id="setPhone" maxlength="20" value="@store.Phone" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></div>
-                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">GST No.</label><input id="setGstNo" maxlength="15" value="@store.GstNo" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition uppercase"></div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">App Name</label><input value="@store.AppName" readonly tabindex="-1" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-slate-50 text-sm font-semibold text-slate-400 cursor-not-allowed"></div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Store Name</label><input id="setStoreName" maxlength="100" value="@store.StoreName" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"></div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Address</label><input id="setAddress" maxlength="250" value="@store.Address" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"></div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Phone</label><input id="setPhone" maxlength="20" value="@store.Phone" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"></div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">GST No.</label><input id="setGstNo" maxlength="15" value="@store.GstNo" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition uppercase"></div>
               </div>
             </div>
 
-            <div class="bg-white rounded-2xl border border-lavender-100 p-5 sm:p-6 shadow-soft">
-              <h3 class="text-sm font-extrabold text-lavender-950 mb-4 flex items-center gap-2"><i data-lucide="receipt" class="w-4 h-4 text-lavender-500"></i> Tax & Billing</h3>
+            <div class="glass rounded-2xl p-5 sm:p-6 shadow-soft">
+              <h3 class="text-sm font-extrabold text-brand-950 mb-4 flex items-center gap-2"><i data-lucide="receipt" class="w-4 h-4 text-brand-500"></i> Tax & Billing</h3>
               <div class="space-y-3">
                 @* Service charge and tax are config_terminal_setting rows. Currency and
                    the two toggles are still placeholder markup. *@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Service Charge (%)</label><input id="setServiceCharge" type="number" min="0" max="100" step="0.01" value="@ViewData["ServiceChargePercent"]" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></div>
-                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Tax Rate (%)</label><input id="setGst" type="number" min="0" max="100" step="0.01" value="@ViewData["GstPercent"]" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></div>
-                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Currency</label><input value="INR (₹)" readonly tabindex="-1" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-slate-50 text-sm font-semibold text-slate-400 cursor-not-allowed"></div>
+                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Service Charge (%)</label><input id="setServiceCharge" type="number" min="0" max="100" step="0.01" value="@ViewData["ServiceChargePercent"]" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"></div>
+                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Tax Rate (%)</label><input id="setGst" type="number" min="0" max="100" step="0.01" value="@ViewData["GstPercent"]" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"></div>
+                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Currency</label><input id="setCurrency" value="" readonly tabindex="-1" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-slate-50 text-sm font-semibold text-slate-400 cursor-not-allowed"></div>
                 </div>
                 <p class="text-xs text-slate-400 leading-relaxed">Applies to every till on its next page load. A cashier can still override the rate for the bill in front of them from the POS Settings panel; that override is never written back here.</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div class="flex items-center justify-between p-3 sm:p-4 bg-lavender-25 rounded-xl border border-lavender-100 gap-4">
-                    <div class="min-w-0"><p class="text-sm font-bold text-lavender-950">Print Receipt Automatically</p><p class="text-xs text-slate-400">Print after every completed order</p></div>
-                    <button onclick="this.dataset.on = this.dataset.on==='1'?'0':'1'; this.classList.toggle('bg-lavender-600'); this.classList.toggle('bg-slate-300'); this.querySelector('span').classList.toggle('translate-x-5')" data-on="1" class="w-11 h-6 rounded-full bg-lavender-600 relative transition-colors flex-shrink-0"><span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform translate-x-5"></span></button>
+                  <div class="flex items-center justify-between p-3 sm:p-4 bg-brand-25 rounded-xl border border-brand-100 gap-4">
+                    <div class="min-w-0"><p class="text-sm font-bold text-brand-950">Print Receipt Automatically</p><p class="text-xs text-slate-400">Print after every completed order</p></div>
+                    <button onclick="this.dataset.on = this.dataset.on==='1'?'0':'1'; this.classList.toggle('bg-brand-600'); this.classList.toggle('bg-slate-300'); this.querySelector('span').classList.toggle('translate-x-5')" data-on="1" class="w-11 h-6 rounded-full bg-brand-600 relative transition-colors flex-shrink-0"><span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform translate-x-5"></span></button>
                   </div>
-                  <div class="flex items-center justify-between p-3 sm:p-4 bg-lavender-25 rounded-xl border border-lavender-100 gap-4">
-                    <div class="min-w-0"><p class="text-sm font-bold text-lavender-950">Sound Effects</p><p class="text-xs text-slate-400">Beep sounds on actions</p></div>
-                    <button onclick="this.dataset.on = this.dataset.on==='1'?'0':'1'; this.classList.toggle('bg-lavender-600'); this.classList.toggle('bg-slate-300'); this.querySelector('span').classList.toggle('translate-x-5')" data-on="1" class="w-11 h-6 rounded-full bg-lavender-600 relative transition-colors flex-shrink-0"><span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform translate-x-5"></span></button>
+                  <div class="flex items-center justify-between p-3 sm:p-4 bg-brand-25 rounded-xl border border-brand-100 gap-4">
+                    <div class="min-w-0"><p class="text-sm font-bold text-brand-950">Sound Effects</p><p class="text-xs text-slate-400">Beep sounds on actions</p></div>
+                    <button onclick="this.dataset.on = this.dataset.on==='1'?'0':'1'; this.classList.toggle('bg-brand-600'); this.classList.toggle('bg-slate-300'); this.querySelector('span').classList.toggle('translate-x-5')" data-on="1" class="w-11 h-6 rounded-full bg-brand-600 relative transition-colors flex-shrink-0"><span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform translate-x-5"></span></button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <button id="saveSettingsBtn" onclick="saveCharges()" class="tap px-6 py-3 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-sm shadow-lift flex items-center gap-2 w-full sm:w-auto justify-center">
+            <button id="saveSettingsBtn" onclick="saveCharges()" class="tap px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lift flex items-center gap-2 w-full sm:w-auto justify-center">
               <i data-lucide="save" class="w-4 h-4"></i> Save Settings
             </button>
           </div>
@@ -665,15 +668,15 @@
 
   <!-- ========== ADD MENU ITEM MODAL ========== -->
   <div id="menuModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-    <div class="bg-white rounded-2xl shadow-lift w-full max-w-lg p-5 sm:p-6 fade-in max-h-[95vh] overflow-y-auto">
+    <div class="glass-strong rounded-2xl shadow-lift w-full max-w-lg p-5 sm:p-6 fade-in max-h-[95vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-5">
-        <h3 id="itemModalTitle" class="text-lg font-extrabold text-lavender-950">Add Menu Item</h3>
-        <button onclick="closeMenuModal()" class="tap w-8 h-8 rounded-lg bg-lavender-50 flex items-center justify-center text-lavender-600 hover:bg-lavender-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <h3 id="itemModalTitle" class="text-lg font-extrabold text-brand-950">Add Menu Item</h3>
+        <button onclick="closeMenuModal()" class="tap w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600 hover:bg-brand-100"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="space-y-3">
-        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Item Name</label><input id="itemName" maxlength="80" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition" placeholder="e.g. Masala Dosa"></div>
+        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Item Name</label><input id="itemName" maxlength="80" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="e.g. Masala Dosa"></div>
         <div class="grid grid-cols-2 gap-3">
-          <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Price (<span class="till-currency"></span>)</label><input id="itemPrice" type="number" min="0.01" step="0.01" inputmode="decimal" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition" placeholder="4.50"></div>
+          <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Price (<span class="till-currency"></span>)</label><input id="itemPrice" type="number" min="0.01" step="0.01" inputmode="decimal" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="4.50"></div>
           <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Type</label>
             <div class="grid grid-cols-2 gap-1.5">
               <button type="button" id="itemVegBtn" onclick="setItemVeg(true)" class="tap py-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-1.5"><span class="w-3 h-3 rounded-[3px] border-[1.5px] border-emerald-600 flex items-center justify-center"><span class="w-1 h-1 rounded-full bg-emerald-600"></span></span>Veg</button>
@@ -682,72 +685,72 @@
           </div>
         </div>
         <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Category</label>
-          <select id="itemCat" onchange="updateItemHint()" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></select>
+          <select id="itemCat" onchange="updateItemHint()" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"></select>
         </div>
-        <label class="flex items-center justify-between p-3 bg-lavender-25 rounded-xl border border-lavender-100 gap-4 cursor-pointer">
-          <span class="min-w-0"><span class="block text-sm font-bold text-lavender-950">Active</span><span class="block text-xs text-slate-400">Shown on the POS</span></span>
-          <input id="itemActive" type="checkbox" class="w-5 h-5 accent-lavender-600" checked>
+        <label class="flex items-center justify-between p-3 bg-brand-25 rounded-xl border border-brand-100 gap-4 cursor-pointer">
+          <span class="min-w-0"><span class="block text-sm font-bold text-brand-950">Active</span><span class="block text-xs text-slate-400">Shown on the POS</span></span>
+          <input id="itemActive" type="checkbox" class="w-5 h-5 accent-brand-600" checked>
         </label>
         <p id="itemHint" class="hidden text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 font-semibold"></p>
-        <button id="itemSaveBtn" onclick="saveMenuItem()" class="tap w-full py-3 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-sm shadow-lift flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> <span id="itemSaveLabel">Add Item</span></button>
+        <button id="itemSaveBtn" onclick="saveMenuItem()" class="tap w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lift flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> <span id="itemSaveLabel">Add Item</span></button>
       </div>
     </div>
   </div>
 
   <!-- ========== ADD CATEGORY MODAL ========== -->
   <div id="categoryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-    <div class="bg-white rounded-2xl shadow-lift w-full max-w-lg p-5 sm:p-6 fade-in max-h-[95vh] overflow-y-auto">
+    <div class="glass-strong rounded-2xl shadow-lift w-full max-w-lg p-5 sm:p-6 fade-in max-h-[95vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-5">
-        <h3 id="catModalTitle" class="text-lg font-extrabold text-lavender-950">Add Category</h3>
-        <button onclick="closeCategoryModal()" class="tap w-8 h-8 rounded-lg bg-lavender-50 flex items-center justify-center text-lavender-600 hover:bg-lavender-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <h3 id="catModalTitle" class="text-lg font-extrabold text-brand-950">Add Category</h3>
+        <button onclick="closeCategoryModal()" class="tap w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600 hover:bg-brand-100"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="space-y-3">
         <div class="flex items-end gap-3">
-          <div class="flex-1 min-w-0"><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Category Name</label><input id="newCatName" maxlength="40" oninput="renderCatPreview()" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition" placeholder="e.g. Juices"></div>
+          <div class="flex-1 min-w-0"><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Category Name</label><input id="newCatName" maxlength="40" oninput="renderCatPreview()" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="e.g. Juices"></div>
           @* Live preview of the till's rail tile - selected and unselected - in the chosen colour. *@
           <div class="flex gap-1.5 flex-shrink-0" title="How it looks on the POS">
-            <div id="catPreviewOn"  class="w-[68px] rounded-2xl py-2 px-1 flex flex-col items-center gap-1 border border-lavender-300 bg-lavender-50"></div>
+            <div id="catPreviewOn"  class="w-[68px] rounded-2xl py-2 px-1 flex flex-col items-center gap-1 border border-brand-300 bg-brand-50"></div>
             <div id="catPreviewOff" class="w-[68px] rounded-2xl py-2 px-1 flex flex-col items-center gap-1 border border-slate-100 bg-white"></div>
           </div>
         </div>
         <div>
           <label class="flex items-center justify-between text-xs font-bold text-slate-400 uppercase mb-1">
             Colour
-            <button type="button" onclick="randomCatColor(true)" class="tap normal-case inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-lavender-50 text-lavender-700 hover:bg-lavender-100 text-[11px] font-bold"><i data-lucide="shuffle" class="w-3 h-3"></i> Random</button>
+            <button type="button" onclick="randomCatColor(true)" class="tap normal-case inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 text-[11px] font-bold"><i data-lucide="shuffle" class="w-3 h-3"></i> Random</button>
           </label>
           <div id="catColorPicker" class="grid grid-cols-10 gap-1.5"></div>
         </div>
         <div>
-          <label class="flex items-center justify-between text-xs font-bold text-slate-400 uppercase mb-1">Icon <span id="catIconName" class="normal-case font-mono text-lavender-600"></span></label>
-          <div id="catIconPicker" class="max-h-64 overflow-y-auto pr-1 p-2 rounded-xl border border-lavender-100"></div>
+          <label class="flex items-center justify-between text-xs font-bold text-slate-400 uppercase mb-1">Icon <span id="catIconName" class="normal-case font-mono text-brand-600"></span></label>
+          <div id="catIconPicker" class="max-h-64 overflow-y-auto pr-1 p-2 rounded-xl border border-brand-100"></div>
         </div>
-        <button id="addCategoryBtn" onclick="saveCategory()" class="tap w-full py-3 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-sm shadow-lift flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> <span id="catSaveLabel">Add Category</span></button>
+        <button id="addCategoryBtn" onclick="saveCategory()" class="tap w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lift flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> <span id="catSaveLabel">Add Category</span></button>
       </div>
     </div>
   </div>
 
   <!-- ========== ADD / EDIT TRANSACTION MODE MODAL ========== -->
   <div id="modeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-    <div class="bg-white rounded-2xl shadow-lift w-full max-w-md p-5 sm:p-6 fade-in">
+    <div class="glass-strong rounded-2xl shadow-lift w-full max-w-md p-5 sm:p-6 fade-in">
       <div class="flex items-center justify-between mb-5">
-        <h3 id="modeModalTitle" class="text-lg font-extrabold text-lavender-950">Add Transaction Mode</h3>
-        <button onclick="closeModeModal()" class="tap w-8 h-8 rounded-lg bg-lavender-50 flex items-center justify-center text-lavender-600 hover:bg-lavender-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <h3 id="modeModalTitle" class="text-lg font-extrabold text-brand-950">Add Transaction Mode</h3>
+        <button onclick="closeModeModal()" class="tap w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600 hover:bg-brand-100"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="space-y-3">
-        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Mode Name</label><input id="modeName" maxlength="30" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold uppercase focus:outline-none focus:ring-2 focus:ring-lavender-400 transition" placeholder="e.g. PAYNOW"></div>
-        <button id="modeSaveBtn" onclick="saveMode()" class="tap w-full py-3 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-sm shadow-lift flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> <span id="modeSaveLabel">Add Mode</span></button>
+        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Mode Name</label><input id="modeName" maxlength="30" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold uppercase focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="e.g. PAYNOW"></div>
+        <button id="modeSaveBtn" onclick="saveMode()" class="tap w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lift flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> <span id="modeSaveLabel">Add Mode</span></button>
       </div>
     </div>
   </div>
 
   <!-- ========== CONFIRM DELETE MODAL ========== -->
   <div id="confirmModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-    <div class="bg-white rounded-2xl shadow-lift w-full max-w-sm p-5 sm:p-6 fade-in text-center">
+    <div class="glass-strong rounded-2xl shadow-lift w-full max-w-sm p-5 sm:p-6 fade-in text-center">
       <div class="w-12 h-12 mx-auto rounded-full bg-rose-50 flex items-center justify-center text-rose-500 mb-3"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
-      <h3 id="confirmTitle" class="text-base font-extrabold text-lavender-950">Delete?</h3>
+      <h3 id="confirmTitle" class="text-base font-extrabold text-brand-950">Delete?</h3>
       <p id="confirmMsg" class="text-sm text-slate-500 font-semibold mt-1"></p>
       <div class="mt-5 grid grid-cols-2 gap-2">
-        <button onclick="closeConfirm()" class="tap py-2.5 rounded-xl bg-lavender-50 text-lavender-700 font-bold text-sm hover:bg-lavender-100">Cancel</button>
+        <button onclick="closeConfirm()" class="tap py-2.5 rounded-xl bg-brand-50 text-brand-700 font-bold text-sm hover:bg-brand-100">Cancel</button>
         <button id="confirmOkBtn" class="tap py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm">Delete</button>
       </div>
     </div>
@@ -755,13 +758,13 @@
 
   <!-- ========== ORDER / HOLD ITEMS MODAL ========== -->
   <div id="orderViewModal" onclick="if (event.target === this) closeOrderView()" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-    <div class="bg-white rounded-2xl shadow-lift w-full max-w-lg max-h-[90vh] flex flex-col fade-in">
-      <div class="flex items-start justify-between gap-3 p-5 sm:p-6 pb-3 border-b border-lavender-100">
+    <div class="glass-strong rounded-2xl shadow-lift w-full max-w-lg max-h-[90vh] flex flex-col fade-in">
+      <div class="flex items-start justify-between gap-3 p-5 sm:p-6 pb-3 border-b border-brand-100">
         <div class="min-w-0">
-          <h3 id="ovTitle" class="text-lg font-extrabold text-lavender-950"></h3>
+          <h3 id="ovTitle" class="text-lg font-extrabold text-brand-950"></h3>
           <p id="ovSub" class="text-xs font-semibold text-slate-400 mt-0.5"></p>
         </div>
-        <button onclick="closeOrderView()" class="tap w-8 h-8 rounded-lg bg-lavender-50 flex items-center justify-center text-lavender-600 hover:bg-lavender-100 flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <button onclick="closeOrderView()" class="tap w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600 hover:bg-brand-100 flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div id="ovBody" class="p-5 sm:p-6 pt-4 overflow-y-auto"></div>
     </div>
@@ -772,28 +775,28 @@
   <div id="staffDrawerBackdrop" onclick="closeStaffDrawer()" class="offcanvas-backdrop fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"></div>
   <aside id="staffDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" data-pane="user"
          class="offcanvas fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[440px] bg-white shadow-lift flex flex-col">
-    <div class="flex items-start justify-between gap-3 px-5 sm:px-6 py-4 border-b border-lavender-100">
+    <div class="flex items-start justify-between gap-3 px-5 sm:px-6 py-4 border-b border-brand-100">
       <div class="min-w-0">
-        <h3 id="drawerTitle" class="text-lg font-extrabold text-lavender-950">Add User</h3>
+        <h3 id="drawerTitle" class="text-lg font-extrabold text-brand-950">Add User</h3>
         <p id="drawerSub" class="text-xs font-semibold text-slate-400 mt-0.5"></p>
       </div>
-      <button onclick="closeStaffDrawer()" class="tap w-8 h-8 rounded-lg bg-lavender-50 flex items-center justify-center text-lavender-600 hover:bg-lavender-100 flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <button onclick="closeStaffDrawer()" class="tap w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600 hover:bg-brand-100 flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
 
     <div class="flex-1 overflow-y-auto px-5 sm:px-6 py-5">
       <!-- user form -->
       <div data-form="user" class="space-y-3">
-        <div><label for="uName" class="block text-xs font-bold text-slate-400 uppercase mb-1">Full Name</label><input id="uName" maxlength="100" autocomplete="off" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition" placeholder="e.g. Priya S"></div>
+        <div><label for="uName" class="block text-xs font-bold text-slate-400 uppercase mb-1">Full Name</label><input id="uName" maxlength="100" autocomplete="off" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="e.g. Priya S"></div>
         <div id="uIdRow" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div id="uUsernameWrap"><label for="uUsername" class="block text-xs font-bold text-slate-400 uppercase mb-1">Username</label><input id="uUsername" maxlength="50" autocomplete="off" autocapitalize="none" spellcheck="false" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold font-mono lowercase focus:outline-none focus:ring-2 focus:ring-lavender-400 transition" placeholder="priya"></div>
-          <div><label for="uPhone" class="block text-xs font-bold text-slate-400 uppercase mb-1">Phone <span class="normal-case font-semibold">(optional)</span></label><input id="uPhone" type="tel" inputmode="tel" maxlength="25" autocomplete="off" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition" placeholder="98765 43210"></div>
+          <div id="uUsernameWrap"><label for="uUsername" class="block text-xs font-bold text-slate-400 uppercase mb-1">Username</label><input id="uUsername" maxlength="50" autocomplete="off" autocapitalize="none" spellcheck="false" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold font-mono lowercase focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="priya"></div>
+          <div><label for="uPhone" class="block text-xs font-bold text-slate-400 uppercase mb-1">Phone <span class="normal-case font-semibold">(optional)</span></label><input id="uPhone" type="tel" inputmode="tel" maxlength="25" autocomplete="off" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="98765 43210"></div>
         </div>
         <p id="uSignInHint" class="text-[11px] text-slate-400 font-semibold -mt-1">Staff sign in with either the username or the phone number.</p>
         <div id="uPwdWrap">
           <label for="uPassword" class="block text-xs font-bold text-slate-400 uppercase mb-1">Password</label>
           <div class="relative">
-            <input id="uPassword" type="password" maxlength="100" autocomplete="new-password" class="w-full pl-4 pr-11 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition" placeholder="At least 4 characters">
-            <button type="button" onclick="togglePwd()" title="Show / hide" class="tap absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg text-slate-400 hover:text-lavender-600 flex items-center justify-center"><i id="uPwdIcon" data-lucide="eye" class="w-4 h-4"></i></button>
+            <input id="uPassword" type="password" maxlength="100" autocomplete="new-password" class="w-full pl-4 pr-11 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="At least 4 characters">
+            <button type="button" onclick="togglePwd()" title="Show / hide" class="tap absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg text-slate-400 hover:text-brand-600 flex items-center justify-center"><i id="uPwdIcon" data-lucide="eye" class="w-4 h-4"></i></button>
           </div>
           <p id="uPwdHint" class="hidden text-[11px] text-slate-400 font-semibold mt-1">Leave blank to keep the current password.</p>
         </div>
@@ -801,19 +804,19 @@
           <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Role</label>
           <div id="uRolePicker" class="grid grid-cols-2 gap-2"></div>
         </div>
-        <label class="flex items-center justify-between p-3 bg-lavender-25 rounded-xl border border-lavender-100 gap-4 cursor-pointer">
-          <span class="min-w-0"><span class="block text-sm font-bold text-lavender-950">Active</span><span id="uActiveSub" class="block text-xs text-slate-400">Can sign in</span></span>
-          <input id="uActive" type="checkbox" class="w-5 h-5 accent-lavender-600" checked>
+        <label class="flex items-center justify-between p-3 bg-brand-25 rounded-xl border border-brand-100 gap-4 cursor-pointer">
+          <span class="min-w-0"><span class="block text-sm font-bold text-brand-950">Active</span><span id="uActiveSub" class="block text-xs text-slate-400">Can sign in</span></span>
+          <input id="uActive" type="checkbox" class="w-5 h-5 accent-brand-600" checked>
         </label>
         <p id="uNote" class="hidden text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 font-semibold"></p>
       </div>
 
       <!-- role form -->
       <div data-form="role" class="space-y-3">
-        <div><label for="rName" class="block text-xs font-bold text-slate-400 uppercase mb-1">Role Name</label><input id="rName" maxlength="50" autocomplete="off" oninput="suggestRoleCode()" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition" placeholder="e.g. Kitchen"></div>
+        <div><label for="rName" class="block text-xs font-bold text-slate-400 uppercase mb-1">Role Name</label><input id="rName" maxlength="50" autocomplete="off" oninput="suggestRoleCode()" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="e.g. Kitchen"></div>
         <div class="grid grid-cols-2 gap-3">
-          <div><label for="rCode" class="block text-xs font-bold text-slate-400 uppercase mb-1">Code</label><input id="rCode" maxlength="20" autocomplete="off" spellcheck="false" oninput="this.dataset.touched='1'; this.value = this.value.toUpperCase().replace(/[^A-Z0-9_]/g,'')" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold font-mono uppercase focus:outline-none focus:ring-2 focus:ring-lavender-400 transition disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed" placeholder="KITCHEN"></div>
-          <div><label for="rSort" class="block text-xs font-bold text-slate-400 uppercase mb-1">Order</label><input id="rSort" type="number" min="0" max="999" step="1" inputmode="numeric" class="w-full px-4 py-3 rounded-xl border border-lavender-200 bg-lavender-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-lavender-400 transition"></div>
+          <div><label for="rCode" class="block text-xs font-bold text-slate-400 uppercase mb-1">Code</label><input id="rCode" maxlength="20" autocomplete="off" spellcheck="false" oninput="this.dataset.touched='1'; this.value = this.value.toUpperCase().replace(/[^A-Z0-9_]/g,'')" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold font-mono uppercase focus:outline-none focus:ring-2 focus:ring-brand-400 transition disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed" placeholder="KITCHEN"></div>
+          <div><label for="rSort" class="block text-xs font-bold text-slate-400 uppercase mb-1">Order</label><input id="rSort" type="number" min="0" max="999" step="1" inputmode="numeric" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"></div>
         </div>
         <p id="rCodeHint" class="text-[11px] text-slate-400 font-semibold -mt-1">The code is fixed once saved: sign-in and permissions match on it.</p>
         <div id="rAccess" class="p-3 rounded-xl border text-xs font-semibold"></div>
@@ -824,15 +827,15 @@
       </div>
     </div>
 
-    <div class="px-5 sm:px-6 py-4 border-t border-lavender-100 grid grid-cols-2 gap-2">
-      <button onclick="closeStaffDrawer()" class="tap py-3 rounded-xl bg-lavender-50 text-lavender-700 font-bold text-sm hover:bg-lavender-100">Cancel</button>
-      <button id="drawerSaveBtn" onclick="saveStaffDrawer()" class="tap py-3 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-bold text-sm shadow-lift flex items-center justify-center gap-2 disabled:opacity-60"><i data-lucide="save" class="w-4 h-4"></i> <span id="drawerSaveLabel">Save</span></button>
+    <div class="px-5 sm:px-6 py-4 border-t border-brand-100 grid grid-cols-2 gap-2">
+      <button onclick="closeStaffDrawer()" class="tap py-3 rounded-xl bg-brand-50 text-brand-700 font-bold text-sm hover:bg-brand-100">Cancel</button>
+      <button id="drawerSaveBtn" onclick="saveStaffDrawer()" class="tap py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lift flex items-center justify-center gap-2 disabled:opacity-60"><i data-lucide="save" class="w-4 h-4"></i> <span id="drawerSaveLabel">Save</span></button>
     </div>
   </aside>
 
   <!-- ========== TOAST (FIXED) ========== -->
   <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-6 sm:top-5 z-[200] pointer-events-none" style="opacity:0">
-    <div class="pointer-events-auto flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-lavender-950 text-white text-sm font-bold shadow-lift border border-lavender-800 min-w-[220px] max-w-[90vw] sm:max-w-sm">
+    <div class="pointer-events-auto flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-brand-950 text-white text-sm font-bold shadow-lift border border-brand-800 min-w-[220px] max-w-[90vw] sm:max-w-sm">
       <div id="toastIcon" class="w-7 h-7 rounded-full bg-mint-500/20 flex items-center justify-center flex-shrink-0">
         <svg id="toastSvg" class="w-4 h-4 text-mint-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
       </div>
@@ -862,7 +865,7 @@
     // ===================== CLOCK =====================
     function tickClock() {
       const d = new Date();
-      document.getElementById('liveClock').textContent = d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true });
+      document.getElementById('liveClock').textContent = shopTime(d, { seconds: true });
     }
     setInterval(tickClock, 1000);
 
@@ -968,7 +971,7 @@
     let DASH = null;
     let dashInFlight = false;
 
-    const rupees  = n => '\u20B9' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+    const rupees  = n => SHOP_TIME.currency + shopNumber(Math.round(Number(n) || 0));
     const setText = (id, v) => { document.getElementById(id).textContent = v; };
 
     // Names, table numbers and item names are typed in by staff, so they are
@@ -981,7 +984,7 @@
     // Worked out from the UTC timestamp, so it reads correctly even on a browser
     // whose clock is set to a different zone than the till's.
     function timeAgo(utcIso) {
-      const t = new Date(utcIso);
+      const t = shopParse(utcIso);
       if (isNaN(t.getTime())) return '';
       const mins = Math.floor((Date.now() - t.getTime()) / 60000);
       if (mins < 1)  return 'just now';
@@ -1024,7 +1027,7 @@
         renderTopSellers();
         renderRecentOrders();
         drawIcons();
-        setText('syncedAt', 'Synced ' + new Date().toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12:true }));
+        setText('syncedAt', 'Synced ' + shopTime(new Date()));
         if (manual) showToast('Dashboard refreshed');
       } catch (e) {
         setText('syncedAt', 'Sync failed');
@@ -1081,11 +1084,11 @@
       el.innerHTML = data.map((d, i) => {
         const v   = Number(d.value) || 0;
         const h   = Math.round((v / max) * 100);
-        const cap = v === 0 ? '' : v >= 1000 ? '\u20B9' + (v / 1000).toFixed(1) + 'k' : rupees(v);
+        const cap = v === 0 ? '' : v >= 1000 ? SHOP_TIME.currency + (v / 1000).toFixed(1) + 'k' : rupees(v);
         return `<div class="flex-1 flex flex-col items-center gap-1" title="${esc(d.label)}: ${rupees(v)}">
-          <span class="text-[9px] sm:text-[10px] font-bold text-lavender-600">${cap}</span>
-          <div class="w-full bg-lavender-100 rounded-t-lg overflow-hidden" style="height:120px;display:flex;align-items:flex-end">
-            <div class="w-full rounded-t-lg bg-gradient-to-t from-lavender-600 to-lavender-400 bar-animate" style="--bar-h:${h}%;height:${h}%;animation-delay:${i * .06}s"></div>
+          <span class="text-[9px] sm:text-[10px] font-bold text-brand-600">${cap}</span>
+          <div class="w-full bg-brand-100 rounded-t-lg overflow-hidden" style="height:120px;display:flex;align-items:flex-end">
+            <div class="w-full rounded-t-lg bg-gradient-to-t from-brand-600 to-brand-400 bar-animate" style="--bar-h:${h}%;height:${h}%;animation-delay:${i * .06}s"></div>
           </div>
           <span class="text-[9px] sm:text-[10px] font-bold text-slate-400">${esc(d.label)}</span>
         </div>`;
@@ -1102,10 +1105,10 @@
       el.innerHTML = items.map((it, i) => {
         const pct = Math.round(((Number(it.qty) || 0) / top) * 100);
         return `<div class="flex items-center gap-3">
-          <span class="w-5 h-5 rounded-full bg-lavender-100 text-lavender-700 text-[10px] font-extrabold flex items-center justify-center flex-shrink-0">${i + 1}</span>
+          <span class="w-5 h-5 rounded-full bg-brand-100 text-brand-700 text-[10px] font-extrabold flex items-center justify-center flex-shrink-0">${i + 1}</span>
           <div class="flex-1 min-w-0">
-            <div class="flex justify-between text-xs font-bold"><span class="text-slate-700 truncate">${esc(it.name)}</span><span class="text-lavender-600 flex-shrink-0 ml-2">${it.qty} sold</span></div>
-            <div class="mt-1 h-1.5 rounded-full bg-lavender-100 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-lavender-500 to-lavender-400 transition-all" style="width:${pct}%"></div></div>
+            <div class="flex justify-between text-xs font-bold"><span class="text-slate-700 truncate">${esc(it.name)}</span><span class="text-brand-600 flex-shrink-0 ml-2">${it.qty} sold</span></div>
+            <div class="mt-1 h-1.5 rounded-full bg-brand-100 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-400 transition-all" style="width:${pct}%"></div></div>
           </div>
         </div>`;
       }).join('');
@@ -1135,12 +1138,12 @@
         return;
       }
       body.innerHTML = rows.map(o =>
-        `<tr class="table-row border-b border-lavender-50 last:border-0">
-          <td class="px-4 sm:px-5 py-3 font-bold text-lavender-700 font-mono">#${String(o.seqNo).padStart(3, '0')}</td>
+        `<tr class="table-row border-b border-brand-50 last:border-0">
+          <td class="px-4 sm:px-5 py-3 font-bold text-brand-700 font-mono">#${String(o.seqNo).padStart(3, '0')}</td>
           <td class="px-4 sm:px-5 py-3 font-semibold text-slate-600">${esc(o.items) || '<span class="text-slate-300">No lines</span>'}</td>
           <td class="px-4 sm:px-5 py-3 text-slate-400 font-semibold whitespace-nowrap" title="${esc(o.localTime)}">${timeAgo(o.createdAt)}</td>
           <td class="px-4 sm:px-5 py-3">${statusBadge(o.status)}</td>
-          <td class="px-4 sm:px-5 py-3 text-right font-bold text-lavender-950 font-mono">${rupees(o.total)}</td>
+          <td class="px-4 sm:px-5 py-3 text-right font-bold text-brand-950 font-mono">${rupees(o.total)}</td>
         </tr>`
       ).join('');
     }
@@ -1163,7 +1166,7 @@
     const orderNo = n => '#' + String(n).padStart(3, '0');
     const modeLabel = o => o.orderMode === 'takeaway' ? 'Take Away' : (o.tableNo ? esc(o.tableNo) : 'Dine In');
     const viewBtn = (kind, id) =>
-      `<button onclick="openOrderView('${kind}', ${id})" class="tap px-3 py-1.5 rounded-lg bg-lavender-50 text-lavender-700 text-[11px] font-bold border border-lavender-200 hover:bg-lavender-100 whitespace-nowrap inline-flex items-center gap-1"><i data-lucide="eye" class="w-3.5 h-3.5"></i> View</button>`;
+      `<button onclick="openOrderView('${kind}', ${id})" class="tap px-3 py-1.5 rounded-lg bg-brand-50 text-brand-700 text-[11px] font-bold border border-brand-200 hover:bg-brand-100 whitespace-nowrap inline-flex items-center gap-1"><i data-lucide="eye" class="w-3.5 h-3.5"></i> View</button>`;
 
     // Name with the phone under it; walk-ins usually have no number.
     const customerCell = o =>
@@ -1174,7 +1177,7 @@
     const PAY_STYLE = {
       cash:  ['CASH',  'bg-mint-50 text-mint-700 border-mint-500',     'banknote'],
       card:  ['CARD',  'bg-sky-50 text-sky-700 border-sky-500',        'credit-card'],
-      qr:    ['UPI',   'bg-lavender-50 text-lavender-700 border-lavender-500', 'qr-code'],
+      qr:    ['UPI',   'bg-brand-50 text-brand-700 border-brand-500', 'qr-code'],
       split: ['SPLIT', 'bg-amber-50 text-amber-700 border-amber-500',  'users'],
     };
     const payBadge = m => {
@@ -1186,7 +1189,7 @@
       orderTab = tab;
       document.querySelectorAll('.order-tab-btn').forEach(b => {
         const on = b.dataset.otab === tab;
-        b.classList.toggle('bg-white', on); b.classList.toggle('text-lavender-700', on); b.classList.toggle('shadow-soft', on);
+        b.classList.toggle('bg-white', on); b.classList.toggle('text-brand-700', on); b.classList.toggle('shadow-soft', on);
         b.classList.toggle('text-slate-500', !on);
       });
       document.getElementById('ordersPane').classList.toggle('hidden', tab !== 'orders');
@@ -1251,8 +1254,8 @@
     function filterOrders(f, btn) {
       orderFilter = f;
       ordersPage = 1;
-      document.querySelectorAll('.order-filter-btn').forEach(b => { b.classList.remove('bg-lavender-600','text-white'); b.classList.add('bg-white','text-slate-500','border','border-lavender-200'); });
-      btn.classList.add('bg-lavender-600','text-white'); btn.classList.remove('bg-white','text-slate-500','border','border-lavender-200');
+      document.querySelectorAll('.order-filter-btn').forEach(b => { b.classList.remove('bg-brand-600','text-white'); b.classList.add('bg-white','text-slate-500','border','border-brand-200'); });
+      btn.classList.add('bg-brand-600','text-white'); btn.classList.remove('bg-white','text-slate-500','border','border-brand-200');
       playBeep('click');
       loadOrders();
     }
@@ -1271,12 +1274,12 @@
 
       const btn = (label, target, { active = false, disabled = false } = {}) =>
         `<button ${disabled ? 'disabled' : `onclick="goPage('${kind}', ${target})"`}
-          class="tap min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold border ${active ? 'bg-lavender-600 text-white border-lavender-600' : 'bg-white text-slate-600 border-lavender-200 hover:bg-lavender-50'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}">${label}</button>`;
+          class="tap min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold border ${active ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-slate-600 border-brand-200 hover:bg-brand-50'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}">${label}</button>`;
 
       return `<div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-5 py-3">
         <div class="flex items-center gap-2 text-xs font-semibold text-slate-400">
           <span>Showing <b class="text-slate-600">${from}&ndash;${to}</b> of <b class="text-slate-600">${total}</b></span>
-          <select onchange="setPageSize('${kind}', this.value)" class="px-2 py-1 rounded-lg border border-lavender-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-lavender-400">
+          <select onchange="setPageSize('${kind}', this.value)" class="px-2 py-1 rounded-lg border border-brand-200 bg-white text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-400">
             ${PAGE_SIZES.map(n => `<option value="${n}" ${n === pageSize ? 'selected' : ''}>${n} / page</option>`).join('')}
           </select>
         </div>
@@ -1310,14 +1313,14 @@
       document.getElementById('ordersPager').innerHTML = pagerHtml('orders', ordersMeta);
       const list = ORDERS;
       document.getElementById('ordersBody').innerHTML = list.length ? list.map(o =>
-        `<tr class="table-row border-b border-lavender-50 last:border-0 ${o.status === 'merged' ? 'opacity-60' : ''}">
-          <td class="px-4 sm:px-5 py-3 font-bold text-lavender-700 font-mono whitespace-nowrap">${orderNo(o.seqNo)}${o.billType === 'split' ? ' <span class="text-[10px] font-extrabold text-sky-600">SPLIT</span>' : ''}</td>
+        `<tr class="table-row border-b border-brand-50 last:border-0 ${o.status === 'merged' ? 'opacity-60' : ''}">
+          <td class="px-4 sm:px-5 py-3 font-bold text-brand-700 font-mono whitespace-nowrap">${orderNo(o.seqNo)}${o.billType === 'split' ? ' <span class="text-[10px] font-extrabold text-sky-600">SPLIT</span>' : ''}</td>
           <td class="px-4 sm:px-5 py-3">${customerCell(o)}</td>
           <td class="px-4 sm:px-5 py-3 text-slate-500 font-semibold whitespace-nowrap">${modeLabel(o)}${o.guests ? ` <span class="text-slate-300">&middot; ${o.guests} pax</span>` : ''}</td>
           <td class="px-4 sm:px-5 py-3 text-slate-500 font-semibold">${esc(o.waiter) || '<span class="text-slate-300">&mdash;</span>'}</td>
           <td class="px-4 sm:px-5 py-3 text-slate-400 font-semibold whitespace-nowrap" title="${esc(o.date)} ${esc(o.localTime)}">${esc(o.localTime)}</td>
           <td class="px-4 sm:px-5 py-3">${statusBadge(o.status)}${o.mergedInto ? ` <span class="text-[10px] font-bold text-slate-400">into ${orderNo(o.mergedInto)}</span>` : ''}</td>
-          <td class="px-4 sm:px-5 py-3 text-right font-bold text-lavender-950 font-mono">${rupees(o.total)}</td>
+          <td class="px-4 sm:px-5 py-3 text-right font-bold text-brand-950 font-mono">${rupees(o.total)}</td>
           <td class="px-4 sm:px-5 py-3 text-right whitespace-nowrap"><span class="text-[11px] font-bold text-slate-400 mr-2">${o.itemCount} qty</span>${viewBtn('order', o.id)}</td>
         </tr>`
       ).join('') : `<tr><td colspan="8" class="px-5 py-8 text-center text-xs font-bold text-slate-400">${phoneQuery() ? 'No orders for that phone number on this date' : 'No orders found'}</td></tr>`;
@@ -1329,14 +1332,14 @@
       setText('heldTabCount', heldTotal ? `(${heldTotal})` : '');
       document.getElementById('heldPager').innerHTML = pagerHtml('held', heldMeta);
       document.getElementById('heldBody').innerHTML = HELD.length ? HELD.map(h =>
-        `<tr class="table-row border-b border-lavender-50 last:border-0">
+        `<tr class="table-row border-b border-brand-50 last:border-0">
           <td class="px-4 sm:px-5 py-3 font-bold text-amber-700 font-mono">H${h.id}</td>
           <td class="px-4 sm:px-5 py-3">${customerCell(h)}</td>
           <td class="px-4 sm:px-5 py-3 text-slate-500 font-semibold whitespace-nowrap">${modeLabel(h)}${h.guests ? ` <span class="text-slate-300">&middot; ${h.guests} pax</span>` : ''}</td>
           <td class="px-4 sm:px-5 py-3 text-slate-500 font-semibold">${esc(h.waiter) || '<span class="text-slate-300">&mdash;</span>'}</td>
           <td class="px-4 sm:px-5 py-3 text-slate-500 font-semibold">${esc(h.terminal) || '<span class="text-slate-300">&mdash;</span>'}</td>
           <td class="px-4 sm:px-5 py-3 text-slate-400 font-semibold whitespace-nowrap" title="${esc(h.businessDate)} ${esc(h.localTime)}">${timeAgo(h.heldAt)}</td>
-          <td class="px-4 sm:px-5 py-3 text-right font-bold text-lavender-950 font-mono">${rupees(h.total)}</td>
+          <td class="px-4 sm:px-5 py-3 text-right font-bold text-brand-950 font-mono">${rupees(h.total)}</td>
           <td class="px-4 sm:px-5 py-3 text-right whitespace-nowrap"><span class="text-[11px] font-bold text-slate-400 mr-2">${h.itemCount} qty</span>${viewBtn('held', h.id)}</td>
         </tr>`
       ).join('') : `<tr><td colspan="8" class="px-5 py-8 text-center text-xs font-bold text-slate-400">${phoneQuery() ? 'No held orders for that phone number' : 'No orders on hold'}</td></tr>`;
@@ -1374,20 +1377,20 @@
     }
 
     function orderViewBody(kind, d) {
-      const money = n => '₹' + (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const money = n => SHOP_TIME.currency + shopNumber(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const lines = (d.items || []).map(i =>
-        `<tr class="border-b border-lavender-50 last:border-0">
+        `<tr class="border-b border-brand-50 last:border-0">
           <td class="py-2 pr-2">
             <p class="font-bold text-slate-700">${esc(i.name)}${i.foc ? ' <span class="text-[10px] font-extrabold text-mint-600">FOC</span>' : ''}</p>
             <p class="text-[10px] font-semibold text-slate-400 font-mono">${esc(i.code)}${i.note ? ` &middot; <span class="font-sans italic">${esc(i.note)}</span>` : ''}</p>
           </td>
           <td class="py-2 px-2 text-center font-bold text-slate-600">${i.qty}</td>
           <td class="py-2 px-2 text-right font-semibold text-slate-500 font-mono">${money(i.price)}</td>
-          <td class="py-2 pl-2 text-right font-bold text-lavender-950 font-mono">${i.foc ? money(0) : money(i.price * i.qty)}</td>
+          <td class="py-2 pl-2 text-right font-bold text-brand-950 font-mono">${i.foc ? money(0) : money(i.price * i.qty)}</td>
         </tr>`).join('');
 
       const row = (label, value, strong) =>
-        `<div class="flex justify-between ${strong ? 'text-sm font-extrabold text-lavender-950 pt-2 mt-1 border-t border-lavender-100' : 'text-xs font-semibold text-slate-500'}"><span>${label}</span><span class="font-mono">${value}</span></div>`;
+        `<div class="flex justify-between ${strong ? 'text-sm font-extrabold text-brand-950 pt-2 mt-1 border-t border-brand-100' : 'text-xs font-semibold text-slate-500'}"><span>${label}</span><span class="font-mono">${value}</span></div>`;
 
       let totals = '';
       if (kind === 'held') {
@@ -1402,12 +1405,12 @@
         if (d.billType === 'split') totals += row('Split between', d.splitCount + ' people');
         const pays = d.payments || [];
         if (pays.length) {
-          totals += `<div class="mt-3 p-3 rounded-xl bg-lavender-25 border border-lavender-200 space-y-2">
+          totals += `<div class="mt-3 p-3 rounded-xl bg-brand-25 border border-brand-200 space-y-2">
             <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Paid by</p>
             ${pays.map(p => `<div class="flex items-center justify-between gap-3">
                 ${payBadge(p.method)}
                 <div class="text-right">
-                  <p class="text-sm font-extrabold text-lavender-950 font-mono">${money(p.amount)}</p>
+                  <p class="text-sm font-extrabold text-brand-950 font-mono">${money(p.amount)}</p>
                   ${p.change ? `<p class="text-[10px] font-semibold text-slate-400 font-mono">TENDERED ${money(p.tendered)} &middot; CHANGE ${money(p.change)}</p>` : ''}
                 </div>
               </div>`).join('')}
@@ -1418,18 +1421,18 @@
         if (d.mergedInto) totals += `<p class="text-[11px] font-bold text-slate-400 mt-2">Merged into ${orderNo(d.mergedInto)} &mdash; these lines are billed there.</p>`;
       }
 
-      const who = `<div class="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl bg-lavender-25 border border-lavender-100">
+      const who = `<div class="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl bg-brand-25 border border-brand-100">
           <div class="min-w-0">
             <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Customer</p>
-            <p class="text-sm font-extrabold text-lavender-950 truncate">${esc(d.customer) || 'Walk-in'}</p>
+            <p class="text-sm font-extrabold text-brand-950 truncate">${esc(d.customer) || 'Walk-in'}</p>
           </div>
           ${d.phone
-            ? `<a href="tel:${esc(d.phone)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-lavender-200 text-sm font-extrabold text-lavender-700 font-mono whitespace-nowrap"><i data-lucide="phone" class="w-4 h-4"></i>${esc(d.phone)}</a>`
+            ? `<a href="tel:${esc(d.phone)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-brand-200 text-sm font-extrabold text-brand-700 font-mono whitespace-nowrap"><i data-lucide="phone" class="w-4 h-4"></i>${esc(d.phone)}</a>`
             : `<span class="text-xs font-bold text-slate-300">No phone</span>`}
         </div>`;
 
       return who + `<table class="w-full text-sm">
-          <thead><tr class="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-lavender-100">
+          <thead><tr class="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-100">
             <th class="text-left pb-2 pr-2">Item</th><th class="text-center pb-2 px-2">Qty</th><th class="text-right pb-2 px-2">Rate</th><th class="text-right pb-2 pl-2">Amount</th>
           </tr></thead>
           <tbody>${lines || '<tr><td colspan="4" class="py-6 text-center text-xs font-bold text-slate-400">No lines on this bill</td></tr>'}</tbody>
@@ -1491,7 +1494,7 @@
       document.querySelectorAll('.rpt-preset').forEach(b => {
         const [pf, pt] = presets[b.dataset.preset];
         b.className = 'tap rpt-preset px-3.5 py-2 rounded-xl text-xs font-bold ' +
-          (pf === f && pt === t ? 'bg-lavender-600 text-white' : 'bg-white text-slate-500 border border-lavender-200');
+          (pf === f && pt === t ? 'bg-brand-600 text-white' : 'bg-white text-slate-500 border border-brand-200');
       });
     }
 
@@ -1512,7 +1515,7 @@
     }
 
     function fmtDay(iso) {
-      return new Date(iso + 'T00:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+      return new Date(iso + 'T00:00:00Z').toLocaleDateString(SHOP_TIME.locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
     }
 
     function renderReports(r) {
@@ -1522,9 +1525,9 @@
       if (s.discount) bits.push('Disc ' + rupees(s.discount));
       if (s.gst) bits.push('GST ' + rupees(s.gst));
       setText('rptRevenueNote', bits.length ? bits.join('  ·  ') : 'Net bill totals');
-      setText('rptOrders', Number(s.orders).toLocaleString('en-IN'));
+      setText('rptOrders', shopNumber(s.orders));
       setText('rptAvg', rupees(s.avgOrder));
-      setText('rptItems', Number(s.itemsSold).toLocaleString('en-IN'));
+      setText('rptItems', shopNumber(s.itemsSold));
       setText('rptHourlySub', r.from === r.to
         ? fmtDay(r.from) + ', by the hour the bill was rung'
         : `${fmtDay(r.from)} – ${fmtDay(r.to)}, each hour added up across the days`);
@@ -1535,14 +1538,14 @@
       renderReportStaff('rptWaiters', r.waiters || [], true);
     }
 
-    // One bar per hour, its height the takings, captioned "Orders(n) - ₹amount" so
+    // One bar per hour, its height the takings, captioned "Orders(n) - amount" so
     // the bill count reads off the same bar.
     function renderReportHourly(data) {
       const el = document.getElementById('rptHourly');
       if (!data.length) { el.innerHTML = emptyNote('No settled bills in this range'); return; }
 
       const max = Math.max(...data.map(d => Number(d.amount) || 0), 1);
-      const kfmt = v => v >= 1000 ? '₹' + (v / 1000).toFixed(1) + 'k' : rupees(v);
+      const kfmt = v => v >= 1000 ? SHOP_TIME.currency + (v / 1000).toFixed(1) + 'k' : rupees(v);
 
       el.innerHTML = `<div class="flex items-end gap-1.5 sm:gap-2">${data.map((d, i) => {
           const v = Number(d.amount) || 0, n = Number(d.orders) || 0, h = Math.round((v / max) * 100);
@@ -1550,9 +1553,9 @@
           const cap = n === 0 ? '&nbsp;'
             : `<span class="whitespace-nowrap text-sky-600">Orders(${n})</span> <span class="whitespace-nowrap">- ${kfmt(v)}</span>`;
           return `<div class="flex-1 flex flex-col items-center gap-1 min-w-0" title="${esc(d.label)}: ${n} order${n === 1 ? '' : 's'} · ${rupees(v)}">
-            <span class="text-[9px] sm:text-[10px] font-bold text-lavender-600 text-center leading-tight">${cap}</span>
-            <div class="w-full bg-lavender-50 rounded-t-lg overflow-hidden" style="height:150px;display:flex;align-items:flex-end">
-              <div class="w-full rounded-t-lg bg-gradient-to-t from-lavender-600 to-lavender-400 bar-animate" style="--bar-h:${h}%;height:${h}%;animation-delay:${i * .04}s"></div>
+            <span class="text-[9px] sm:text-[10px] font-bold text-brand-600 text-center leading-tight">${cap}</span>
+            <div class="w-full bg-brand-50 rounded-t-lg overflow-hidden" style="height:150px;display:flex;align-items:flex-end">
+              <div class="w-full rounded-t-lg bg-gradient-to-t from-brand-600 to-brand-400 bar-animate" style="--bar-h:${h}%;height:${h}%;animation-delay:${i * .04}s"></div>
             </div>
             <span class="text-[9px] sm:text-[10px] font-bold text-slate-400 whitespace-nowrap">${esc(d.label)}</span>
           </div>`;
@@ -1586,14 +1589,14 @@
       }
       const sum = k => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
       const num = 'px-3 py-2.5 text-right font-mono';
-      const amt = 'px-4 sm:px-5 py-2.5 text-right font-mono font-extrabold text-lavender-950 whitespace-nowrap';
-      body.innerHTML = rows.map(r => `<tr class="border-b border-lavender-50">
+      const amt = 'px-4 sm:px-5 py-2.5 text-right font-mono font-extrabold text-brand-950 whitespace-nowrap';
+      body.innerHTML = rows.map(r => `<tr class="border-b border-brand-50">
           <td class="px-4 sm:px-5 py-2.5 font-bold ${r.none ? 'text-slate-400 italic' : 'text-slate-700'}">${esc(r.name)}</td>
           <td class="${num} font-bold text-slate-600">${r.orders}</td>
           ${withPax ? `<td class="${num} font-semibold text-slate-500">${r.guests}</td>` : ''}
           <td class="${amt}">${rupees(r.amount)}</td>
         </tr>`).join('') +
-        `<tr class="bg-lavender-25">
+        `<tr class="bg-brand-25">
           <td class="px-4 sm:px-5 py-2.5 text-xs font-extrabold text-slate-500 uppercase">Total</td>
           <td class="${num} font-extrabold text-slate-700">${sum('orders')}</td>
           ${withPax ? `<td class="${num} font-extrabold text-slate-600">${sum('guests')}</td>` : ''}
@@ -1750,8 +1753,8 @@
 
     function filterCategories(f, btn) {
       catFilter = f;
-      document.querySelectorAll('.cat-filter-btn').forEach(b => { b.classList.remove('bg-lavender-600','text-white'); b.classList.add('bg-white','text-slate-500','border','border-lavender-200'); });
-      btn.classList.add('bg-lavender-600','text-white'); btn.classList.remove('bg-white','text-slate-500','border','border-lavender-200');
+      document.querySelectorAll('.cat-filter-btn').forEach(b => { b.classList.remove('bg-brand-600','text-white'); b.classList.add('bg-white','text-slate-500','border','border-brand-200'); });
+      btn.classList.add('bg-brand-600','text-white'); btn.classList.remove('bg-white','text-slate-500','border','border-brand-200');
       renderCategories();
       playBeep('click');
     }
@@ -1770,11 +1773,11 @@
       }
       body.innerHTML = list.map(c => {
         const tint = tintOf(c);
-        return `<tr class="table-row border-b border-lavender-50 last:border-0 ${c.isActive ? '' : 'opacity-60'}">
+        return `<tr class="table-row border-b border-brand-50 last:border-0 ${c.isActive ? '' : 'opacity-60'}">
           <td class="px-4 sm:px-5 py-3">
             <div class="flex items-center gap-3">
               <span class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:${tint};color:#fff" title="${tint}"><i data-lucide="${esc(c.icon || 'utensils')}" class="w-[18px] h-[18px]"></i></span>
-              <span class="font-extrabold text-lavender-950">${esc(c.name)}</span>
+              <span class="font-extrabold text-brand-950">${esc(c.name)}</span>
             </div>
           </td>
           <td class="px-4 sm:px-5 py-3 font-mono text-xs font-bold text-slate-400">${esc(c.code)}</td>
@@ -1784,12 +1787,12 @@
             : '<span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border bg-slate-100 text-slate-500 border-slate-200">Inactive</span>'}</td>
           <td class="px-4 sm:px-5 py-3 text-center">
             <button onclick="toggleCategory(${c.id})" title="${c.isActive ? 'Deactivate' : 'Activate'}" aria-pressed="${c.isActive}"
-                    class="w-11 h-6 rounded-full ${c.isActive ? 'bg-lavender-600' : 'bg-slate-300'} relative transition-colors inline-block align-middle">
+                    class="w-11 h-6 rounded-full ${c.isActive ? 'bg-brand-600' : 'bg-slate-300'} relative transition-colors inline-block align-middle">
               <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${c.isActive ? 'translate-x-5' : ''}"></span>
             </button>
           </td>
           <td class="px-4 sm:px-5 py-3 text-right">
-            <button onclick="openCategoryModal(${c.id})" title="Edit" class="tap w-8 h-8 rounded-lg bg-lavender-50 text-lavender-700 hover:bg-lavender-100 inline-flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+            <button onclick="openCategoryModal(${c.id})" title="Edit" class="tap w-8 h-8 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 inline-flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
           </td>
         </tr>`;
       }).join('');
@@ -1820,7 +1823,7 @@
         `<p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mt-2 first:mt-0 mb-1.5">${g.label}</p>
          <div class="grid grid-cols-6 sm:grid-cols-8 gap-1.5">${g.icons.map(ic =>
           `<button type="button" onclick="pickCatIcon('${ic}')" title="${ic}"
-                   class="tap h-10 rounded-xl border flex items-center justify-center ${ic === catIcon ? 'bg-lavender-600 border-lavender-600 text-white' : 'bg-lavender-25 border-lavender-200 text-lavender-600 hover:bg-lavender-50'}">
+                   class="tap h-10 rounded-xl border flex items-center justify-center ${ic === catIcon ? 'bg-brand-600 border-brand-600 text-white' : 'bg-brand-25 border-brand-200 text-brand-600 hover:bg-brand-50'}">
              <i data-lucide="${ic}" class="w-[18px] h-[18px]"></i>
            </button>`).join('')}</div>`).join('');
       // Re-rendering on every pick would otherwise jump the list back to the top.
@@ -1838,7 +1841,7 @@
     function renderColorPicker() {
       document.getElementById('catColorPicker').innerHTML = CAT_TINTS.map(col =>
         `<button type="button" onclick="pickCatColor('${col}')" title="${col}"
-                 class="tap aspect-square rounded-lg flex items-center justify-center ${col === catColor ? 'ring-2 ring-offset-2 ring-lavender-900' : ''}" style="background:${col}">
+                 class="tap aspect-square rounded-lg flex items-center justify-center ${col === catColor ? 'ring-2 ring-offset-2 ring-brand-900' : ''}" style="background:${col}">
            ${col === catColor ? '<i data-lucide="check" class="w-3.5 h-3.5 text-white"></i>' : ''}
          </button>`).join('');
       renderCatPreview();
@@ -1861,7 +1864,7 @@
       const name = esc(document.getElementById('newCatName').value.trim() || 'Category');
       const tile = on => `
         <span class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:${on ? catColor : catColor + '18'};color:${on ? '#fff' : catColor}"><i data-lucide="${catIcon}" class="w-[18px] h-[18px]"></i></span>
-        <span class="text-[10px] font-bold leading-tight text-center truncate max-w-full ${on ? 'text-lavender-900' : 'text-slate-600'}">${name}</span>`;
+        <span class="text-[10px] font-bold leading-tight text-center truncate max-w-full ${on ? 'text-brand-900' : 'text-slate-600'}">${name}</span>`;
       document.getElementById('catPreviewOn').innerHTML = tile(true);
       document.getElementById('catPreviewOff').innerHTML = tile(false);
       drawIcons();
@@ -1946,20 +1949,20 @@
         body.innerHTML = `<tr><td colspan="5" class="px-5 py-8 text-center text-xs font-bold text-slate-400">No transaction modes</td></tr>`;
         return;
       }
-      body.innerHTML = MODES.map(m => `<tr class="table-row border-b border-lavender-50 last:border-0 ${m.isActive ? '' : 'opacity-60'}">
-          <td class="px-4 sm:px-5 py-3 font-extrabold text-lavender-950">${esc(m.name)}</td>
+      body.innerHTML = MODES.map(m => `<tr class="table-row border-b border-brand-50 last:border-0 ${m.isActive ? '' : 'opacity-60'}">
+          <td class="px-4 sm:px-5 py-3 font-extrabold text-brand-950">${esc(m.name)}</td>
           <td class="px-4 sm:px-5 py-3 text-right font-bold text-slate-600 font-mono">${m.used}</td>
           <td class="px-4 sm:px-5 py-3">${m.isActive
             ? '<span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border bg-mint-50 text-mint-700 border-mint-200">Active</span>'
             : '<span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border bg-slate-100 text-slate-500 border-slate-200">Inactive</span>'}</td>
           <td class="px-4 sm:px-5 py-3 text-center">
             <button onclick="toggleMode(${m.id})" title="${m.isActive ? 'Deactivate' : 'Activate'}" aria-pressed="${m.isActive}"
-                    class="w-11 h-6 rounded-full ${m.isActive ? 'bg-lavender-600' : 'bg-slate-300'} relative transition-colors inline-block align-middle">
+                    class="w-11 h-6 rounded-full ${m.isActive ? 'bg-brand-600' : 'bg-slate-300'} relative transition-colors inline-block align-middle">
               <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${m.isActive ? 'translate-x-5' : ''}"></span>
             </button>
           </td>
           <td class="px-4 sm:px-5 py-3 text-right whitespace-nowrap">
-            <button onclick="openModeModal(${m.id})" title="Edit" class="tap w-8 h-8 rounded-lg bg-lavender-50 text-lavender-700 hover:bg-lavender-100 inline-flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+            <button onclick="openModeModal(${m.id})" title="Edit" class="tap w-8 h-8 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 inline-flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
             <button onclick="confirmDeleteMode(${m.id})" title="${m.used ? 'In use - deactivate instead' : 'Delete'}"
                     class="tap w-8 h-8 rounded-lg inline-flex items-center justify-center ${m.used ? 'bg-slate-50 text-slate-300 cursor-not-allowed' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'}"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </td>
@@ -2057,8 +2060,9 @@
     // The dishes on the till, read and written through the API. Main and sub
     // categories are re-read with them so names, colours and dropdowns are current.
     const ITEMS_ENDPOINT = '@Url.Action("MenuItems", "Admin")';
-    // Mirrors AppState.currency on the till, so prices read the same in both places.
-    const TILL_CURRENCY = '$';
+    // The shop country's currency, as the till opens with, so prices read the same in both places.
+    const TILL_CURRENCY = SHOP_TIME.currency;
+    document.getElementById('setCurrency').value = `${SHOP_TIME.currencyCode} (${SHOP_TIME.currency})`;
     const price2 = v => TILL_CURRENCY + (Number(v) || 0).toFixed(2);
     document.querySelectorAll('.till-currency').forEach(el => el.textContent = TILL_CURRENCY);
 
@@ -2093,7 +2097,7 @@
                   ${esc(label)} <span class="opacity-70">${n}</span></button>`;
       };
       document.getElementById('menuCatChips').innerHTML =
-        chip('', 'All', '#7540cc', ITEMS.length) +
+        chip('', 'All', '#74793f', ITEMS.length) +
         realParents().map(c => chip(c.code, c.name + (c.isActive ? '' : ' (off)'), c.isActive ? tintOf(c) : '#94a3b8',
                                      ITEMS.filter(i => i.category === c.code).length)).join('');
     }
@@ -2125,28 +2129,28 @@
         const tint = p ? tintOf(p) : '#94a3b8';
         // Why a dish is off the till even though it is switched on.
         const hiddenBy = !it.isActive ? '' : p && !p.isActive ? `${p.name} is inactive` : '';
-        return `<div class="bg-white rounded-2xl border border-lavender-100 shadow-soft flex flex-col overflow-hidden hover:shadow-glow hover:border-lavender-200 transition-all duration-200 ${it.isActive ? '' : 'opacity-60'}">
+        return `<div class="glass rounded-2xl shadow-soft flex flex-col overflow-hidden hover:shadow-glow hover:border-brand-200 transition-all duration-200 ${it.isActive ? '' : 'opacity-60'}">
           <div class="h-1.5" style="background:${tint}"></div>
           <div class="p-4 flex flex-col flex-1">
             <div class="flex items-start justify-between gap-2">
               <span title="${it.isVeg ? 'Veg' : 'Non-veg'}" class="w-4 h-4 mt-0.5 rounded-[4px] border-[1.5px] ${it.isVeg ? 'border-emerald-600' : 'border-rose-600'} flex items-center justify-center shrink-0"><span class="w-1.5 h-1.5 rounded-full ${it.isVeg ? 'bg-emerald-600' : 'bg-rose-600'}"></span></span>
               <button onclick="toggleMenuItem(${it.id})" title="${it.isActive ? 'Deactivate' : 'Activate'}" aria-pressed="${it.isActive}"
-                      class="w-10 h-[22px] rounded-full ${it.isActive ? 'bg-lavender-600' : 'bg-slate-300'} relative transition-colors flex-shrink-0">
+                      class="w-10 h-[22px] rounded-full ${it.isActive ? 'bg-brand-600' : 'bg-slate-300'} relative transition-colors flex-shrink-0">
                 <span class="absolute top-0.5 left-0.5 w-[18px] h-[18px] bg-white rounded-full shadow transition-transform ${it.isActive ? 'translate-x-[18px]' : ''}"></span>
               </button>
             </div>
-            <h4 class="mt-2 text-sm font-extrabold text-lavender-950 leading-snug">${esc(it.name)}</h4>
+            <h4 class="mt-2 text-sm font-extrabold text-brand-950 leading-snug">${esc(it.name)}</h4>
             <div class="mt-1.5 flex flex-wrap gap-1">
               <span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase" style="background:${tint}18;color:${tint}">${esc(p?.name || it.category)}</span>
             </div>
             ${hiddenBy ? `<p class="mt-1.5 text-[10px] font-bold text-amber-600 flex items-center gap-1"><i data-lucide="eye-off" class="w-3 h-3"></i> Hidden on POS: ${esc(hiddenBy)}</p>` : ''}
             <div class="mt-auto pt-3 flex items-end justify-between gap-2">
               <div>
-                <p class="text-lg font-extrabold text-lavender-700 font-digital leading-none">${price2(it.price)}</p>
+                <p class="text-lg font-extrabold text-brand-700 font-digital leading-none">${price2(it.price)}</p>
                 <p class="text-[10px] font-mono font-bold text-slate-300 mt-1">${esc(it.code)}</p>
               </div>
               <div class="flex gap-1.5">
-                <button onclick="openMenuModal(${it.id})" title="Edit" class="tap w-8 h-8 rounded-lg bg-lavender-50 text-lavender-700 hover:bg-lavender-100 inline-flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                <button onclick="openMenuModal(${it.id})" title="Edit" class="tap w-8 h-8 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 inline-flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
                 <button onclick="confirmDeleteItem(${it.id})" title="${it.inUse ? 'On past bills - deactivate instead' : 'Delete'}"
                         class="tap w-8 h-8 rounded-lg inline-flex items-center justify-center ${it.inUse ? 'bg-slate-50 text-slate-300 cursor-not-allowed' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'}"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
               </div>
@@ -2176,8 +2180,8 @@
 
     function setItemVeg(v) {
       itemVeg = v;
-      const on  = 'bg-lavender-600 border-lavender-600 text-white';
-      const off = 'bg-lavender-25 border-lavender-200 text-slate-600';
+      const on  = 'bg-brand-600 border-brand-600 text-white';
+      const off = 'bg-brand-25 border-brand-200 text-slate-600';
       document.getElementById('itemVegBtn').className    = `tap py-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-1.5 ${v ? on : off}`;
       document.getElementById('itemNonVegBtn').className = `tap py-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-1.5 ${v ? off : on}`;
     }
@@ -2317,21 +2321,20 @@
     function filterAttendance(f, btn) {
       attFilter = f;
       document.querySelectorAll('.att-filter-btn').forEach(b => {
-        b.classList.remove('bg-lavender-600', 'text-white');
-        b.classList.add('bg-white', 'text-slate-500', 'border', 'border-lavender-200');
+        b.classList.remove('bg-brand-600', 'text-white');
+        b.classList.add('bg-white', 'text-slate-500', 'border', 'border-brand-200');
       });
-      btn.classList.add('bg-lavender-600', 'text-white');
-      btn.classList.remove('bg-white', 'text-slate-500', 'border', 'border-lavender-200');
+      btn.classList.add('bg-brand-600', 'text-white');
+      btn.classList.remove('bg-white', 'text-slate-500', 'border', 'border-brand-200');
       playBeep('click');
       if (ATTENDANCE) renderAttendance();
     }
 
     const fmtHours = m => m === null || m === undefined ? '' : `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
-    const fmtClock = iso => new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const fmtClock = iso => shopTime(iso);
     // A shift past midnight ends on the next calendar day; say so beside the time.
     const fmtOut = (iso, dayIso) => {
-      const d = new Date(iso);
-      const local = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const local = shopDateKey(iso);
       return fmtClock(iso) + (local !== dayIso ? ' <span class="text-[10px] font-bold text-slate-400">(next day)</span>' : '');
     };
 
@@ -2366,12 +2369,12 @@
         const how = r.source === 'PUNCH'
           ? `Punched${r.inBy ? ' in by ' + esc(r.inBy) : ''}${r.outBy ? ', out by ' + esc(r.outBy) : ''}`
           : 'Sign-in';
-        return `<tr class="table-row border-b border-lavender-50 last:border-0">
+        return `<tr class="table-row border-b border-brand-50 last:border-0">
           <td class="px-4 sm:px-5 py-3">
             <div class="flex items-center gap-3">
               <span class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white font-extrabold text-sm" style="background:${roleTint(r.roleCode)}">${esc((r.name || '?')[0].toUpperCase())}</span>
               <div class="min-w-0">
-                <p class="font-extrabold text-lavender-950 truncate">${esc(r.name)}</p>
+                <p class="font-extrabold text-brand-950 truncate">${esc(r.name)}</p>
                 <p class="text-[11px] font-bold text-slate-400">${how}</p>
               </div>
             </div>
@@ -2379,7 +2382,7 @@
           <td class="px-4 sm:px-5 py-3">${roleBadge(r.roleCode, r.roleName)}</td>
           <td class="px-4 sm:px-5 py-3 text-xs font-bold text-slate-600">${fmtClock(r.firstInAt)}</td>
           <td class="px-4 sm:px-5 py-3 text-xs font-bold text-slate-600">${out}</td>
-          <td class="px-4 sm:px-5 py-3 text-right font-mono text-xs font-extrabold ${r.onShift ? 'text-mint-700' : 'text-lavender-950'}">${r.minutes === null ? '<span class="text-slate-300">&#8212;</span>' : fmtHours(r.minutes) + (r.onShift ? ' <span class="text-[10px] font-bold text-mint-600">so far</span>' : '')}</td>
+          <td class="px-4 sm:px-5 py-3 text-right font-mono text-xs font-extrabold ${r.onShift ? 'text-mint-700' : 'text-brand-950'}">${r.minutes === null ? '<span class="text-slate-300">&#8212;</span>' : fmtHours(r.minutes) + (r.onShift ? ' <span class="text-[10px] font-bold text-mint-600">so far</span>' : '')}</td>
           <td class="px-4 sm:px-5 py-3 text-right text-xs font-bold text-slate-500">${r.inCount}</td>
           <td class="px-4 sm:px-5 py-3">${status}</td>
         </tr>`;
@@ -2400,8 +2403,8 @@
 
     // Same chip styling as the category filters: the pressed tab is filled.
     function setFilterChip(cls, btn) {
-      document.querySelectorAll('.' + cls).forEach(b => { b.classList.remove('bg-lavender-600','text-white'); b.classList.add('bg-white','text-slate-500','border','border-lavender-200'); });
-      btn.classList.add('bg-lavender-600','text-white'); btn.classList.remove('bg-white','text-slate-500','border','border-lavender-200');
+      document.querySelectorAll('.' + cls).forEach(b => { b.classList.remove('bg-brand-600','text-white'); b.classList.add('bg-white','text-slate-500','border','border-brand-200'); });
+      btn.classList.add('bg-brand-600','text-white'); btn.classList.remove('bg-white','text-slate-500','border','border-brand-200');
       playBeep('click');
     }
     function filterUsers(f, btn) { userStatus = f; setFilterChip('user-filter-btn', btn); renderUsers(); }
@@ -2412,7 +2415,7 @@
     let userRoleId = null;    // role picked in the drawer
 
     // Built-in roles keep fixed colours; added roles take the next from the list.
-    const ROLE_TINTS = { ADMIN:'#7540cc', SUPERVISOR:'#0284c7', CASHIER:'#059669', WAITER:'#d97706' };
+    const ROLE_TINTS = { ADMIN:'#74793f', SUPERVISOR:'#0284c7', CASHIER:'#059669', WAITER:'#d97706' };
     const EXTRA_TINTS = ['#e11d48', '#0d9488', '#9333ea', '#ea580c', '#4f46e5', '#65a30d'];
     function roleTint(code) {
       if (ROLE_TINTS[code]) return ROLE_TINTS[code];
@@ -2426,7 +2429,7 @@
     };
     const switchBtn = (on, onclick, title, disabled) =>
       `<button onclick="${onclick}" title="${esc(title)}" aria-pressed="${on}" ${disabled ? 'disabled' : ''}
-               class="w-11 h-6 rounded-full ${on ? 'bg-lavender-600' : 'bg-slate-300'} relative transition-colors inline-block align-middle ${disabled ? 'opacity-40 cursor-not-allowed' : ''}">
+               class="w-11 h-6 rounded-full ${on ? 'bg-brand-600' : 'bg-slate-300'} relative transition-colors inline-block align-middle ${disabled ? 'opacity-40 cursor-not-allowed' : ''}">
          <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : ''}"></span>
        </button>`;
     const iconBtn = (icon, onclick, title, tone, disabled) =>
@@ -2437,7 +2440,7 @@
       staffTab = tab;
       document.querySelectorAll('.staff-tab-btn').forEach(b => {
         const on = b.dataset.stab === tab;
-        b.classList.toggle('bg-white', on); b.classList.toggle('text-lavender-700', on); b.classList.toggle('shadow-soft', on);
+        b.classList.toggle('bg-white', on); b.classList.toggle('text-brand-700', on); b.classList.toggle('shadow-soft', on);
         b.classList.toggle('text-slate-500', !on);
       });
       document.getElementById('usersPane').classList.toggle('hidden', tab !== 'users');
@@ -2506,12 +2509,12 @@
         const toggleWhy = locked ? 'Only an Admin can change an Admin account' : self ? 'You cannot deactivate yourself' : (u.isActive ? 'Deactivate' : 'Activate');
         const delWhy = locked ? 'Only an Admin can remove an Admin account' : self ? 'You cannot delete yourself'
                      : u.inUse ? 'Has bills on record - deactivate instead' : 'Delete';
-        return `<tr class="table-row border-b border-lavender-50 last:border-0 ${u.isActive ? '' : 'opacity-60'}">
+        return `<tr class="table-row border-b border-brand-50 last:border-0 ${u.isActive ? '' : 'opacity-60'}">
           <td class="px-4 sm:px-5 py-3">
             <div class="flex items-center gap-3">
               <span class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white font-extrabold text-sm" style="background:${u.isActive ? tint : '#94a3b8'}">${esc((u.displayName || u.username)[0].toUpperCase())}</span>
               <div class="min-w-0">
-                <p class="font-extrabold text-lavender-950 truncate">${esc(u.displayName)}${self ? ' <span class="text-[10px] font-bold text-lavender-500">(you)</span>' : ''}</p>
+                <p class="font-extrabold text-brand-950 truncate">${esc(u.displayName)}${self ? ' <span class="text-[10px] font-bold text-brand-500">(you)</span>' : ''}</p>
                 ${u.canSignIn
                   ? `<p class="text-[11px] font-mono font-bold text-slate-400">${esc(u.username)}</p>`
                   : '<p class="text-[11px] font-bold text-slate-400 flex items-center gap-1"><i data-lucide="user-x" class="w-3 h-3"></i> No sign-in</p>'}
@@ -2524,7 +2527,7 @@
             : u.lastLoginAt ? esc(timeAgo(u.lastLoginAt)) : '<span class="text-slate-300">Never</span>'}</td>
           <td class="px-4 sm:px-5 py-3 text-center">${switchBtn(u.isActive, `toggleUser(${u.id})`, toggleWhy, locked || self)}</td>
           <td class="px-4 sm:px-5 py-3 text-right whitespace-nowrap">
-            ${iconBtn('pencil', `openUserDrawer(${u.id})`, locked ? 'Only an Admin can edit an Admin account' : 'Edit', 'bg-lavender-50 text-lavender-700 hover:bg-lavender-100', locked)}
+            ${iconBtn('pencil', `openUserDrawer(${u.id})`, locked ? 'Only an Admin can edit an Admin account' : 'Edit', 'bg-brand-50 text-brand-700 hover:bg-brand-100', locked)}
             ${iconBtn('trash-2', `confirmDeleteUser(${u.id})`, delWhy, 'bg-rose-50 text-rose-600 hover:bg-rose-100', locked || self || u.inUse)}
           </td>
         </tr>`;
@@ -2601,16 +2604,16 @@
                      : r.builtIn ? 'Built-in role - switch it off instead'
                      : r.users > 0 ? 'Has users - move them first' : 'Delete';
         const access = r.canAdmin
-          ? '<span class="inline-flex items-center gap-1 text-[11px] font-extrabold text-lavender-700"><i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Admin + POS</span>'
+          ? '<span class="inline-flex items-center gap-1 text-[11px] font-extrabold text-brand-700"><i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Admin + POS</span>'
           : !r.canSignIn
           ? '<span class="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-700"><i data-lucide="list-checks" class="w-3.5 h-3.5"></i> Picker only - no sign-in</span>'
           : '<span class="inline-flex items-center gap-1 text-[11px] font-extrabold text-slate-500"><i data-lucide="monitor" class="w-3.5 h-3.5"></i> POS only</span>';
-        return `<tr class="table-row border-b border-lavender-50 last:border-0 ${r.isActive ? '' : 'opacity-60'}">
+        return `<tr class="table-row border-b border-brand-50 last:border-0 ${r.isActive ? '' : 'opacity-60'}">
           <td class="px-4 sm:px-5 py-3">
             <div class="flex items-center gap-3">
               <span class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white" style="background:${roleTint(r.code)}"><i data-lucide="${r.canAdmin ? 'shield-check' : 'user'}" class="w-[18px] h-[18px]"></i></span>
               <div class="min-w-0">
-                <p class="font-extrabold text-lavender-950">${esc(r.name)}</p>
+                <p class="font-extrabold text-brand-950">${esc(r.name)}</p>
                 ${r.builtIn ? '<p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Built-in</p>' : ''}
               </div>
             </div>
@@ -2620,7 +2623,7 @@
           <td class="px-4 sm:px-5 py-3 text-right font-bold text-slate-600 font-mono" title="${r.activeUsers} active">${r.users}</td>
           <td class="px-4 sm:px-5 py-3 text-center">${switchBtn(r.isActive, `toggleRole(${r.id})`, toggleWhy, !IS_ADMIN || r.code === 'ADMIN' || mine)}</td>
           <td class="px-4 sm:px-5 py-3 text-right whitespace-nowrap">
-            ${iconBtn(IS_ADMIN ? 'pencil' : 'eye', `openRoleDrawer(${r.id})`, IS_ADMIN ? 'Edit' : 'View', 'bg-lavender-50 text-lavender-700 hover:bg-lavender-100', false)}
+            ${iconBtn(IS_ADMIN ? 'pencil' : 'eye', `openRoleDrawer(${r.id})`, IS_ADMIN ? 'Edit' : 'View', 'bg-brand-50 text-brand-700 hover:bg-brand-100', false)}
             ${iconBtn('trash-2', `confirmDeleteRole(${r.id})`, delWhy, 'bg-rose-50 text-rose-600 hover:bg-rose-100', !IS_ADMIN || r.builtIn || r.users > 0)}
           </td>
         </tr>`;
@@ -2856,7 +2859,7 @@
 
       const canAdmin = roleEditing?.canAdmin;
       const access = document.getElementById('rAccess');
-      access.className = `p-3 rounded-xl border text-xs font-semibold ${canAdmin ? 'bg-lavender-50 border-lavender-200 text-lavender-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`;
+      access.className = `p-3 rounded-xl border text-xs font-semibold ${canAdmin ? 'bg-brand-50 border-brand-200 text-brand-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`;
       access.textContent = canAdmin
         ? 'Staff on this role can open the Admin Panel and Billing POS.'
         : roleEditing && !roleEditing.canSignIn
@@ -2866,7 +2869,7 @@
       const members = roleEditing ? USERS.filter(u => u.roleId === roleEditing.id) : [];
       document.getElementById('rUsersWrap').classList.toggle('hidden', !members.length);
       document.getElementById('rUsers').innerHTML = members.map(u =>
-        `<span class="px-2.5 py-1 rounded-lg text-[11px] font-bold border ${u.isActive ? 'bg-white border-lavender-200 text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-400 line-through'}">${esc(u.displayName)}</span>`).join('');
+        `<span class="px-2.5 py-1 rounded-lg text-[11px] font-bold border ${u.isActive ? 'bg-white border-brand-200 text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-400 line-through'}">${esc(u.displayName)}</span>`).join('');
 
       openStaffDrawer('role',
         readOnly ? roleEditing.name : roleEditing ? 'Edit Role' : 'Add Role',

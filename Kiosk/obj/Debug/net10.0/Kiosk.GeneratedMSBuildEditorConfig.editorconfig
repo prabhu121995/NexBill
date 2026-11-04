@@ -63,6 +63,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9LaW9za0hlYWQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[E:/Client/NexBill/Kiosk/Views/Shared/_ShopClock.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9TaG9wQ2xvY2suY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [E:/Client/NexBill/Kiosk/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

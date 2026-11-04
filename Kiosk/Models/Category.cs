@@ -9,7 +9,7 @@ public class Category : AuditableEntity
     /// </summary>
     public static readonly string[] Palette =
     [
-        "#7540cc", "#0e9f6e", "#d97706", "#e11d48", "#2563eb", "#0891b2", "#9333ea",
+        "#74793f", "#0e9f6e", "#d97706", "#e11d48", "#2563eb", "#0891b2", "#9333ea",
         "#ca8a04", "#db2777", "#16a34a", "#ea580c", "#4f46e5", "#0d9488", "#64748b",
         "#c026d3", "#65a30d", "#0284c7", "#be123c", "#7c3aed", "#b45309"
     ];

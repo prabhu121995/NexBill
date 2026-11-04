@@ -720,7 +720,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
             createdAt = DateTime.SpecifyKind(o.CreatedAt, DateTimeKind.Utc),
             // The wall clock the bill was rung at, in the cafe's timezone — which is
             // the till's, not necessarily this browser's.
-            localTime = clock.ToLocal(o.CreatedAt).ToString("hh:mm tt"),
+            localTime = clock.FormatTime(o.CreatedAt),
             items     = string.Join(", ", lines[o.Id].Select(i => $"{i.Qty}x {i.Name}"))
         })
         .ToArray();
@@ -990,7 +990,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
             {
                 id         = o.Id,
                 seqNo      = o.SeqNo,
-                date       = o.BusinessDate.ToString("dd MMM"),
+                date       = clock.FormatShortDate(o.BusinessDate),
                 orderMode  = o.OrderMode,
                 tableNo    = o.TableNo,
                 guests     = o.Guests,
@@ -1005,7 +1005,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
                 mergedInto = o.MergedIntoOrderId is int m && mergedSeq.TryGetValue(m, out var ms) ? ms : (int?)null,
                 archived   = o.IsArchived,
                 createdAt  = DateTime.SpecifyKind(o.CreatedAt, DateTimeKind.Utc),
-                localTime  = clock.ToLocal(o.CreatedAt).ToString("hh:mm tt")
+                localTime  = clock.FormatTime(o.CreatedAt)
             })
         });
     }
@@ -1058,7 +1058,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
             terminal   = o.TerminalId is int t ? terminalNames.GetValueOrDefault(t) : null,
             mergedInto = o.MergedIntoOrderId is int m && mergedSeq.TryGetValue(m, out var ms) ? ms : (int?)null,
             archived   = o.IsArchived,
-            localTime  = clock.ToLocal(o.CreatedAt).ToString("dd MMM yyyy, hh:mm tt"),
+            localTime  = clock.FormatDateTime(o.CreatedAt),
             subTotal        = o.SubTotal,
             discountPercent = o.DiscountPercent,
             discountAmount  = o.DiscountAmount,
@@ -1145,7 +1145,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
                 terminal     = h.terminal,
                 itemCount    = h.itemCount,
                 heldAt       = DateTime.SpecifyKind(h.HeldAt, DateTimeKind.Utc),
-                localTime    = clock.ToLocal(h.HeldAt).ToString("hh:mm tt")
+                localTime    = clock.FormatTime(h.HeldAt)
             })
         });
     }
@@ -1173,7 +1173,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
             phone           = h.CustomerPhone,
             waiter          = h.Waiter?.DisplayName,
             terminal        = h.Terminal?.Name,
-            localTime       = clock.ToLocal(h.HeldAt).ToString("dd MMM yyyy, hh:mm tt"),
+            localTime       = clock.FormatDateTime(h.HeldAt),
             discountPercent = h.DiscountPercent,
             total           = h.NetTotal,
             items = h.Items.OrderBy(i => i.Id).Select(i => new

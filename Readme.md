@@ -360,12 +360,16 @@ Install-Kiosk.bat -Uninstall
 ### App icon
 
 The Desktop and Start-menu shortcuts, the browser tab, and the taskbar tile
-while the till is running all show the same mark — a coffee cup on the app's
-lavender. None of those files are drawn by hand: `scripts/make-icons.py` renders
-one 4096px master and writes every size from it, so they cannot drift apart.
+while the till is running all show the same mark — a two-tone shield carrying the N,
+on the app's olive. None of those files are drawn by hand: `scripts/make-icons.py`
+renders one master and writes every size from it, so they cannot drift apart.
+
+The mark itself is `scripts/app-icon.svg`, with `scripts/app-icon.png` as its
+1024px export (Pillow cannot read SVG). After editing the SVG, re-export the PNG
+and run:
 
 ```
-python scripts/make-icons.py wwwroot
+python scripts/make-icons.py wwwroot scripts/app-icon.png --plain
 ```
 
 | File | Used by |
@@ -387,7 +391,7 @@ Export it as a square PNG, 512px or larger, transparent background:
 python scripts/make-icons.py wwwroot cafe-logo.png
 ```
 
-It is centred on the same lavender tile, so one café's till and the next still
+It is centred on the same olive tile, so one shop's till and the next still
 look like the same product. Add `--plain` after the filename if the logo carries
 its own background and should run edge to edge. Pillow cannot read SVG — export
 to PNG first. Then publish, and re-run `Install-Kiosk.ps1` on each terminal (or
@@ -953,6 +957,46 @@ Rules worth knowing:
 
 ---
 
+## Shop country, time zone and date format
+
+The shop's country is set in `appsettings.json`, not taken from the server.
+Left out (or empty), it is **Singapore**:
+
+```json
+"Pos": {
+  "Country": "Singapore",
+  "DateFormat": "",
+  "TimeFormat": ""
+}
+```
+
+| `Country` | Time zone | Dates | Times | Numbers | Currency |
+|---|---|---|---|---|---|
+| `Singapore` (default) | UTC+8 (`Asia/Singapore`) | `05 Nov 2026` | `02:30 pm` | `100,000` | SGD `$` |
+| `India` | UTC+5:30 (`Asia/Kolkata`) | `05-11-2026` | `02:30 pm` | `1,00,000` | INR `₹` |
+
+`DateFormat` and `TimeFormat` are optional .NET format strings that override the
+country's (`dd/MM/yyyy`, `HH:mm` for a 24-hour clock); leave them empty to use
+the defaults above.
+
+This is what makes the server's location irrelevant. Every timestamp is stored
+in UTC; `BusinessClock` turns it into the shop's day and time, and the screens
+format through `Views/Shared/_ShopClock.cshtml` with the same zone and locale —
+the till PC's own zone and language are ignored too. The trading day, order
+numbers, End of Day, attendance, every date and time on screen, and the currency
+on the till, admin panel and customer display all follow it. (A cashier can
+still switch the till's currency symbol for the session from POS Settings.)
+
+* An **unknown** `Country` (a typo, or one not in the list) **stops the app at
+  startup** with a message naming the supported countries, rather than silently
+  becoming Singapore or the server's zone and dating bills wrongly.
+* Changing the country of a shop that already has bills is safe for stored
+  data (it is all UTC), but the trading day boundary moves, so do it after End
+  of Day.
+* To add a country, add a line to `ShopCountry.Known` in
+  `Services/ShopCountry.cs` with its Windows and IANA zone ids, culture,
+  formats and currency.
+
 ## Deployment checklist
 
 ### 1. Database
@@ -1322,12 +1366,12 @@ no terminal at all.
     — there is no shift table, so a sign-in is the only shift signal the schema
     has. Someone who works a shift without signing in does not appear.
   - *Top Sellers* excludes FOC lines: they were given away, so they are not sales.
-- **Dashboard hours depend on `Pos:TimeZone`.** `Orders.CreatedAt` and
+- **Dashboard hours depend on `Pos:Country`.** `Orders.CreatedAt` and
   `users.LastLoginAt` are stored in UTC, so the hourly chart's buckets and the
   "signed in today" window are both derived by converting through
-  `BusinessClock` (`ToLocal` / `UtcWindow`). A wrong or missing `Pos:TimeZone`
-  silently shifts the chart and can push logins into the wrong day — the same
-  setting that already drives daily order numbering. The "2 min ago" column is
+  `BusinessClock` (`ToLocal` / `UtcWindow`) in the country's zone — the same
+  setting that drives daily order numbering. A missing or unknown country stops
+  startup rather than falling back to the server's zone. The "2 min ago" column is
   the exception: it is sent as UTC and aged by the browser, so it stays right
   even on a machine set to another zone.
 - **A page cannot self-fullscreen on load** — browsers require a user gesture.

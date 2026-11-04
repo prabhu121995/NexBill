@@ -14,6 +14,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>@(await Brand.NameAsync())</title>
   <partial name="_AppIcons" />
+  <partial name="_ShopClock" />
   <script src="~/lib/tailwind/tailwind.min.js"></script>
   <script src="~/lib/lucide/lucide.min.js"></script>
   <link rel="stylesheet" href="~/lib/fonts/fonts.css" />
@@ -28,12 +29,12 @@
             digital: ['"Chakra Petch"', 'sans-serif'],
           },
           colors: {
-            lavender: { 25:'#fbfaff',50:'#f6f3fc',100:'#ece5fa',200:'#ded2f6',300:'#c5b0f0',400:'#a787e6',500:'#8c60dc',600:'#7540cc',700:'#6432b4',800:'#522995',900:'#432279',950:'#231046' },
+            brand: { 25:'#fcfdfa',50:'#f9f9f3',100:'#f1f2e5',200:'#e4e6d1',300:'#d0d3b1',400:'#b8bc8a',500:'#828746',600:'#74793f',700:'#5e6133',800:'#474a26',900:'#37391e',950:'#202211' },
             mint: { 50:'#edfcf5',100:'#d3f7e6',200:'#a7eecb',500:'#10b981',600:'#059669',700:'#047857' }
           },
           boxShadow: {
-            'soft': '0 1px 2px rgba(35,16,70,.04), 0 4px 16px -4px rgba(35,16,70,.08)',
-            'lift': '0 10px 30px -8px rgba(117,64,204,.28)',
+            'soft': '0 1px 2px rgba(32,34,17,.04), 0 4px 16px -4px rgba(32,34,17,.08)',
+            'lift': '0 10px 30px -8px rgba(116,121,63,.28)',
           },
           animation: { 'pop-in': 'popIn .18s cubic-bezier(.16,1,.3,1)' },
           keyframes: { popIn: { '0%': { transform: 'scale(.95)', opacity: 0 }, '100%': { transform: 'scale(1)', opacity: 1 } } }
@@ -42,24 +43,29 @@
     }
   </script>
   <style>
+    /* White-first page with two faint orange glows - the glass cards need something soft behind them to frost. */
+    .app-bg { background-color: #fdfdf9; background-image: radial-gradient(55rem 38rem at -8% -12%, rgba(184,188,138,.32), transparent 60%), radial-gradient(48rem 38rem at 108% 112%, rgba(208,211,177,.38), transparent 60%), radial-gradient(40rem 30rem at 55% 45%, rgba(241,242,229,.55), transparent 70%); background-attachment: fixed; }
+    .glass { background: linear-gradient(135deg, rgba(255,255,255,.74), rgba(255,255,255,.4)); -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%); border: 1px solid rgba(255,255,255,.95); box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(255,255,255,.35), 0 10px 30px -12px rgba(116,121,63,.22); }
+    /* Modals and the login card: more opaque, so form text stays easy to read over whatever is behind. */
+    .glass-strong { background: rgba(255,255,255,.84); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); border: 1px solid rgba(255,255,255,.85); box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 18px 48px -16px rgba(32,34,17,.28); }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #ded2f6; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb { background: #e4e6d1; border-radius: 6px; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { scrollbar-width: none; }
     .tap { touch-action: manipulation; transition: transform .1s ease, background-color .15s, border-color .15s, box-shadow .15s; }
     .tap:active { transform: scale(.96); }
-    .tap:focus-visible { outline: 2px solid #7540cc; outline-offset: 2px; }
-    .dish-card:hover { box-shadow: 0 8px 22px -10px rgba(117,64,204,.35); border-color: #c5b0f0; }
-    .rail-btn.active::before { content: ''; position: absolute; left: -10px; top: 18%; bottom: 18%; width: 4px; border-radius: 4px; background: #7540cc; }
-    .rail-btn.active::after { content: ''; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 9px solid #7540cc; }
+    .tap:focus-visible { outline: 2px solid #74793f; outline-offset: 2px; }
+    .dish-card:hover { box-shadow: 0 8px 22px -10px rgba(116,121,63,.35); border-color: #d0d3b1; }
+    .rail-btn.active::before { content: ''; position: absolute; left: -10px; top: 18%; bottom: 18%; width: 4px; border-radius: 4px; background: #74793f; }
+    .rail-btn.active::after { content: ''; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 9px solid #74793f; }
     .cut { --c: 14px; clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c))); }
     .cut-frame { padding: 1.5px; }
     .cut-frame > .cut { --c: 13.4px; }
     .tree-section { position: relative; padding-left: 26px; }
-    .tree-section::before { content: ''; position: absolute; left: 8px; top: 14px; bottom: 0; width: 2px; background: linear-gradient(#c5b0f0, #ece5fa); border-radius: 2px; }
-    .tree-node { position: absolute; left: 2px; top: 6px; width: 14px; height: 14px; border-radius: 4px; transform: rotate(45deg); background: #fff; border: 2px solid #7540cc; }
-    .tree-branch { position: absolute; left: -18px; top: 50%; width: 18px; height: 2px; background: #ded2f6; }
+    .tree-section::before { content: ''; position: absolute; left: 8px; top: 14px; bottom: 0; width: 2px; background: linear-gradient(#d0d3b1, #f1f2e5); border-radius: 2px; }
+    .tree-node { position: absolute; left: 2px; top: 6px; width: 14px; height: 14px; border-radius: 4px; transform: rotate(45deg); background: #fff; border: 2px solid #74793f; }
+    .tree-branch { position: absolute; left: -18px; top: 50%; width: 18px; height: 2px; background: #e4e6d1; }
     /* lucide swaps the <i> for an <svg>, so the spin targets the child */
     .refreshing svg { animation: spin .7s linear infinite; }
     @@keyframes spin { to { transform: rotate(360deg); } }
@@ -70,11 +76,11 @@
   </style>
 </head>
 
-<body class="bg-[#f4f2f9] text-slate-800 h-screen w-screen overflow-hidden flex flex-col font-sans antialiased">
+<body class="app-bg text-slate-800 h-screen w-screen overflow-hidden flex flex-col font-sans antialiased">
 
   <!-- TOAST -->
-  <div id="posNotificationBanner" class="fixed top-3 left-1/2 -translate-x-1/2 -translate-y-40 opacity-0 transition-all duration-300 z-[200] bg-white border border-lavender-200 px-4 py-3 rounded-2xl shadow-lift flex items-center gap-3 max-w-lg w-[92%] sm:w-auto">
-    <div id="notifIconWrapper" class="w-9 h-9 rounded-xl bg-lavender-100 text-lavender-700 flex items-center justify-center shrink-0"><i id="notifIcon" data-lucide="info" class="w-5 h-5"></i></div>
+  <div id="posNotificationBanner" class="fixed top-3 left-1/2 -translate-x-1/2 -translate-y-40 opacity-0 transition-all duration-300 z-[200] bg-white border border-brand-200 px-4 py-3 rounded-2xl shadow-lift flex items-center gap-3 max-w-lg w-[92%] sm:w-auto">
+    <div id="notifIconWrapper" class="w-9 h-9 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center shrink-0"><i id="notifIcon" data-lucide="info" class="w-5 h-5"></i></div>
     <div class="flex-1 min-w-0"><h4 id="notifTitle" class="font-bold text-sm text-slate-900">Notification</h4><p id="notifDesc" class="text-xs text-slate-500 truncate">Description</p></div>
     <button onclick="dismissNotification()" class="text-slate-400 hover:text-slate-700 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
   </div>
@@ -85,22 +91,24 @@
        screen then is what staff see — without this the till blanked out into
        browser furniture. Same colour as the page canvas, so the hand-off to
        Chrome's own last repaint is invisible. -->
-  <div id="closingCover" class="hidden fixed inset-0 z-[300] bg-[#f4f2f9] flex flex-col items-center justify-center">
-    <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-lavender-700 to-lavender-500 text-white shadow-lift flex items-center justify-center">
-      <i data-lucide="coffee" class="w-12 h-12"></i>
+  <div id="closingCover" class="hidden fixed inset-0 z-[300] app-bg flex flex-col items-center justify-center">
+    <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-brand-700 to-brand-500 text-white shadow-lift flex items-center justify-center">
+      <svg viewBox="14.5 14.5 71 71" class="w-12 h-12" aria-hidden="true"><defs><mask id="nbNPos1"><rect x="0" y="0" width="100" height="100" fill="#fff"/><path d="M39 63V36.5h6.6l9.8 14.8V36.5H62V63h-6.6l-9.8-14.8V63z" fill="#000"/></mask></defs><g mask="url(#nbNPos1)"><path d="M50 16.5C58.5 21 67 23.2 75 23.2V47C75 65.5 64.5 77.5 50 84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M50 16.5V84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#e7e9d6" stroke="#e7e9d6" stroke-width="3" stroke-linejoin="round"/></g></svg>
     </div>
-    <p class="mt-6 text-lg font-extrabold text-lavender-950 tracking-tight">Closing terminal</p>
+    <p class="mt-6 text-lg font-extrabold text-brand-950 tracking-tight">Closing terminal</p>
     <p id="closingCoverNote" class="mt-1 text-xs font-semibold text-slate-400">Shift ended · signing out</p>
-    <i data-lucide="loader-2" class="w-6 h-6 mt-5 text-lavender-500 animate-spin"></i>
+    <i data-lucide="loader-2" class="w-6 h-6 mt-5 text-brand-500 animate-spin"></i>
   </div>
 
   <form id="logoutForm" method="post" action="@Url.Action("Logout", "Account")" class="hidden">@Html.AntiForgeryToken()</form>
 
   <!-- HEADER -->
   <!-- Phones: brand and search share the first row, the actions take the second. -->
-  <header class="min-h-[3.5rem] lg:h-14 bg-white border-b border-lavender-100 px-3 py-2 lg:px-4 lg:py-0 flex flex-wrap lg:flex-nowrap items-center gap-x-3 gap-y-2 lg:gap-4 shrink-0">
+  @* relative z-30: the blur makes the header its own layer, which would otherwise
+     paint the power menu underneath the rail, the cards and the order panel. *@
+  <header class="relative z-30 min-h-[3.5rem] lg:h-14 bg-white/70 backdrop-blur-xl border-b border-brand-100 px-3 py-2 lg:px-4 lg:py-0 flex flex-wrap lg:flex-nowrap items-center gap-x-3 gap-y-2 lg:gap-4 shrink-0">
     <div class="flex items-center gap-2.5 lg:w-[200px] shrink-0">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-lavender-700 to-lavender-500 text-white flex items-center justify-center"><i data-lucide="coffee" class="w-5 h-5"></i></div>
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-700 to-brand-500 text-white flex items-center justify-center"><svg viewBox="14.5 14.5 71 71" class="w-5 h-5" aria-hidden="true"><defs><mask id="nbNPos2"><rect x="0" y="0" width="100" height="100" fill="#fff"/><path d="M39 63V36.5h6.6l9.8 14.8V36.5H62V63h-6.6l-9.8-14.8V63z" fill="#000"/></mask></defs><g mask="url(#nbNPos2)"><path d="M50 16.5C58.5 21 67 23.2 75 23.2V47C75 65.5 64.5 77.5 50 84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M50 16.5V84.5C35.5 77.5 25 65.5 25 47V23.2C33 23.2 41.5 21 50 16.5Z" fill="#e7e9d6" stroke="#e7e9d6" stroke-width="3" stroke-linejoin="round"/></g></svg></div>
       <div class="leading-tight">
         <div class="font-extrabold text-slate-900">@(await Brand.NameAsync())</div>
         <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider" title="@ViewData["MachineName"] · @ViewData["MachineGuid"]">@ViewData["TerminalName"]</div>
@@ -109,7 +117,7 @@
     <div class="relative flex-1 min-w-0 lg:max-w-xl">
       <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
       <input id="quickDishFilterInput" oninput="handleQuickDishFilter(this.value)" type="text" placeholder="Search dishes…"
-        class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 text-sm placeholder-slate-400 focus:outline-none focus:border-lavender-500 focus:bg-white">
+        class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 text-sm placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:bg-white">
     </div>
     <div id="posActions" class="w-full lg:w-auto lg:ml-auto flex items-center justify-between lg:justify-end gap-1 sm:gap-2">
       <div class="hidden xl:flex flex-col items-end pr-3 mr-1 border-r border-slate-200 leading-tight">
@@ -132,19 +140,19 @@
 {
       <!-- End of Day: moves closed bills to the archive tables. Admin / Supervisor only, checked server side too. -->
       <button id="eodBtn" onclick="runEndOfDay()" class="tap h-10 px-2.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center gap-1 text-[11px] font-extrabold" title="End of Day - archive closed bills"><i data-lucide="archive" class="w-4 h-4"></i><span class="hidden sm:inline">EOD</span></button>
-      <a href="@Url.Action("Index", "Admin")" onclick="event.preventDefault(); window.location.replace(this.href)" class="tap w-10 h-10 rounded-xl bg-lavender-50 border border-lavender-200 text-lavender-700 flex items-center justify-center" title="Admin panel"><i data-lucide="shield" class="w-4 h-4"></i></a>
+      <a href="@Url.Action("Index", "Admin")" onclick="event.preventDefault(); window.location.replace(this.href)" class="tap w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 text-brand-700 flex items-center justify-center" title="Admin panel"><i data-lucide="shield" class="w-4 h-4"></i></a>
 }
       <div class="hidden lg:flex flex-col items-end pl-3 ml-1 border-l border-slate-200 leading-tight">
         <span class="text-xs font-extrabold text-slate-800">@displayName</span>
-        <span class="text-[10px] font-bold text-lavender-400 uppercase tracking-wider">@roleName</span>
+        <span class="text-[10px] font-bold text-brand-400 uppercase tracking-wider">@roleName</span>
       </div>
-      <div class="hidden sm:flex w-9 h-9 rounded-full bg-gradient-to-br from-lavender-700 to-lavender-500 text-white font-bold text-sm items-center justify-center shrink-0" title="@displayName · @roleName">@initial</div>
+      <div class="hidden sm:flex w-9 h-9 rounded-full bg-gradient-to-br from-brand-700 to-brand-500 text-white font-bold text-sm items-center justify-center shrink-0" title="@displayName · @roleName">@initial</div>
       <!-- Both ways off this till sit behind the one power button: closing the
            terminal and signing out differ only in whether the window survives, and
            a cashier reaching for one looks in the same place for the other. -->
       <div class="relative">
         <button id="powerMenuBtn" onclick="togglePowerMenu(event)" class="tap w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center" title="Close terminal"><i data-lucide="power" class="w-4 h-4"></i></button>
-        <div id="powerMenu" class="hidden absolute top-12 right-0 w-60 bg-white border border-slate-200 rounded-2xl shadow-lift p-1.5 z-[170] animate-pop-in text-sm">
+        <div id="powerMenu" class="hidden absolute top-12 right-0 w-60 glass-strong rounded-2xl shadow-lift p-1.5 z-[170] animate-pop-in text-sm">
           <button onclick="closePowerMenu();handleClosePOS()" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-rose-50 flex items-start gap-2.5">
             <i data-lucide="power" class="w-4 h-4 text-rose-600 mt-0.5 shrink-0"></i>
             <span class="min-w-0">
@@ -153,8 +161,8 @@
             </span>
           </button>
           <div class="h-px bg-slate-100 my-1"></div>
-          <button onclick="closePowerMenu();handleSignOut()" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-lavender-50 flex items-start gap-2.5">
-            <i data-lucide="user-round-x" class="w-4 h-4 text-lavender-700 mt-0.5 shrink-0"></i>
+          <button onclick="closePowerMenu();handleSignOut()" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-brand-50 flex items-start gap-2.5">
+            <i data-lucide="user-round-x" class="w-4 h-4 text-brand-700 mt-0.5 shrink-0"></i>
             <span class="min-w-0">
               <span class="block font-bold text-slate-800">Logout</span>
               <span class="block text-[11px] font-semibold text-slate-400 leading-snug">Back to sign-in, terminal stays open</span>
@@ -169,7 +177,7 @@
   <main class="flex-1 flex min-h-0">
 
     <!-- CATEGORY RAIL -->
-    <nav class="w-[84px] lg:w-[104px] shrink-0 bg-white border-r border-lavender-100 flex flex-col">
+    <nav class="w-[84px] lg:w-[104px] shrink-0 bg-white/60 backdrop-blur-xl border-r border-brand-100 flex flex-col">
       <div id="categoryRail" class="flex-1 overflow-y-auto no-scrollbar py-3 pl-[10px] pr-2 space-y-2"></div>
     </nav>
 
@@ -198,57 +206,59 @@
 
     <!-- ORDER PANEL: a column from lg up; below that a full-screen sheet opened from
          the order bar. z-40 keeps it under the modals it opens (z-50). -->
-    <aside id="orderPanel" class="fixed inset-0 z-40 translate-y-full transition-transform duration-300 lg:static lg:z-auto lg:translate-y-0 lg:transition-none lg:w-[380px] xl:w-[410px] shrink-0 bg-white lg:border-l border-lavender-100 flex flex-col min-h-0">
+    <aside id="orderPanel" class="fixed inset-0 z-40 translate-y-full transition-transform duration-300 lg:static lg:z-auto lg:translate-y-0 lg:transition-none lg:w-[380px] xl:w-[410px] shrink-0 bg-white lg:border-l border-brand-100 flex flex-col min-h-0">
       <div class="p-4 border-b border-slate-100 shrink-0 space-y-3">
         <div class="flex lg:hidden items-center justify-between -mt-1">
           <span class="text-sm font-extrabold text-slate-900">Current order</span>
           <button onclick="toggleOrderSheet(false)" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center" title="Back to menu"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
         </div>
-        <div class="flex items-center justify-between">
-          <div>
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0 shrink-0">
             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order</div>
             <div class="flex items-baseline gap-2">
               <span id="seqNumberDisplay" class="font-digital font-bold text-2xl text-slate-900">#1</span>
               <span id="cartItemsBadge" class="text-xs font-semibold text-slate-400">0 items</span>
-              <span id="mergeBadge" class="hidden text-[10px] font-extrabold text-lavender-800 bg-lavender-100 border border-lavender-300 px-2 py-0.5 rounded-full tracking-wide">MERGED 0</span>
+              <span id="mergeBadge" class="hidden text-[10px] font-extrabold text-brand-800 bg-brand-100 border border-brand-300 px-2 py-0.5 rounded-full tracking-wide">MERGED 0</span>
             </div>
           </div>
           <div class="hidden">
             <button id="btnDineIn" onclick="setOrderMode('dinein')" class="tap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"><i data-lucide="utensils" class="w-3.5 h-3.5"></i>Dine In</button>
             <button id="btnTakeAway" onclick="setOrderMode('takeaway')" class="tap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"><i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>Take Away</button>
           </div>
-        </div>
-        <div class="grid grid-cols-1 gap-2">
-          <button id="tableChip" onclick="openTableModal()" class="hidden tap bg-lavender-50 border border-lavender-200 rounded-xl px-2.5 py-2 text-left">
-            <div class="text-[10px] font-bold text-lavender-500 uppercase">Table</div>
-            <div id="currentTableBadge" class="text-sm font-extrabold text-lavender-900">T5</div>
+          <div class="flex items-stretch gap-2 min-w-0 flex-1 justify-end">
+          <button id="tableChip" onclick="openTableModal()" class="hidden tap bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-2 text-left">
+            <div class="text-[10px] font-bold text-brand-500 uppercase">Table</div>
+            <div id="currentTableBadge" class="text-sm font-extrabold text-brand-900">T5</div>
           </button>
           <button onclick="openPersonsModal()" class="hidden tap bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-left">
             <div class="text-[10px] font-bold text-slate-400 uppercase">Guests</div>
             <div id="currentPersonsCount" class="text-sm font-extrabold text-slate-800">2</div>
           </button>
-          <button onclick="openCustomerModal()" class="tap bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-left min-w-0">
-            <div class="text-[10px] font-bold text-slate-400 uppercase">Customer</div>
-            <div id="topCustomerLabel" class="text-sm font-extrabold text-slate-800 truncate">Walk-in</div>
+          <button onclick="openCustomerModal()" class="tap bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-left min-w-0 w-44 flex items-center gap-2">
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 shrink-0"></i>
+            <div class="min-w-0">
+              <div class="text-[10px] font-bold text-slate-400 uppercase">Customer</div>
+              <div id="topCustomerLabel" class="text-sm font-extrabold text-slate-800 truncate">Walk-in</div>
+            </div>
           </button>
+          </div>
         </div>
       </div>
 
       <div id="cartItemsList" class="flex-1 overflow-y-auto px-3 py-2 space-y-1.5"></div>
 
       <div class="px-3 py-2 border-t border-slate-100 flex items-center gap-1.5 shrink-0">
-        <button onclick="openModifierModal()" class="tap flex-1 h-9 rounded-lg bg-lavender-50 border border-lavender-200 text-lavender-800 text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>Note</button>
+        <button onclick="openModifierModal()" class="tap flex-1 h-9 rounded-lg bg-brand-50 border border-brand-200 text-brand-800 text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>Note</button>
         <button onclick="toggleFOCForSelected()" class="tap flex-1 h-9 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold">FOC</button>
         <button onclick="openDiscountModal()" class="tap flex-1 h-9 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="percent" class="w-3.5 h-3.5"></i>Disc.</button>
         <button onclick="removeSelectedItem()" class="tap w-9 h-9 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center" title="Delete line"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
         <div class="relative">
           <button onclick="toggleMoreMenu(event)" class="tap w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center" title="More"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
-          <div id="moreMenu" class="hidden absolute bottom-11 right-0 w-52 bg-white border border-slate-200 rounded-2xl shadow-lift p-1.5 z-40 animate-pop-in text-sm">
-            <button onclick="closeMoreMenu();openViewOrderModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>View Order</button>
-            <button onclick="closeMoreMenu();openSeatModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 flex items-center gap-2"><i data-lucide="armchair" class="w-4 h-4 text-slate-400"></i>Seat No</button>
-            <button onclick="closeMoreMenu();openMergeBillModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 flex items-center gap-2"><i data-lucide="git-merge" class="w-4 h-4 text-slate-400"></i>Merge Bill <span class="ml-auto text-[10px] text-slate-400">F11</span></button>
-            <button onclick="closeMoreMenu();handleRefund()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 flex items-center gap-2"><i data-lucide="undo-2" class="w-4 h-4 text-slate-400"></i>Refund</button>
-            <button onclick="closeMoreMenu();handleReprintReceipt()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>Last Order</button>
+          <div id="moreMenu" class="hidden absolute bottom-11 right-0 w-52 glass-strong rounded-2xl shadow-lift p-1.5 z-40 animate-pop-in text-sm">
+            <button onclick="closeMoreMenu();openViewOrderModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>View Order</button>
+            <button onclick="closeMoreMenu();openMergeBillModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 flex items-center gap-2"><i data-lucide="git-merge" class="w-4 h-4 text-slate-400"></i>Merge Bill <span class="ml-auto text-[10px] text-slate-400">F11</span></button>
+            <button onclick="closeMoreMenu();handleRefund()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 flex items-center gap-2"><i data-lucide="undo-2" class="w-4 h-4 text-slate-400"></i>Refund</button>
+            <button onclick="closeMoreMenu();handleReprintReceipt()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>Last Order</button>
             <div class="h-px bg-slate-100 my-1"></div>
             <button onclick="closeMoreMenu();clearCurrentOrder()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-rose-50 text-rose-600 flex items-center gap-2"><i data-lucide="rotate-ccw" class="w-4 h-4"></i>Clear Order <span class="ml-auto text-[10px] text-rose-300">F2</span></button>
           </div>
@@ -266,15 +276,15 @@
         </div>
         <div onclick="toggleTotalsBreakdown()" class="flex justify-between items-end pt-2 border-t border-dashed border-slate-300 cursor-pointer select-none">
           <span class="text-sm font-extrabold text-slate-900 flex items-center gap-1">Net Total<span id="totalsBreakdownChevron" class="inline-flex text-slate-400 transition-transform"><i data-lucide="chevron-down" class="w-4 h-4"></i></span></span>
-          <span id="summaryNetTotal" class="font-digital font-bold text-3xl text-lavender-800 leading-none">$0.00</span>
+          <span id="summaryNetTotal" class="font-digital font-bold text-3xl text-brand-800 leading-none">$0.00</span>
         </div>
         <div class="grid grid-cols-3 gap-2 mt-3">
           <button onclick="holdCurrentOrder()" class="tap h-12 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="pause" class="w-4 h-4"></i>Hold</button>
-          <button onclick="placeOrder()" class="tap h-12 rounded-xl bg-lavender-100 border border-lavender-300 text-lavender-800 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="clipboard-check" class="w-4 h-4"></i>Order</button>
+          <button onclick="placeOrder()" class="tap h-12 rounded-xl bg-brand-100 border border-brand-300 text-brand-800 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="clipboard-check" class="w-4 h-4"></i>Order</button>
           <button onclick="printBill()" class="tap h-12 rounded-xl bg-mint-50 border border-mint-200 text-mint-700 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="printer" class="w-4 h-4"></i>Print</button>
         </div>
-        <button onclick="openPaymentModal()" class="tap mt-2 w-full h-14 rounded-2xl bg-gradient-to-r from-lavender-700 to-lavender-500 text-white font-extrabold shadow-lift flex items-center justify-between px-5">
-          <span class="flex items-center gap-2"><i data-lucide="credit-card" class="w-5 h-5"></i>Pay <span class="text-[10px] font-bold text-lavender-200">F10</span></span>
+        <button onclick="openPaymentModal()" class="tap mt-2 w-full h-14 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-500 text-white font-extrabold shadow-lift flex items-center justify-between px-5">
+          <span class="flex items-center gap-2"><i data-lucide="credit-card" class="w-5 h-5"></i>Pay <span class="text-[10px] font-bold text-brand-200">F10</span></span>
           <span id="payBtnTotal" class="font-digital text-xl">$0.00</span>
         </button>
       </div>
@@ -282,20 +292,20 @@
   </main>
 
   <!-- Below lg: what is on the order, always in reach; tapping it opens the order sheet. -->
-  <button id="orderSheetBar" onclick="toggleOrderSheet(true)" class="lg:hidden tap shrink-0 mx-3 mb-3 h-14 rounded-2xl bg-gradient-to-r from-lavender-700 to-lavender-500 text-white font-extrabold shadow-lift flex items-center justify-between px-5">
-    <span class="flex items-center gap-2"><i data-lucide="shopping-basket" class="w-5 h-5"></i>View order <span id="orderSheetBarCount" class="text-xs font-bold text-lavender-200">0 items</span></span>
+  <button id="orderSheetBar" onclick="toggleOrderSheet(true)" class="lg:hidden tap shrink-0 mx-3 mb-3 h-14 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-500 text-white font-extrabold shadow-lift flex items-center justify-between px-5">
+    <span class="flex items-center gap-2"><i data-lucide="shopping-basket" class="w-5 h-5"></i>View order <span id="orderSheetBarCount" class="text-xs font-bold text-brand-200">0 items</span></span>
     <span id="orderSheetBarTotal" class="font-digital text-xl">$0.00</span>
   </button>
 
   <!-- VIRTUAL KEYBOARD -->
   <!-- mousedown is cancelled so tapping a key never steals focus from the field being typed into. -->
-  <div id="globalVirtualKeyboard" onmousedown="event.preventDefault()" class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-lavender-200 shadow-2xl p-3 z-[150] translate-y-full transition-transform duration-200">
+  <div id="globalVirtualKeyboard" onmousedown="event.preventDefault()" class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-brand-200 shadow-2xl p-3 z-[150] translate-y-full transition-transform duration-200">
     <div class="max-w-4xl mx-auto space-y-1.5">
       <div class="flex items-center justify-between px-1 pb-1.5 text-xs">
-        <div class="flex items-center gap-2 text-slate-500"><i data-lucide="keyboard" class="w-4 h-4 text-lavender-600"></i>Typing in: <span id="vkTargetLabel" class="font-bold text-lavender-700">Field</span></div>
+        <div class="flex items-center gap-2 text-slate-500"><i data-lucide="keyboard" class="w-4 h-4 text-brand-600"></i>Typing in: <span id="vkTargetLabel" class="font-bold text-brand-700">Field</span></div>
         <div class="flex gap-2">
           <button onclick="virtualKeyClear()" class="tap px-3 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200">Clear</button>
-          <button onclick="closeGlobalVirtualKeyboard()" class="tap px-4 py-1 rounded-lg bg-lavender-600 text-white font-bold">Done</button>
+          <button onclick="closeGlobalVirtualKeyboard()" class="tap px-4 py-1 rounded-lg bg-brand-600 text-white font-bold">Done</button>
         </div>
       </div>
       <div id="vkRows" class="space-y-1.5"></div>
@@ -306,26 +316,26 @@
 
   <!-- PAYMENT -->
   <div id="paymentModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[95vh]">
+    <div class="glass-strong rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[95vh]">
       <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
         <h2 class="text-base font-extrabold text-slate-900">Settle Payment</h2>
         <button onclick="closeModal('paymentModal')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <div id="paymentModalBody" class="flex-1 overflow-y-auto p-6 space-y-5">
-        <div class="bg-lavender-50 border border-lavender-200 rounded-2xl p-4 flex flex-wrap sm:flex-nowrap items-center gap-x-5 gap-y-3">
-          <div class="shrink-0"><span class="text-[11px] text-lavender-600 font-bold uppercase tracking-wider block">Amount Payable</span><span id="paymentModalTotal" class="font-digital font-bold text-3xl text-lavender-900">$0.00</span></div>
+        <div class="bg-brand-50 border border-brand-200 rounded-2xl p-4 flex flex-wrap sm:flex-nowrap items-center gap-x-5 gap-y-3">
+          <div class="shrink-0"><span class="text-[11px] text-brand-600 font-bold uppercase tracking-wider block">Amount Payable</span><span id="paymentModalTotal" class="font-digital font-bold text-3xl text-brand-900">$0.00</span></div>
 
           <!-- WAITER — who the bill is credited to, saved on the order; leave
                unassigned for counter sales. One scrolling row of chips rather than
                a dropdown: at a touch screen a tap beats opening a list, and the row
                keeps working the same way whether there are three waiters or thirty. -->
           <div class="order-last sm:order-none basis-full sm:basis-auto flex-1 min-w-0">
-            <span class="text-[11px] text-lavender-600 font-bold uppercase tracking-wider block mb-1.5">Waiter</span>
+            <span class="text-[11px] text-brand-600 font-bold uppercase tracking-wider block mb-1.5">Waiter</span>
             <div id="waiterCards" class="flex gap-2 overflow-x-auto pb-1 -mb-1"></div>
             <p id="waiterEmptyHint" class="hidden mt-1.5 text-[11px] font-semibold text-amber-600">No active waiter accounts — add one in the Admin Panel to credit bills.</p>
           </div>
 
-          <span id="paymentModalModeBadge" class="shrink-0 ml-auto self-start sm:self-center bg-white border border-lavender-200 text-lavender-800 text-xs px-3 py-1 rounded-full font-bold">Dine In (T5)</span>
+          <span id="paymentModalModeBadge" class="shrink-0 ml-auto self-start sm:self-center bg-white border border-brand-200 text-brand-800 text-xs px-3 py-1 rounded-full font-bold">Dine In (T5)</span>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -341,15 +351,15 @@
             <div>
               <div class="flex items-center justify-between h-7 mb-1">
                 <span class="text-xs font-bold text-slate-500 flex items-center gap-1"><i data-lucide="banknote" class="w-3.5 h-3.5"></i>Cash</span>
-                <button onclick="setMixedHalf()" class="tap text-[11px] font-bold text-lavender-700 bg-lavender-50 border border-lavender-200 px-2.5 py-1 rounded-lg">Half</button>
+                <button onclick="setMixedHalf()" class="tap text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-lg">Half</button>
               </div>
-              <input id="inputMixedCash" type="number" step="0.10" min="0" value="0.00" oninput="updateMixedCalculation()" onblur="this.value = (parseFloat(this.value) || 0).toFixed(2)" placeholder="Cash amount" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg focus:outline-none focus:border-lavender-600">
+              <input id="inputMixedCash" type="number" step="0.10" min="0" value="0.00" oninput="updateMixedCalculation()" onblur="this.value = (parseFloat(this.value) || 0).toFixed(2)" placeholder="Cash amount" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg focus:outline-none focus:border-brand-600">
             </div>
             <div>
               <div class="flex items-center justify-between h-7 mb-1">
                 <span class="text-xs font-bold text-slate-500 flex items-center gap-1"><i data-lucide="credit-card" class="w-3.5 h-3.5"></i>Card</span>
               </div>
-              <input id="inputMixedCard" type="number" step="0.10" min="0" value="0.00" oninput="updateMixedCalculation()" onblur="this.value = (parseFloat(this.value) || 0).toFixed(2)" placeholder="Card amount" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg focus:outline-none focus:border-lavender-600">
+              <input id="inputMixedCard" type="number" step="0.10" min="0" value="0.00" oninput="updateMixedCalculation()" onblur="this.value = (parseFloat(this.value) || 0).toFixed(2)" placeholder="Card amount" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg focus:outline-none focus:border-brand-600">
             </div>
             <p class="col-span-2 text-[11px] text-slate-400">The rest is paid by QR / UPI. Leave a part at 0 to skip it.</p>
           </div>
@@ -358,13 +368,13 @@
               <div class="text-[10px] font-bold text-mint-600 uppercase tracking-wider">Cash</div>
               <div id="mixedCashShow" class="font-digital font-bold text-lg text-mint-700">$0.00</div>
             </div>
-            <div class="bg-lavender-50 border border-lavender-200 rounded-xl py-2">
-              <div class="text-[10px] font-bold text-lavender-600 uppercase tracking-wider">Card</div>
-              <div id="mixedCardShow" class="font-digital font-bold text-lg text-lavender-800">$0.00</div>
+            <div class="bg-brand-50 border border-brand-200 rounded-xl py-2">
+              <div class="text-[10px] font-bold text-brand-600 uppercase tracking-wider">Card</div>
+              <div id="mixedCardShow" class="font-digital font-bold text-lg text-brand-800">$0.00</div>
             </div>
-            <div class="bg-lavender-50 border border-lavender-200 rounded-xl py-2">
-              <div class="text-[10px] font-bold text-lavender-600 uppercase tracking-wider">QR / UPI</div>
-              <div id="mixedQrShow" class="font-digital font-bold text-lg text-lavender-800">$0.00</div>
+            <div class="bg-brand-50 border border-brand-200 rounded-xl py-2">
+              <div class="text-[10px] font-bold text-brand-600 uppercase tracking-wider">QR / UPI</div>
+              <div id="mixedQrShow" class="font-digital font-bold text-lg text-brand-800">$0.00</div>
             </div>
             <div class="bg-slate-50 border border-slate-200 rounded-xl py-2">
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</div>
@@ -380,12 +390,12 @@
             <div>
               <span class="text-xs font-bold text-slate-600 block">Split between</span>
               <span class="text-[11px] text-slate-400">Tap an amount to change it; the others share what is left</span>
-              <button onclick="resetSplitAmounts()" id="splitResetBtn" class="tap hidden text-[11px] font-bold text-lavender-700 underline">Reset to equal</button>
+              <button onclick="resetSplitAmounts()" id="splitResetBtn" class="tap hidden text-[11px] font-bold text-brand-700 underline">Reset to equal</button>
             </div>
             <div class="flex items-center gap-2 shrink-0">
               <button onclick="changeSplitCount(-1)" class="tap w-9 h-9 rounded-xl bg-white border border-slate-200 font-extrabold text-slate-600">&minus;</button>
               <span id="splitCount" class="w-10 text-center font-digital font-bold text-xl">2</span>
-              <button onclick="changeSplitCount(1)" class="tap w-9 h-9 rounded-xl bg-white border border-slate-200 font-extrabold text-lavender-700">+</button>
+              <button onclick="changeSplitCount(1)" class="tap w-9 h-9 rounded-xl bg-white border border-slate-200 font-extrabold text-brand-700">+</button>
             </div>
           </div>
 
@@ -417,7 +427,7 @@
 
   <!-- TABLE -->
   <div id="tableModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
+    <div class="glass-strong rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
       <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Select Table</h3><button onclick="closeModal('tableModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
       <div id="tableGrid" class="grid grid-cols-4 gap-2.5"></div>
     </div>
@@ -425,7 +435,7 @@
 
   <!-- PERSONS -->
   <div id="personsModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-xs shadow-2xl p-5 animate-pop-in">
+    <div class="glass-strong rounded-3xl w-full max-w-xs shadow-2xl p-5 animate-pop-in">
       <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Number of Guests</h3><button onclick="closeModal('personsModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
       <div id="personsGrid" class="grid grid-cols-4 gap-2"></div>
     </div>
@@ -433,7 +443,7 @@
 
   <!-- PENDING -->
   <div id="pendingModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-5 animate-pop-in">
+    <div class="glass-strong rounded-3xl w-full max-w-lg shadow-2xl p-5 animate-pop-in">
       <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Held Orders</h3><button onclick="closeModal('pendingModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
       <div id="pendingOrdersList" class="space-y-2.5 max-h-80 overflow-y-auto"></div>
     </div>
@@ -441,20 +451,20 @@
 
   <!-- WAITER PUNCH -->
   <div id="punchModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-5 animate-pop-in flex flex-col max-h-[85vh]">
+    <div class="glass-strong rounded-3xl w-full max-w-lg shadow-2xl p-5 animate-pop-in flex flex-col max-h-[85vh]">
       <div class="flex justify-between items-center mb-4 shrink-0">
         <div>
           <h3 class="text-base font-extrabold">Waiter Attendance</h3>
           <p class="text-[11px] text-slate-400 font-semibold">Punch a waiter in at the start of their shift, and out at the end</p>
         </div>
         <div class="flex items-center gap-1">
-          <button onclick="loadPunchList()" title="Refresh list" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-lavender-700 flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+          <button onclick="loadPunchList()" title="Refresh list" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-brand-700 flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
           <button onclick="closeModal('punchModal')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
       </div>
 
       <div class="flex gap-2 mb-4 shrink-0">
-        <select id="punchWaiterSelect" class="flex-1 min-w-0 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-700 focus:outline-none focus:border-lavender-500 focus:bg-white"></select>
+        <select id="punchWaiterSelect" class="flex-1 min-w-0 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-500 focus:bg-white"></select>
         <button id="punchInBtn" onclick="punchIn()" class="tap h-11 px-5 rounded-xl bg-mint-600 hover:bg-mint-700 text-white font-extrabold text-sm flex items-center gap-2 shrink-0 disabled:opacity-40"><i data-lucide="log-in" class="w-4 h-4"></i>Punch In</button>
       </div>
 
@@ -470,7 +480,7 @@
        browser's "this page says" box. Above every other modal, since some ask
        from inside one. Driven by posConfirm(). -->
   <div id="confirmModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[180] flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 animate-pop-in">
+    <div class="glass-strong rounded-3xl w-full max-w-sm shadow-2xl p-6 animate-pop-in">
       <div class="flex items-start gap-3 mb-4">
         <div id="confirmIconWrap" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"><i id="confirmIcon" class="w-5 h-5"></i></div>
         <div class="min-w-0">
@@ -492,14 +502,14 @@
 
   <!-- VIEW / RECALL ORDER -->
   <div id="recallModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[85vh]">
+    <div class="glass-strong rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[85vh]">
       <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
         <div>
           <h2 class="text-base font-extrabold text-slate-900">Open Orders</h2>
           <p class="text-[11px] text-slate-400 font-semibold">Unpaid bills from today &middot; tap one to collect payment</p>
         </div>
         <div class="flex items-center gap-1">
-          <button id="recallRefreshBtn" onclick="loadRecallList()" title="Refresh list" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-lavender-700 flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+          <button id="recallRefreshBtn" onclick="loadRecallList()" title="Refresh list" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-brand-700 flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
           <button onclick="closeModal('recallModal')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
       </div>
@@ -513,14 +523,14 @@
 
   <!-- MERGE BILL -->
   <div id="mergeModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[85vh]">
+    <div class="glass-strong rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[85vh]">
       <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
         <div>
           <h2 class="text-base font-extrabold text-slate-900">Merge Bills</h2>
           <p class="text-[11px] text-slate-400 font-semibold">Unpaid bills from today &middot; pick two or more</p>
         </div>
         <div class="flex items-center gap-1">
-          <button id="mergeRefreshBtn" onclick="loadMergeList()" title="Refresh list" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-lavender-700 flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+          <button id="mergeRefreshBtn" onclick="loadMergeList()" title="Refresh list" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-brand-700 flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
           <button onclick="closeModal('mergeModal')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
       </div>
@@ -531,11 +541,11 @@
         <div class="text-xs font-bold text-slate-500">
           <span id="mergeSelCount">0</span> selected
           <span class="text-slate-300 mx-1">&middot;</span>
-          <span id="mergeSelTotal" class="font-digital text-base text-lavender-800">$0.00</span>
+          <span id="mergeSelTotal" class="font-digital text-base text-brand-800">$0.00</span>
         </div>
         <div class="ml-auto flex gap-2">
           <button onclick="closeModal('mergeModal')" class="tap px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm">Cancel</button>
-          <button id="mergeBtn" onclick="mergeSelectedBills()" class="tap px-6 py-2.5 rounded-xl bg-lavender-600 text-white font-extrabold text-sm flex items-center gap-2 disabled:opacity-40"><i data-lucide="git-merge" class="w-4 h-4"></i>Merge</button>
+          <button id="mergeBtn" onclick="mergeSelectedBills()" class="tap px-6 py-2.5 rounded-xl bg-brand-600 text-white font-extrabold text-sm flex items-center gap-2 disabled:opacity-40"><i data-lucide="git-merge" class="w-4 h-4"></i>Merge</button>
         </div>
       </div>
     </div>
@@ -543,28 +553,28 @@
 
   <!-- MODIFIER -->
   <div id="modifierModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
+    <div class="glass-strong rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
       <div class="flex justify-between items-center mb-3"><h3 class="text-base font-extrabold">Kitchen Note</h3><button onclick="closeModal('modifierModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-      <p id="modifierDishName" class="text-sm font-bold text-lavender-700 mb-3">Selected Dish</p>
+      <p id="modifierDishName" class="text-sm font-bold text-brand-700 mb-3">Selected Dish</p>
       <div class="flex flex-wrap gap-2 mb-4">
-        <button onclick="appendModifier('Less Spicy')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">Less Spicy</button>
-        <button onclick="appendModifier('Extra Spicy')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">Extra Spicy</button>
-        <button onclick="appendModifier('No Onion / Garlic')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">No Onion</button>
-        <button onclick="appendModifier('Crispy / Well Done')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">Crispy</button>
-        <button onclick="appendModifier('Extra Ghee')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">Extra Ghee</button>
-        <button onclick="appendModifier('Pack Separate')" class="tap px-3 py-2 bg-slate-50 hover:bg-lavender-100 rounded-full text-xs font-bold border border-slate-200">Pack Separate</button>
+        <button onclick="appendModifier('Less Spicy')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">Less Spicy</button>
+        <button onclick="appendModifier('Extra Spicy')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">Extra Spicy</button>
+        <button onclick="appendModifier('No Onion / Garlic')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">No Onion</button>
+        <button onclick="appendModifier('Crispy / Well Done')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">Crispy</button>
+        <button onclick="appendModifier('Extra Ghee')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">Extra Ghee</button>
+        <button onclick="appendModifier('Pack Separate')" class="tap px-3 py-2 bg-slate-50 hover:bg-brand-100 rounded-full text-xs font-bold border border-slate-200">Pack Separate</button>
       </div>
-      <input id="inputCustomModifier" type="text" placeholder="Custom note…" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-lavender-600">
+      <input id="inputCustomModifier" type="text" placeholder="Custom note…" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-brand-600">
       <div class="flex justify-end gap-2">
         <button onclick="clearModifierForSelected()" class="tap px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">Clear</button>
-        <button onclick="saveModifier()" class="tap px-5 py-2 bg-lavender-600 rounded-xl text-xs font-extrabold text-white">Save Note</button>
+        <button onclick="saveModifier()" class="tap px-5 py-2 bg-brand-600 rounded-xl text-xs font-extrabold text-white">Save Note</button>
       </div>
     </div>
   </div>
 
   <!-- DISCOUNT -->
   <div id="discountModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-5 animate-pop-in">
+    <div class="glass-strong rounded-3xl w-full max-w-sm shadow-2xl p-5 animate-pop-in">
       <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Bill Discount</h3><button onclick="closeModal('discountModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
       <div class="grid grid-cols-4 gap-2 mb-4">
         <button onclick="setDiscountPercent(5)" class="tap py-2.5 bg-slate-50 hover:bg-amber-100 font-bold rounded-xl text-xs border border-slate-200">5%</button>
@@ -573,7 +583,7 @@
         <button onclick="setDiscountPercent(20)" class="tap py-2.5 bg-slate-50 hover:bg-amber-100 font-bold rounded-xl text-xs border border-slate-200">20%</button>
       </div>
       <label class="text-xs font-bold text-slate-500">Custom (%)</label>
-      <input id="inputCustomDiscount" type="number" min="0" max="100" value="0" placeholder="Discount %" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg mt-1 mb-4 focus:outline-none focus:border-lavender-600">
+      <input id="inputCustomDiscount" type="number" min="0" max="100" value="0" placeholder="Discount %" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg mt-1 mb-4 focus:outline-none focus:border-brand-600">
       <div class="flex justify-end gap-2">
         <button onclick="applyCustomDiscount(0)" class="tap px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">Reset</button>
         <button onclick="applyCustomDiscount()" class="tap px-5 py-2 bg-amber-600 rounded-xl text-xs font-extrabold text-white">Apply</button>
@@ -583,22 +593,22 @@
 
   <!-- CUSTOMER -->
   <div id="customerModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
+    <div class="glass-strong rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
       <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Customer</h3><button onclick="closeModal('customerModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
       <div class="space-y-3 mb-4">
-        <input id="custNameInput" type="text" placeholder="Customer name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-lavender-600">
-        <input id="custPhoneInput" type="tel" placeholder="Phone number" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-lavender-600">
+        <input id="custNameInput" type="text" placeholder="Customer name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-600">
+        <input id="custPhoneInput" type="tel" placeholder="Phone number" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-600">
       </div>
       <div class="flex justify-end gap-2">
         <button onclick="setCustomer('Walk-in')" class="tap px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold">Walk-in</button>
-        <button onclick="saveCustomer()" class="tap px-5 py-2 bg-lavender-600 rounded-xl text-xs font-extrabold text-white">Save</button>
+        <button onclick="saveCustomer()" class="tap px-5 py-2 bg-brand-600 rounded-xl text-xs font-extrabold text-white">Save</button>
       </div>
     </div>
   </div>
 
   <!-- CASH IN / OUT -->
   <div id="transactionModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-5xl shadow-2xl p-5 animate-pop-in flex flex-col max-h-[90vh]">
+    <div class="glass-strong rounded-3xl w-full max-w-5xl shadow-2xl p-5 animate-pop-in flex flex-col max-h-[90vh]">
       <div class="flex justify-between items-center mb-4 shrink-0">
         <div>
           <h3 class="text-base font-extrabold">Transactions</h3>
@@ -610,10 +620,10 @@
       <div class="flex flex-col lg:flex-row gap-4 min-h-0 overflow-y-auto lg:overflow-hidden">
         <!-- Entry form -->
         <div class="lg:w-80 shrink-0 space-y-3">
-          <p id="txnFormTitle" class="text-xs font-extrabold text-lavender-800 uppercase tracking-wider">New Transaction</p>
+          <p id="txnFormTitle" class="text-xs font-extrabold text-brand-800 uppercase tracking-wider">New Transaction</p>
           <div>
             <label for="txnNumber" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Transaction Number</label>
-            <input id="txnNumber" maxlength="30" placeholder="Transaction Number" class="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-mono font-bold focus:outline-none focus:border-lavender-500 focus:bg-white">
+            <input id="txnNumber" maxlength="30" placeholder="Transaction Number" class="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-mono font-bold focus:outline-none focus:border-brand-500 focus:bg-white">
           </div>
           <div>
             <span class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Type</span>
@@ -624,23 +634,23 @@
           </div>
           <div>
             <label for="txnMode" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Transaction Mode</label>
-            <select id="txnMode" class="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-700 focus:outline-none focus:border-lavender-500 focus:bg-white"></select>
+            <select id="txnMode" class="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-700 focus:outline-none focus:border-brand-500 focus:bg-white"></select>
           </div>
           <div>
             <label for="txnAmount" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Amount</label>
             <div class="flex gap-2">
               <span id="txnAmountSign" class="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-mono font-extrabold text-lg shrink-0">-</span>
-              <input id="txnAmount" inputmode="decimal" maxlength="8" placeholder="Amount" oninput="this.value = this.value.replace(/[^0-9.]/g, '')" class="flex-1 min-w-0 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-right font-mono font-bold focus:outline-none focus:border-lavender-500 focus:bg-white">
+              <input id="txnAmount" inputmode="decimal" maxlength="8" placeholder="Amount" oninput="this.value = this.value.replace(/[^0-9.]/g, '')" class="flex-1 min-w-0 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-right font-mono font-bold focus:outline-none focus:border-brand-500 focus:bg-white">
             </div>
           </div>
           <div>
             <label for="txnRemarks" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Remarks</label>
-            <textarea id="txnRemarks" rows="3" maxlength="250" placeholder="Remarks" onclick="openGlobalVirtualKeyboard(this)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold resize-none focus:outline-none focus:border-lavender-500 focus:bg-white"></textarea>
+            <textarea id="txnRemarks" rows="3" maxlength="250" placeholder="Remarks" onclick="openGlobalVirtualKeyboard(this)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold resize-none focus:outline-none focus:border-brand-500 focus:bg-white"></textarea>
           </div>
           <p id="txnError" class="hidden text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2"></p>
           <div class="flex gap-2">
             <button id="txnCancelBtn" onclick="resetTxnForm()" class="hidden tap h-11 px-4 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm">Cancel</button>
-            <button id="txnSaveBtn" onclick="saveTransaction()" class="tap flex-1 h-11 rounded-xl bg-lavender-600 hover:bg-lavender-700 text-white font-extrabold text-sm flex items-center justify-center gap-2 disabled:opacity-40"><i data-lucide="save" class="w-4 h-4"></i><span id="txnSaveLabel">Add Transaction</span></button>
+            <button id="txnSaveBtn" onclick="saveTransaction()" class="tap flex-1 h-11 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-sm flex items-center justify-center gap-2 disabled:opacity-40"><i data-lucide="save" class="w-4 h-4"></i><span id="txnSaveLabel">Add Transaction</span></button>
           </div>
         </div>
 
@@ -669,7 +679,7 @@
 
   <!-- SETTLEMENT -->
   <div id="settlementModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-7xl shadow-2xl p-5 animate-pop-in flex flex-col max-h-[90vh]">
+    <div class="glass-strong rounded-3xl w-full max-w-7xl shadow-2xl p-5 animate-pop-in flex flex-col max-h-[90vh]">
       <div class="flex flex-wrap justify-between items-end gap-3 mb-4 shrink-0">
         <div>
           <h3 class="text-base font-extrabold">Settlement</h3>
@@ -696,15 +706,15 @@
             <div id="setSummary" class="divide-y divide-slate-100"></div>
           </div>
           <section class="lg:col-span-2 border border-slate-200 rounded-2xl overflow-hidden flex flex-col">
-            <h4 class="px-3 py-2 bg-lavender-50 text-xs font-extrabold text-lavender-800 uppercase tracking-wider">Sales Summary</h4>
+            <h4 class="px-3 py-2 bg-brand-50 text-xs font-extrabold text-brand-800 uppercase tracking-wider">Sales Summary</h4>
             <div id="setPaymodes" class="flex-1"></div>
           </section>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-lavender-50 text-xs font-extrabold text-lavender-800 uppercase tracking-wider">Transaction</h4><div id="setTransactions" class="overflow-x-auto"></div></section>
-          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-lavender-50 text-xs font-extrabold text-lavender-800 uppercase tracking-wider">Sales</h4><div id="setSales"></div></section>
-          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-lavender-50 text-xs font-extrabold text-lavender-800 uppercase tracking-wider">Credit Sales</h4><div id="setCredit"></div></section>
-          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-lavender-50 text-xs font-extrabold text-lavender-800 uppercase tracking-wider">Discount Details</h4><div id="setDiscounts"></div></section>
+          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-brand-50 text-xs font-extrabold text-brand-800 uppercase tracking-wider">Transaction</h4><div id="setTransactions" class="overflow-x-auto"></div></section>
+          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-brand-50 text-xs font-extrabold text-brand-800 uppercase tracking-wider">Sales</h4><div id="setSales"></div></section>
+          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-brand-50 text-xs font-extrabold text-brand-800 uppercase tracking-wider">Credit Sales</h4><div id="setCredit"></div></section>
+          <section class="border border-slate-200 rounded-2xl overflow-hidden"><h4 class="px-3 py-2 bg-brand-50 text-xs font-extrabold text-brand-800 uppercase tracking-wider">Discount Details</h4><div id="setDiscounts"></div></section>
         </div>
       </div>
     </div>
@@ -712,10 +722,10 @@
 
   <!-- SETTINGS -->
   <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
+    <div class="glass-strong rounded-3xl w-full max-w-md shadow-2xl p-5 animate-pop-in">
       <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Terminal Settings</h3><button onclick="closeModal('settingsModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
       <div class="space-y-4 text-sm mb-5">
-        <div class="flex justify-between items-center"><span class="font-semibold flex items-center gap-2"><i id="soundIcon" data-lucide="volume-2" class="w-4 h-4 text-lavender-700"></i>Sound</span><button onclick="toggleSound()" id="soundToggleCheckbox" class="tap px-3 py-1 rounded-xl bg-lavender-600 text-white font-bold text-xs">Enabled</button></div>
+        <div class="flex justify-between items-center"><span class="font-semibold flex items-center gap-2"><i id="soundIcon" data-lucide="volume-2" class="w-4 h-4 text-brand-700"></i>Sound</span><button onclick="toggleSound()" id="soundToggleCheckbox" class="tap px-3 py-1 rounded-xl bg-brand-600 text-white font-bold text-xs">Enabled</button></div>
         <div class="flex justify-between items-center"><span class="font-semibold">Service Charge %</span><input id="settingServiceCharge" type="number" value="@ViewData["ServiceChargePercent"]" onchange="updateTaxSettings()" placeholder="Service %" class="w-20 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-right font-mono font-bold"></div>
         <div class="flex justify-between items-center"><span class="font-semibold">GST / Tax %</span><input id="settingGST" type="number" value="@ViewData["GstPercent"]" onchange="updateTaxSettings()" placeholder="GST %" class="w-20 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-right font-mono font-bold"></div>
         <div class="flex justify-between items-center"><span class="font-semibold">Currency</span>
@@ -739,21 +749,21 @@
                   <option value="mobile">Mobile</option>
                 </select>
                 <input id="settingPayNowProxy" type="text" placeholder="202312345A" onchange="updatePayNowSettings()"
-                       class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-lavender-600">
+                       class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-brand-600">
               </div>
               <p id="payNowHint" class="text-[11px] text-slate-400 font-medium mt-1">Business UEN as registered for PayNow.</p>
             </div>
             <div>
               <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Business name on the QR</label>
               <input id="settingMerchantName" type="text" placeholder="MY CAFE PTE LTD" maxlength="25" onchange="updatePayNowSettings()"
-                     class="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-lavender-600">
+                     class="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-600">
               <p class="text-[11px] text-slate-400 font-medium mt-1">Shown in the customer's banking app. Max 25 characters.</p>
             </div>
           </div>
         </div>
         <div class="flex justify-between items-center pt-3 border-t border-slate-100"><span class="font-semibold">Fullscreen</span><button onclick="toggleFullscreen()" class="tap px-3 py-1 rounded-xl bg-slate-100 text-xs font-bold">Toggle</button></div>
       </div>
-      <div class="flex justify-end"><button onclick="closeModal('settingsModal')" class="tap px-5 py-2 bg-lavender-600 rounded-xl text-xs font-extrabold text-white">Done</button></div>
+      <div class="flex justify-end"><button onclick="closeModal('settingsModal')" class="tap px-5 py-2 bg-brand-600 rounded-xl text-xs font-extrabold text-white">Done</button></div>
     </div>
   </div>
 
@@ -785,11 +795,13 @@
       billType: 'single',  // 'single' | 'split' — payment shape only
       mergeFrom: new Set(),// bills staged for merge; absorbed only when this bill saves
       discountPercent: 0, serviceChargePercent: CONFIG_SERVICE_CHARGE, gstPercent: CONFIG_GST, incdtl: 0,
-      currency: '$', soundEnabled: true, pendingOrders: [],
+      currency: SHOP_TIME.currency, soundEnabled: true, pendingOrders: [],
       showPaymentQr: false, payNowType: 'uen', payNowProxy: '', merchantName: '',
       categories: INITIAL_CATEGORIES, catalog: INITIAL_MENU_CATALOG
     };
 
+    // The Settings panel's currency picker opens on the shop country's currency.
+    document.getElementById('settingCurrency').value = AppState.currency;
     const money = v => `${AppState.currency}${v.toFixed(2)}`;
     // Cash In less Cash Out, sign before the currency. Rounded so float error cannot show as "-$0.00".
     const netAmount = (cashIn, cashOut) => Math.round((cashIn - cashOut) * 100) / 100;
@@ -806,7 +818,7 @@
       document.getElementById('seqNumberDisplay').textContent = orderLabel(AppState.seqNo);
     }
 
-    const CAT_TINTS = ['#7540cc','#0e9f6e','#d97706','#e11d48','#2563eb','#0891b2','#9333ea','#ca8a04','#db2777','#16a34a','#ea580c','#4f46e5','#0d9488','#64748b'];
+    const CAT_TINTS = ['#74793f','#0e9f6e','#d97706','#e11d48','#2563eb','#0891b2','#9333ea','#ca8a04','#db2777','#16a34a','#ea580c','#4f46e5','#0d9488','#64748b'];
     // Each category carries the colour set for it in the admin panel; it tints
     // the rail tile, the path and every item card under it.
     // The positional palette is only a fallback for a row that has none yet.
@@ -830,12 +842,12 @@
         const count = itemsInCategory(cat.id).length;
         const tint = catTint(cat.id);
         const btn = document.createElement('button');
-        btn.className = `rail-btn tap relative w-full rounded-2xl py-2.5 px-1 flex flex-col items-center gap-1 border ${active ? 'active bg-lavender-50 border-lavender-300' : 'bg-white border-transparent hover:bg-slate-50'}`;
+        btn.className = `rail-btn tap relative w-full rounded-2xl py-2.5 px-1 flex flex-col items-center gap-1 border ${active ? 'active bg-brand-50/90 border-brand-300' : 'bg-white/50 border-transparent hover:bg-slate-50'}`;
         btn.innerHTML = `
           <span class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:${active ? tint : tint + '18'};color:${active ? '#fff' : tint}">
             <i data-lucide="${cat.icon || 'utensils'}" class="w-5 h-5"></i>
           </span>
-          <span class="text-[11px] font-bold leading-tight text-center ${active ? 'text-lavender-900' : 'text-slate-600'}">${escapeHtml(cat.name)}</span>
+          <span class="text-[11px] font-bold leading-tight text-center ${active ? 'text-brand-900' : 'text-slate-600'}">${escapeHtml(cat.name)}</span>
           <span class="text-[9px] font-semibold text-slate-400">${count}</span>`;
         btn.onclick = () => selectCategory(cat.id);
         rail.appendChild(btn);
@@ -855,7 +867,7 @@
           <span class="cut inline-flex items-center gap-1.5 px-2.5 py-1" style="--c:6.4px;${styles[state]}">
             <span class="text-[9px] font-extrabold opacity-80">L${n}</span>${escapeHtml(label)}</span></span>`;
       };
-      const arrow = '<i data-lucide="chevron-right" class="w-3.5 h-3.5 text-lavender-300"></i>';
+      const arrow = '<i data-lucide="chevron-right" class="w-3.5 h-3.5 text-brand-300"></i>';
       el.innerHTML =
         step(1, cat ? cat.name : cap(AppState.activeCategory), 'done') + arrow +
         step(2, dishInPath ? cap(dish.name) : 'Select item', dishInPath ? 'done' : 'idle');
@@ -874,7 +886,7 @@
       playBeep('click');
       const map = { all: 'vegFilterAll', veg: 'vegFilterVeg', nonveg: 'vegFilterNon' };
       Object.entries(map).forEach(([k, id]) => {
-        document.getElementById(id).className = `tap px-3 py-1.5 rounded-lg flex items-center gap-1 ${k === v ? 'bg-lavender-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`;
+        document.getElementById(id).className = `tap px-3 py-1.5 rounded-lg flex items-center gap-1 ${k === v ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`;
       });
       renderDishGrid();
     }
@@ -895,7 +907,7 @@
       document.getElementById('dishGridCountLabel').textContent = `${items.length} dishes`;
 
       if (items.length === 0) {
-        grid.innerHTML = `<div class="py-20 text-center"><div class="w-14 h-14 rounded-2xl bg-lavender-100 text-lavender-500 flex items-center justify-center mx-auto mb-3"><i data-lucide="search-x" class="w-7 h-7"></i></div><p class="font-bold text-slate-700">No dishes found</p><p class="text-xs text-slate-400 mt-1">Try another category or clear the search</p></div>`;
+        grid.innerHTML = `<div class="py-20 text-center"><div class="w-14 h-14 rounded-2xl bg-brand-100 text-brand-500 flex items-center justify-center mx-auto mb-3"><i data-lucide="search-x" class="w-7 h-7"></i></div><p class="font-bold text-slate-700">No dishes found</p><p class="text-xs text-slate-400 mt-1">Try another category or clear the search</p></div>`;
         renderLevelPath(); lucide.createIcons(); return;
       }
 
@@ -919,7 +931,7 @@
             <i data-lucide="chevron-right" class="w-3 h-3 text-slate-300"></i>
             <span class="text-sm font-extrabold text-slate-800">${escapeHtml(labelOf(g.key))}</span>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:${tint}18;color:${tint}">${g.items.length}</span>
-            <span class="flex-1 h-px bg-lavender-100"></span>
+            <span class="flex-1 h-px bg-brand-100"></span>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3"></div>`;
         const inner = section.lastElementChild;
@@ -935,27 +947,28 @@
       const tint = catTint(dish.category);
       const isLast = AppState.lastDishId === dish.id;
       const frame = document.createElement('div');
-      frame.className = 'dish-card tap cut-frame cut relative cursor-pointer';
-      frame.style.background = isLast ? tint : (qty ? '#a787e6' : '#e2e8f0');
+      frame.className = 'dish-card tap cut-frame cut relative cursor-pointer backdrop-blur-md';
+      // The frame is the card's edge; the translucent face lets a little of it through as a tint.
+      frame.style.background = isLast ? tint : (qty ? '#d0d3b1' : 'rgba(255,255,255,.95)');
       frame.style.padding = isLast ? '2.5px' : '1.5px';
       frame.onclick = () => addDishToCart(dish);
       frame.innerHTML = `
-        <div class="cut relative bg-white flex flex-col min-h-[132px] ${qty ? 'bg-gradient-to-b from-lavender-50 to-white' : ''}">
+        <div class="cut relative flex flex-col min-h-[132px] ${qty ? 'bg-gradient-to-b from-brand-50/90 to-white/80' : 'bg-white/70'}">
           <div class="h-1.5 mr-[14px]" style="background:${tint}"></div>
           <div class="p-3 flex-1 flex flex-col">
             <div class="flex items-start justify-between gap-2">
               <span class="w-4 h-4 mt-0.5 rounded-[4px] border-[1.5px] ${dish.isVeg ? 'border-emerald-600' : 'border-rose-600'} flex items-center justify-center shrink-0"><span class="w-1.5 h-1.5 rounded-full ${dish.isVeg ? 'bg-emerald-600' : 'bg-rose-600'}"></span></span>
-              ${qty ? `<span class="bg-lavender-600 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full animate-pop-in">x${qty}</span>` : ''}
+              ${qty ? `<span class="bg-brand-600 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full animate-pop-in">x${qty}</span>` : ''}
             </div>
             <div class="font-bold text-[13px] text-slate-800 leading-snug mt-2 line-clamp-2">${cap(dish.name)}</div>
             <div class="mt-auto pt-2 flex items-center justify-between pr-1">
               <span class="font-digital font-bold text-base text-slate-900">${money(dish.price)}</span>
               ${qty ? `
-                <div class="flex items-center bg-lavender-600 rounded-lg text-white" onclick="event.stopPropagation()">
+                <div class="flex items-center bg-brand-600 rounded-lg text-white" onclick="event.stopPropagation()">
                   <button class="w-7 h-7 flex items-center justify-center" onclick="changeDishQty('${dish.id}',-1)"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
                   <button class="w-7 h-7 flex items-center justify-center" onclick="changeDishQty('${dish.id}',1)"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
                 </div>` :
-                `<span class="w-7 h-7 rounded-lg bg-lavender-50 text-lavender-600 flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4"></i></span>`}
+                `<span class="w-7 h-7 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4"></i></span>`}
             </div>
           </div>
         </div>`;
@@ -999,7 +1012,7 @@
       box.innerHTML = '';
 
       if (!AppState.cart.length) {
-        box.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-center py-10"><div class="w-14 h-14 rounded-2xl bg-lavender-50 text-lavender-400 flex items-center justify-center mb-3"><i data-lucide="shopping-basket" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">No items yet</p><p class="text-xs text-slate-400 mt-1">Tap a dish to add it</p></div>`;
+        box.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-center py-10"><div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-400 flex items-center justify-center mb-3"><i data-lucide="shopping-basket" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">No items yet</p><p class="text-xs text-slate-400 mt-1">Tap a dish to add it</p></div>`;
         lucide.createIcons(); return;
       }
 
@@ -1007,7 +1020,7 @@
         const sel = index === AppState.selectedCartIndex;
         const line = item.foc ? 0 : item.qty * item.rPrice;
         const row = document.createElement('div');
-        row.className = `rounded-xl border p-2.5 flex items-center gap-2.5 cursor-pointer ${sel ? 'border-lavender-400 bg-lavender-50/70' : 'border-slate-100 hover:bg-slate-50'}`;
+        row.className = `rounded-xl border p-2.5 flex items-center gap-2.5 cursor-pointer ${sel ? 'border-brand-400 bg-brand-50/70' : 'border-slate-100 hover:bg-slate-50'}`;
         row.onclick = () => selectCartRow(index);
         row.innerHTML = `
           <div class="flex-1 min-w-0">
@@ -1015,12 +1028,12 @@
               ${item.foc ? '<span class="bg-amber-100 text-amber-800 text-[9px] px-1.5 py-0.5 rounded font-extrabold">FOC</span>' : ''}${cap(item.name)}
             </div>
             <div class="text-[11px] text-slate-400 font-mono">${money(item.rPrice)} each</div>
-            ${item.modifier ? `<div class="text-[11px] text-lavender-700 italic truncate">&#8627; ${item.modifier}</div>` : ''}
+            ${item.modifier ? `<div class="text-[11px] text-brand-700 italic truncate">&#8627; ${item.modifier}</div>` : ''}
           </div>
           <div class="flex items-center bg-white border border-slate-200 rounded-lg" onclick="event.stopPropagation()">
             <button class="tap w-8 h-8 flex items-center justify-center text-slate-600" onclick="changeLineQty(${index},-1)"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
             <span class="w-6 text-center font-mono font-bold text-sm">${item.qty}</span>
-            <button class="tap w-8 h-8 flex items-center justify-center text-lavender-700" onclick="changeLineQty(${index},1)"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+            <button class="tap w-8 h-8 flex items-center justify-center text-brand-700" onclick="changeLineQty(${index},1)"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
           </div>
           <div class="w-16 text-right font-mono font-bold text-sm ${item.foc ? 'text-amber-600 line-through' : 'text-slate-900'}">${money(item.foc ? item.qty * item.rPrice : line)}</div>`;
         box.appendChild(row);
@@ -1157,11 +1170,11 @@
       lines.forEach(l => { const p = document.createElement('p'); p.textContent = l; body.appendChild(p); });
 
       const danger = tone === 'danger';
-      document.getElementById('confirmIconWrap').className = `w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-rose-100 text-rose-600' : 'bg-lavender-100 text-lavender-700'}`;
+      document.getElementById('confirmIconWrap').className = `w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-rose-100 text-rose-600' : 'bg-brand-100 text-brand-700'}`;
       document.getElementById('confirmIcon').outerHTML = `<i id="confirmIcon" data-lucide="${danger ? 'alert-octagon' : 'help-circle'}" class="w-5 h-5"></i>`;
       const ok = document.getElementById('confirmOkBtn');
       ok.textContent = okText;
-      ok.className = `tap h-11 rounded-xl text-white font-extrabold text-sm ${danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-lavender-600 hover:bg-lavender-700'}`;
+      ok.className = `tap h-11 rounded-xl text-white font-extrabold text-sm ${danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-brand-600 hover:bg-brand-700'}`;
 
       document.getElementById('confirmWarn').classList.toggle('hidden', !warn);
       const act = document.getElementById('confirmWarnAction');
@@ -1212,7 +1225,7 @@
       for (let n = 1; n <= 12; n++) {
         const t = `T${n}`, on = t === AppState.tableNo;
         const b = document.createElement('button');
-        b.className = `tap py-4 rounded-xl font-extrabold border ${on ? 'bg-lavender-600 text-white border-lavender-700' : 'bg-slate-50 hover:bg-lavender-100 border-slate-200'}`;
+        b.className = `tap py-4 rounded-xl font-extrabold border ${on ? 'bg-brand-600 text-white border-brand-700' : 'bg-slate-50 hover:bg-brand-100 border-slate-200'}`;
         b.textContent = t; b.onclick = () => selectTable(t); g.appendChild(b);
       }
       openModal('tableModal');
@@ -1224,7 +1237,7 @@
       for (let n = 1; n <= 8; n++) {
         const on = n === AppState.persons;
         const b = document.createElement('button');
-        b.className = `tap py-3 rounded-xl font-extrabold text-base border ${on ? 'bg-lavender-600 text-white border-lavender-700' : 'bg-slate-50 hover:bg-lavender-100 border-slate-200'}`;
+        b.className = `tap py-3 rounded-xl font-extrabold text-base border ${on ? 'bg-brand-600 text-white border-brand-700' : 'bg-slate-50 hover:bg-brand-100 border-slate-200'}`;
         b.textContent = n === 8 ? '8+' : n; b.onclick = () => selectPersons(n); g.appendChild(b);
       }
       openModal('personsModal');
@@ -1284,7 +1297,7 @@
     // ================= ORDER FLOW =================
     function setOrderMode(mode) {
       AppState.orderMode = mode;
-      const on = 'tap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-lavender-800 shadow-sm';
+      const on = 'tap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-brand-800 shadow-sm';
       const off = 'tap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500';
       document.getElementById('btnDineIn').className = mode === 'dinein' ? on : off;
       document.getElementById('btnTakeAway').className = mode === 'takeaway' ? on : off;
@@ -1412,7 +1425,7 @@
       if (!onShift.length) {
         list.innerHTML = '<div class="py-8 text-center"><i data-lucide="user-x" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i><p class="text-sm font-bold text-slate-500">Nobody punched in yet</p></div>';
       } else {
-        const t = iso => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const t = iso => shopTime(iso);
         list.innerHTML = onShift.map(w => `
           <div class="border border-slate-200 rounded-2xl px-3.5 py-2.5 flex items-center gap-3">
             <span class="w-9 h-9 rounded-full bg-mint-100 text-mint-700 flex items-center justify-center text-xs font-extrabold shrink-0">${escHtml(waiterInitials(w.name))}</span>
@@ -1548,9 +1561,9 @@
       const card = (id, name, badge, isIcon) => {
         const on = id === AppState.waiterId;
         return `<button onclick="selectWaiter(${id === null ? 'null' : id})" title="${escHtml(name)}"
-          class="tap shrink-0 pl-1.5 pr-3 py-1.5 rounded-full border-2 flex items-center gap-2 ${on ? 'border-lavender-600 bg-white' : 'border-lavender-100 bg-white/70'}">
-          <span class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${on ? 'bg-lavender-600 text-white' : 'bg-slate-100 text-slate-500'}">${isIcon ? badge : escHtml(badge)}</span>
-          <span class="max-w-[96px] truncate text-xs font-bold ${on ? 'text-lavender-900' : 'text-slate-600'}">${escHtml(name)}</span>
+          class="tap shrink-0 pl-1.5 pr-3 py-1.5 rounded-full border-2 flex items-center gap-2 ${on ? 'border-brand-600 bg-white' : 'border-brand-100 bg-white/70'}">
+          <span class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${on ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-500'}">${isIcon ? badge : escHtml(badge)}</span>
+          <span class="max-w-[96px] truncate text-xs font-bold ${on ? 'text-brand-900' : 'text-slate-600'}">${escHtml(name)}</span>
         </button>`;
       };
 
@@ -1573,7 +1586,7 @@
     // A recalled bill can be credited to someone far along the row, so bring that
     // card into view instead of leaving the row parked at the start.
     function scrollWaiterIntoView() {
-      const on = document.querySelector('#waiterCards .border-lavender-600');
+      const on = document.querySelector('#waiterCards .border-brand-600');
       if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
     }
 
@@ -1608,7 +1621,7 @@
       selectedPayMethod = m; playBeep('click');
       ['mixed', 'split'].forEach(t => {
         const b = document.getElementById(`payTab${cap(t)}`);
-        b.className = `tap py-3.5 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 border-2 ${t === m ? 'border-lavender-600 bg-lavender-50 text-lavender-900' : 'border-slate-200 bg-white text-slate-600'}`;
+        b.className = `tap py-3.5 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 border-2 ${t === m ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-slate-200 bg-white text-slate-600'}`;
       });
       document.getElementById('mixedSection').classList.toggle('hidden', m !== 'mixed');
       document.getElementById('splitSection').classList.toggle('hidden', m !== 'split');
@@ -1735,9 +1748,9 @@
         row.onclick = () => toggleSplitPaid(i);
         row.innerHTML = `
           <span class="w-8 h-8 rounded-lg ${paid ? 'bg-mint-600' : 'bg-slate-300'} text-white font-extrabold text-xs flex items-center justify-center shrink-0">${i + 1}</span>
-          <span class="flex-1 font-bold text-sm ${paid ? 'text-mint-800' : 'text-slate-700'}">Person ${i + 1} <span data-custom class="hidden text-[10px] text-lavender-600 font-extrabold uppercase">custom</span></span>
+          <span class="flex-1 font-bold text-sm ${paid ? 'text-mint-800' : 'text-slate-700'}">Person ${i + 1} <span data-custom class="hidden text-[10px] text-brand-600 font-extrabold uppercase">custom</span></span>
           <span class="flex items-center gap-1 font-digital font-bold text-lg ${paid ? 'text-mint-700' : 'text-slate-900'}">${AppState.currency}<input type="text" inputmode="decimal" autocomplete="off" ${paid ? 'disabled' : ''}
-            class="w-24 px-2 py-1 rounded-lg border ${paid ? 'border-transparent bg-transparent' : 'border-slate-200 bg-slate-50 focus:border-lavender-500 focus:bg-white placeholder:text-slate-300'} text-right font-digital font-bold text-lg outline-none"></span>
+            class="w-24 px-2 py-1 rounded-lg border ${paid ? 'border-transparent bg-transparent' : 'border-slate-200 bg-slate-50 focus:border-brand-500 focus:bg-white placeholder:text-slate-300'} text-right font-digital font-bold text-lg outline-none"></span>
           <span class="w-12 text-right text-[10px] font-extrabold uppercase ${paid ? 'text-mint-600' : 'text-slate-300'}">${paid ? 'paid' : 'due'}</span>`;
 
         const input = row.querySelector('input');
@@ -1946,13 +1959,13 @@
       if (!AppState.pendingOrders.length) {
         c.innerHTML = `<div class="py-10 text-center"><i data-lucide="inbox" class="w-8 h-8 text-amber-500 mx-auto mb-2"></i><p class="text-sm font-bold text-slate-700">No held orders</p></div>`;
       } else AppState.pendingOrders.forEach(o => {
-        const time = new Date(o.heldAt.endsWith('Z') ? o.heldAt : o.heldAt + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const time = shopTime(o.heldAt);
         const by = [o.heldBy, o.terminal].filter(Boolean).join(' @@ ');
         const d = document.createElement('div');
         d.className = 'border border-slate-200 rounded-2xl p-3.5 flex justify-between items-center';
-        d.innerHTML = `<div class="min-w-0"><div class="font-extrabold text-sm flex items-center gap-2">${escapeHtml(o.customerName || 'Walk-in')}<span class="bg-lavender-100 text-lavender-800 text-xs px-2 py-0.5 rounded-full">${o.orderMode === 'dinein' ? escapeHtml(o.tableNo) : 'Take Away'}</span></div><div class="text-xs text-slate-500 mt-1 truncate">${o.lines} line(s) • ${time}${by ? ' • ' + escapeHtml(by) : ''}${o.waiter ? ' • ' + escapeHtml(o.waiter) : ''}</div></div>
-          <div class="flex items-center gap-2 shrink-0"><span class="font-digital font-bold text-lavender-800 mr-1">${money(o.netTotal)}</span>
-          <button onclick="recallPendingOrder(${o.id})" class="tap bg-lavender-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl">Recall</button>
+        d.innerHTML = `<div class="min-w-0"><div class="font-extrabold text-sm flex items-center gap-2">${escapeHtml(o.customerName || 'Walk-in')}<span class="bg-brand-100 text-brand-800 text-xs px-2 py-0.5 rounded-full">${o.orderMode === 'dinein' ? escapeHtml(o.tableNo) : 'Take Away'}</span></div><div class="text-xs text-slate-500 mt-1 truncate">${o.lines} line(s) • ${time}${by ? ' • ' + escapeHtml(by) : ''}${o.waiter ? ' • ' + escapeHtml(o.waiter) : ''}</div></div>
+          <div class="flex items-center gap-2 shrink-0"><span class="font-digital font-bold text-brand-800 mr-1">${money(o.netTotal)}</span>
+          <button onclick="recallPendingOrder(${o.id})" class="tap bg-brand-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl">Recall</button>
           <button onclick="deletePendingOrder(${o.id})" class="tap bg-rose-50 text-rose-600 p-2 rounded-xl border border-rose-200"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
         c.appendChild(d);
       });
@@ -2105,7 +2118,7 @@
       // Cover the till before anything else, and set the same colour on the root
       // element: that is the colour Chrome keeps painting once the page is gone, so
       // the window disappears out of a solid frame instead of a white flash.
-      document.documentElement.style.background = '#f4f2f9';
+      document.documentElement.style.background = '#fdfdf9';
       document.getElementById('closingCover').classList.remove('hidden');
       lucide.createIcons();
 
@@ -2184,7 +2197,7 @@
 
       list.innerHTML = '';
       if (!orders.length) {
-        list.innerHTML = `<div class="py-12 text-center"><div class="w-14 h-14 rounded-2xl bg-lavender-50 text-lavender-400 flex items-center justify-center mx-auto mb-3"><i data-lucide="inbox" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">No unpaid bills today</p><p class="text-xs text-slate-400 mt-1">Save an order with the Order button first</p></div>`;
+        list.innerHTML = `<div class="py-12 text-center"><div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-400 flex items-center justify-center mx-auto mb-3"><i data-lucide="inbox" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">No unpaid bills today</p><p class="text-xs text-slate-400 mt-1">Save an order with the Order button first</p></div>`;
         lucide.createIcons(); return;
       }
 
@@ -2193,10 +2206,10 @@
         // Shown so the till can tell two open tables apart by who is serving them.
         const served = o.waiter ? ` · ${o.waiter}` : '';
         const row = document.createElement('button');
-        row.className = 'tap w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border bg-white border-slate-200 hover:bg-lavender-50 hover:border-lavender-300';
+        row.className = 'tap w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border bg-white border-slate-200 hover:bg-brand-50 hover:border-brand-300';
         row.onclick = () => recallOrder(o.id);
         row.innerHTML = `
-          <span class="font-digital font-bold text-lg text-lavender-800 w-16 shrink-0">${orderLabel(o.seqNo)}</span>
+          <span class="font-digital font-bold text-lg text-brand-800 w-16 shrink-0">${orderLabel(o.seqNo)}</span>
           <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">${o.orderMode === 'dinein' ? o.tableNo : 'Take Away'}</span>
           <span class="flex-1 min-w-0 text-xs text-slate-500 font-semibold truncate">${who || 'Walk-in'} &middot; ${o.lines} line(s)${served}</span>
           <span class="font-digital font-bold text-base text-slate-900 shrink-0">${money(o.netTotal)}</span>
@@ -2296,7 +2309,7 @@
       list.innerHTML = '';
 
       if (!_openOrders.length) {
-        list.innerHTML = `<div class="py-12 text-center"><div class="w-14 h-14 rounded-2xl bg-lavender-50 text-lavender-400 flex items-center justify-center mx-auto mb-3"><i data-lucide="inbox" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">No unpaid bills today</p><p class="text-xs text-slate-400 mt-1">Save an order with the Order button first</p></div>`;
+        list.innerHTML = `<div class="py-12 text-center"><div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-400 flex items-center justify-center mx-auto mb-3"><i data-lucide="inbox" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">No unpaid bills today</p><p class="text-xs text-slate-400 mt-1">Save an order with the Order button first</p></div>`;
         lucide.createIcons(); updateMergeFooter(); return;
       }
 
@@ -2304,13 +2317,13 @@
         const on = _mergePicked.has(o.id);
         const who = [o.customerName, o.customerPhone].filter(v => v && v !== 'Walk-in').join(' · ');
         const row = document.createElement('button');
-        row.className = `tap w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border ${on ? 'bg-lavender-50 border-lavender-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`;
+        row.className = `tap w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border ${on ? 'bg-brand-50 border-brand-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`;
         row.onclick = () => toggleMergePick(o.id);
         row.innerHTML = `
-          <span class="w-5 h-5 rounded-md border-2 ${on ? 'bg-lavender-600 border-lavender-600' : 'border-slate-300'} flex items-center justify-center shrink-0">
+          <span class="w-5 h-5 rounded-md border-2 ${on ? 'bg-brand-600 border-brand-600' : 'border-slate-300'} flex items-center justify-center shrink-0">
             ${on ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}
           </span>
-          <span class="font-digital font-bold text-lg text-lavender-800 w-16 shrink-0">${orderLabel(o.seqNo)}</span>
+          <span class="font-digital font-bold text-lg text-brand-800 w-16 shrink-0">${orderLabel(o.seqNo)}</span>
           <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">${o.orderMode === 'dinein' ? o.tableNo : 'Take Away'}</span>
           <span class="flex-1 min-w-0 text-xs text-slate-500 font-semibold truncate">${who || 'Walk-in'} &middot; ${o.lines} line(s)</span>
           <span class="font-digital font-bold text-base text-slate-900 shrink-0">${money(o.netTotal)}</span>`;
@@ -2534,7 +2547,7 @@
     function renderQrSettingUi() {
       const btn = document.getElementById('qrToggleCheckbox');
       btn.textContent = AppState.showPaymentQr ? 'On' : 'Off';
-      btn.classList.toggle('bg-lavender-600', AppState.showPaymentQr);
+      btn.classList.toggle('bg-brand-600', AppState.showPaymentQr);
       btn.classList.toggle('bg-slate-400', !AppState.showPaymentQr);
       document.getElementById('qrPayeeRow').classList.toggle('hidden', !AppState.showPaymentQr);
 
@@ -2765,7 +2778,7 @@
               ${r.remarks ? `<div class="text-[11px] font-medium text-slate-500 truncate" title="${escHtml(r.remarks)}">${escHtml(r.remarks)}</div>` : ''}
             </div>
             <span class="font-mono font-extrabold text-sm shrink-0 ${r.type === 'IN' ? 'text-mint-700' : 'text-rose-600'}">${r.type === 'IN' ? '+' : '-'}${money(r.amount)}</span>
-            <button onclick="editTransaction(${r.id})" title="Edit" class="tap w-8 h-8 rounded-lg bg-lavender-50 text-lavender-700 flex items-center justify-center shrink-0"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+            <button onclick="editTransaction(${r.id})" title="Edit" class="tap w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center shrink-0"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
             <button onclick="deleteTransaction(${r.id})" title="Delete" class="tap w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           </div>`).join('');
       }
@@ -2828,7 +2841,7 @@
         ['Service Charge', money(s.serviceCharge)],
         ['GST', money(s.gst)],
         ['Round Off', money(s.roundOff)],
-        ['Net Sales', money(s.netSales), 'text-sm font-extrabold text-lavender-800 bg-lavender-50'],
+        ['Net Sales', money(s.netSales), 'text-sm font-extrabold text-brand-800 bg-brand-50'],
         ['Number Of Guests', String(s.guests)],
         ['Number Of Receipts', String(s.receipts)],
         ['UnBilled', money(s.unbilled), 'text-sm font-extrabold text-mint-700 bg-mint-50']
@@ -2856,13 +2869,13 @@
     function buildKeyboard() {
       const rows = ['1234567890', 'QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM.'];
       const box = document.getElementById('vkRows');
-      const key = (label, fn, cls = '') => `<button onclick="${fn}" class="tap h-11 rounded-xl border font-bold flex items-center justify-center ${cls || 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-lavender-100'}">${label}</button>`;
+      const key = (label, fn, cls = '') => `<button onclick="${fn}" class="tap h-11 rounded-xl border font-bold flex items-center justify-center ${cls || 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-brand-100'}">${label}</button>`;
       box.innerHTML = rows.map((r, i) => {
         let keys = [...r].map(c => key(c, `virtualKeyPress('${c}')`)).join('');
-        if (i === 3) keys = `<button id="vkShiftBtn" onclick="virtualKeyToggleShift()" class="tap h-11 rounded-xl border bg-lavender-100 border-lavender-200 text-lavender-800 flex items-center justify-center"><i data-lucide="arrow-big-up" class="w-5 h-5"></i></button>` + keys + key('<i data-lucide="delete" class="w-5 h-5"></i>', 'virtualKeyBackspace()', 'bg-rose-50 border-rose-200 text-rose-700');
+        if (i === 3) keys = `<button id="vkShiftBtn" onclick="virtualKeyToggleShift()" class="tap h-11 rounded-xl border bg-brand-100 border-brand-200 text-brand-800 flex items-center justify-center"><i data-lucide="arrow-big-up" class="w-5 h-5"></i></button>` + keys + key('<i data-lucide="delete" class="w-5 h-5"></i>', 'virtualKeyBackspace()', 'bg-rose-50 border-rose-200 text-rose-700');
         const cols = i === 2 ? 9 : 10;
         return `<div class="grid gap-1.5 ${i === 2 ? 'px-5' : ''}" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${keys}</div>`;
-      }).join('') + `<div class="flex gap-1.5">${key('-', "virtualKeyPress('-')", 'w-16 bg-slate-50 border-slate-200')}<button onclick="virtualKeyPress(' ')" class="tap flex-1 h-11 rounded-xl border bg-slate-50 border-slate-200 text-slate-500 text-sm font-bold tracking-widest">SPACE</button><button onclick="closeGlobalVirtualKeyboard()" class="tap w-32 h-11 rounded-xl bg-lavender-600 text-white font-bold">Enter</button></div>`;
+      }).join('') + `<div class="flex gap-1.5">${key('-', "virtualKeyPress('-')", 'w-16 bg-slate-50 border-slate-200')}<button onclick="virtualKeyPress(' ')" class="tap flex-1 h-11 rounded-xl border bg-slate-50 border-slate-200 text-slate-500 text-sm font-bold tracking-widest">SPACE</button><button onclick="closeGlobalVirtualKeyboard()" class="tap w-32 h-11 rounded-xl bg-brand-600 text-white font-bold">Enter</button></div>`;
     }
     function openGlobalVirtualKeyboard(el) {
       activeInputTarget = el;
@@ -2887,8 +2900,8 @@
     function virtualKeyToggleShift() {
       isShiftActive = !isShiftActive;
       const b = document.getElementById('vkShiftBtn');
-      b.classList.toggle('bg-lavender-600', isShiftActive); b.classList.toggle('text-white', isShiftActive);
-      b.classList.toggle('bg-lavender-100', !isShiftActive);
+      b.classList.toggle('bg-brand-600', isShiftActive); b.classList.toggle('text-white', isShiftActive);
+      b.classList.toggle('bg-brand-100', !isShiftActive);
     }
     function bindVirtualKeyboardToInputs() {
       // Bound to click, not focus: the keyboard should appear only when someone
@@ -2924,7 +2937,7 @@
       document.getElementById('soundIcon').setAttribute('data-lucide', AppState.soundEnabled ? 'volume-2' : 'volume-x');
       const chk = document.getElementById('soundToggleCheckbox');
       chk.textContent = AppState.soundEnabled ? 'Enabled' : 'Muted';
-      chk.classList.toggle('bg-lavender-600', AppState.soundEnabled); chk.classList.toggle('bg-slate-400', !AppState.soundEnabled);
+      chk.classList.toggle('bg-brand-600', AppState.soundEnabled); chk.classList.toggle('bg-slate-400', !AppState.soundEnabled);
       lucide.createIcons();
     }
 
@@ -2936,7 +2949,7 @@
       const styles = {
         success: ['bg-mint-100 text-mint-700', 'check-circle-2', 'border-mint-500'],
         warning: ['bg-amber-100 text-amber-700', 'alert-triangle', 'border-amber-500'],
-        info: ['bg-lavender-100 text-lavender-700', 'info', 'border-lavender-300']
+        info: ['bg-brand-100 text-brand-700', 'info', 'border-brand-300']
       }[type] || [];
       document.getElementById('notifIconWrapper').className = `w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${styles[0]}`;
       document.getElementById('notifIcon').setAttribute('data-lucide', styles[1]);
@@ -2953,8 +2966,8 @@
     // ================= CLOCK & SHORTCUTS =================
     function updateClock() {
       const n = new Date();
-      document.getElementById('liveClockTime').textContent = n.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      document.getElementById('liveClockDate').textContent = n.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+      document.getElementById('liveClockTime').textContent = shopTime(n, { seconds: true });
+      document.getElementById('liveClockDate').textContent = shopDate(n, { weekday: 'short', month: 'short', day: 'numeric' });
     }
     setInterval(updateClock, 1000);
 
