@@ -1,7 +1,14 @@
+﻿@using Microsoft.EntityFrameworkCore
 @inject Kiosk.Services.BusinessClock ShopClock
+@inject Kiosk.Data.AppDbContext ShopDb
 @{
     // 12-hour unless the configured time format is a 24-hour one (HH).
     var hour12 = !ShopClock.Country.TimeFormat.Contains("HH");
+
+    // Admin > Settings can pick the currency; left empty it is the country's own.
+    var savedCurrency = await ShopDb.StoreInfo.AsNoTracking().OrderBy(s => s.Id)
+        .Select(s => s.CurrencySymbol).FirstOrDefaultAsync();
+    var currencySymbol = string.IsNullOrWhiteSpace(savedCurrency) ? ShopClock.Country.CurrencySymbol : savedCurrency;
 }
 @*
     The shop's clock and currency for the screens, from Pos:Country in
@@ -21,8 +28,9 @@
       zone         = ShopClock.IanaZone,
       locale       = ShopClock.Culture.Name,
       hour12,
-      currency     = ShopClock.Country.CurrencySymbol,
-      currencyCode = ShopClock.Country.CurrencyCode
+      currency     = currencySymbol,
+      currencyCode = ShopClock.Country.CurrencyCode,
+      qrScheme     = ShopClock.Country.QrScheme
   })));
 
   /// A Date from a Date, epoch ms or ISO string. The server sends UTC; a string

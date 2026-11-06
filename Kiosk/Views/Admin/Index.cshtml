@@ -1,4 +1,5 @@
-﻿@{
+﻿@inject Kiosk.Services.BusinessClock ShopCountryClock
+@{
     Layout = null;
     var displayName = ((ViewData["DisplayName"] as string) ?? "").Trim();
     var roleName = (ViewData["RoleName"] as string) ?? "";
@@ -315,9 +316,9 @@
             <div class="overflow-x-auto">
               <table class="w-full text-sm min-w-[520px]">
                 <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-100">
-                  <th class="text-left px-4 sm:px-5 py-3">Mode</th><th class="text-right px-4 sm:px-5 py-3">Transactions</th><th class="text-left px-4 sm:px-5 py-3">Status</th><th class="text-center px-4 sm:px-5 py-3">Active</th><th class="text-right px-4 sm:px-5 py-3">Action</th>
+                  <th class="text-left px-4 sm:px-5 py-3">Order</th><th class="text-left px-4 sm:px-5 py-3">Mode</th><th class="text-right px-4 sm:px-5 py-3">Transactions</th><th class="text-left px-4 sm:px-5 py-3">Status</th><th class="text-center px-4 sm:px-5 py-3">Active</th><th class="text-right px-4 sm:px-5 py-3">Action</th>
                 </tr></thead>
-                <tbody id="modesBody"><tr><td colspan="5" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
+                <tbody id="modesBody"><tr><td colspan="6" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -617,7 +618,12 @@
 
         <!-- ===== SETTINGS ===== -->
         <div id="sec-settings" class="section-page">
-          @{ var store = (StoreInfo)ViewData["Store"]!; }
+          @{
+            var store = (StoreInfo)ViewData["Store"]!;
+            // Pos:Country decides the QR scheme: UPI in India, PayNow in Singapore.
+            var qrUpi = ShopCountryClock.Country.UsesUpi;
+            var qrScheme = ShopCountryClock.Country.QrScheme;
+          }
           <div class="space-y-4">
 
             <div class="glass rounded-2xl p-5 sm:p-6 shadow-soft">
@@ -635,14 +641,21 @@
             <div class="glass rounded-2xl p-5 sm:p-6 shadow-soft">
               <h3 class="text-sm font-extrabold text-brand-950 mb-4 flex items-center gap-2"><i data-lucide="receipt" class="w-4 h-4 text-brand-500"></i> Tax & Billing</h3>
               <div class="space-y-3">
-                @* Service charge and tax are config_terminal_setting rows. Currency and
-                   the two toggles are still placeholder markup. *@
+                @* Service charge and tax are config_terminal_setting rows; currency and
+                   PayNow are on config_store. The two toggles below are still placeholder markup. *@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Service Charge (%)</label><input id="setServiceCharge" type="number" min="0" max="100" step="0.01" value="@ViewData["ServiceChargePercent"]" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"></div>
                   <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Tax Rate (%)</label><input id="setGst" type="number" min="0" max="100" step="0.01" value="@ViewData["GstPercent"]" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"></div>
-                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Currency</label><input id="setCurrency" value="" readonly tabindex="-1" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-slate-50 text-sm font-semibold text-slate-400 cursor-not-allowed"></div>
+                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Currency</label>
+                    <select id="setCurrency" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition">
+                      <option value="">Country default (@ShopCountryClock.Country.CurrencySymbol @ShopCountryClock.Country.CurrencyCode)</option>
+                      @foreach (var c in Kiosk.Services.CurrencyOptions.All)
+                      {
+                        <option value="@c.Symbol" selected="@(c.Symbol == store.CurrencySymbol)">@c.Label</option>
+                      }
+                    </select></div>
                 </div>
-                <p class="text-xs text-slate-400 leading-relaxed">Applies to every till on its next page load. A cashier can still override the rate for the bill in front of them from the POS Settings panel; that override is never written back here.</p>
+                <p class="text-xs text-slate-400 leading-relaxed">Applies to every till, the customer screen and this panel on their next page load.</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div class="flex items-center justify-between p-3 sm:p-4 bg-brand-25 rounded-xl border border-brand-100 gap-4">
                     <div class="min-w-0"><p class="text-sm font-bold text-brand-950">Print Receipt Automatically</p><p class="text-xs text-slate-400">Print after every completed order</p></div>
@@ -653,6 +666,36 @@
                     <button onclick="this.dataset.on = this.dataset.on==='1'?'0':'1'; this.classList.toggle('bg-brand-600'); this.classList.toggle('bg-slate-300'); this.querySelector('span').classList.toggle('translate-x-5')" data-on="1" class="w-11 h-6 rounded-full bg-brand-600 relative transition-colors flex-shrink-0"><span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform translate-x-5"></span></button>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div class="glass rounded-2xl p-5 sm:p-6 shadow-soft">
+              <h3 class="text-sm font-extrabold text-brand-950 mb-4 flex items-center gap-2"><i data-lucide="qr-code" class="w-4 h-4 text-brand-500"></i> @qrScheme QR <span class="text-xs font-semibold text-slate-400">&middot; @ShopCountryClock.Country.Name</span></h3>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 sm:p-4 bg-brand-25 rounded-xl border border-brand-100 gap-4">
+                  <div class="min-w-0"><p class="text-sm font-bold text-brand-950">Show on customer screen</p><p class="text-xs text-slate-400">Splits the customer display and shows a scannable @qrScheme QR for the amount due</p></div>
+                  <button id="setPayNowEnabled" type="button" onclick="setPayNowToggle(this.dataset.on !== '1')" data-on="@(store.PayNowEnabled ? "1" : "0")" class="w-11 h-6 rounded-full @(store.PayNowEnabled ? "bg-brand-600" : "bg-slate-300") relative transition-colors flex-shrink-0"><span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform @(store.PayNowEnabled ? "translate-x-5" : "")"></span></button>
+                </div>
+                @if (qrUpi)
+                {
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input type="hidden" id="setPayNowType" value="upi">
+                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">UPI ID</label><input id="setPayNowProxy" maxlength="60" value="@store.PayNowProxy" placeholder="myshop@okaxis" autocomplete="off" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold font-mono focus:outline-none focus:ring-2 focus:ring-brand-400 transition"><p class="text-xs text-slate-400 mt-1">The shop's UPI ID (VPA) that receives the payment.</p></div>
+                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Payee name</label><input id="setPayNowMerchant" maxlength="25" value="@store.PayNowMerchantName" placeholder="MY SHOP" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"><p class="text-xs text-slate-400 mt-1">Shown in the customer's UPI app. Max 25 characters.</p></div>
+                </div>
+                }
+                else
+                {
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Registered to</label>
+                    <select id="setPayNowType" onchange="renderPayNowHint()" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition">
+                      <option value="uen" selected="@(store.PayNowType != "mobile")">UEN</option>
+                      <option value="mobile" selected="@(store.PayNowType == "mobile")">Mobile</option>
+                    </select></div>
+                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">UEN / Mobile</label><input id="setPayNowProxy" maxlength="20" value="@store.PayNowProxy" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold font-mono focus:outline-none focus:ring-2 focus:ring-brand-400 transition"><p id="payNowHint" class="text-xs text-slate-400 mt-1"></p></div>
+                  <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Business name on QR</label><input id="setPayNowMerchant" maxlength="25" value="@store.PayNowMerchantName" placeholder="MY SHOP PTE LTD" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition"><p class="text-xs text-slate-400 mt-1">Shown in the customer's banking app. Max 25 characters.</p></div>
+                </div>
+                }
               </div>
             </div>
 
@@ -738,6 +781,8 @@
       </div>
       <div class="space-y-3">
         <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Mode Name</label><input id="modeName" maxlength="30" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold uppercase focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="e.g. PAYNOW"></div>
+        <div><label for="modeSort" class="block text-xs font-bold text-slate-400 uppercase mb-1">Order</label><input id="modeSort" type="number" min="0" max="999" step="1" inputmode="numeric" class="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-25 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="Last"></div>
+        <p class="text-[11px] text-slate-400 font-semibold -mt-1">Lowest first in the till's payment list. Leave blank on a new mode to add it at the end.</p>
         <button id="modeSaveBtn" onclick="saveMode()" class="tap w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lift flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> <span id="modeSaveLabel">Add Mode</span></button>
       </div>
     </div>
@@ -1633,8 +1678,17 @@
         storeName: document.getElementById('setStoreName').value.trim(),
         address:   document.getElementById('setAddress').value.trim(),
         phone:     document.getElementById('setPhone').value.trim(),
-        gstNo:     document.getElementById('setGstNo').value.trim().toUpperCase()
+        gstNo:     document.getElementById('setGstNo').value.trim().toUpperCase(),
+        currencySymbol:     document.getElementById('setCurrency').value,
+        payNowEnabled:      document.getElementById('setPayNowEnabled').dataset.on === '1',
+        payNowType:         document.getElementById('setPayNowType').value,
+        payNowProxy:        document.getElementById('setPayNowProxy').value.trim(),
+        payNowMerchantName: document.getElementById('setPayNowMerchant').value.trim()
       };
+      if (store.payNowEnabled && !store.payNowProxy) {
+        showToast(QR_UPI ? 'Enter the UPI ID, or turn the QR off' : 'Enter the PayNow UEN or mobile, or turn the QR off', 'error');
+        return;
+      }
       if (!store.storeName) {
         showToast('Store name is required', 'error');
         return;
@@ -1666,6 +1720,8 @@
         document.getElementById('setAddress').value   = savedStore.address;
         document.getElementById('setPhone').value     = savedStore.phone;
         document.getElementById('setGstNo').value     = savedStore.gstNo;
+        document.getElementById('setPayNowProxy').value    = savedStore.payNowProxy;
+        document.getElementById('setPayNowMerchant').value = savedStore.payNowMerchantName;
 
         const res = await fetch(CHARGES_ENDPOINT, {
           method: 'POST',
@@ -1939,17 +1995,18 @@
         renderModes();
       } catch (e) {
         if (e.message !== 'auth')
-          document.getElementById('modesBody').innerHTML = `<tr><td colspan="5" class="px-5 py-8 text-center text-xs font-bold text-rose-500">Could not load transaction modes</td></tr>`;
+          document.getElementById('modesBody').innerHTML = `<tr><td colspan="6" class="px-5 py-8 text-center text-xs font-bold text-rose-500">Could not load transaction modes</td></tr>`;
       }
     }
 
     function renderModes() {
       const body = document.getElementById('modesBody');
       if (!MODES.length) {
-        body.innerHTML = `<tr><td colspan="5" class="px-5 py-8 text-center text-xs font-bold text-slate-400">No transaction modes</td></tr>`;
+        body.innerHTML = `<tr><td colspan="6" class="px-5 py-8 text-center text-xs font-bold text-slate-400">No transaction modes</td></tr>`;
         return;
       }
       body.innerHTML = MODES.map(m => `<tr class="table-row border-b border-brand-50 last:border-0 ${m.isActive ? '' : 'opacity-60'}">
+          <td class="px-4 sm:px-5 py-3 font-bold text-slate-600 font-mono">${m.sortOrder}</td>
           <td class="px-4 sm:px-5 py-3 font-extrabold text-brand-950">${esc(m.name)}</td>
           <td class="px-4 sm:px-5 py-3 text-right font-bold text-slate-600 font-mono">${m.used}</td>
           <td class="px-4 sm:px-5 py-3">${m.isActive
@@ -1992,6 +2049,7 @@
       document.getElementById('modeModalTitle').textContent = modeEditing ? 'Edit Transaction Mode' : 'Add Transaction Mode';
       document.getElementById('modeSaveLabel').textContent = modeEditing ? 'Save Changes' : 'Add Mode';
       document.getElementById('modeName').value = modeEditing?.name || '';
+      document.getElementById('modeSort').value = modeEditing ? modeEditing.sortOrder : '';
 
       const m = document.getElementById('modeModal');
       m.classList.remove('hidden'); m.classList.add('flex');
@@ -2007,6 +2065,9 @@
     async function saveMode() {
       const name = document.getElementById('modeName').value.trim().toUpperCase();
       if (!name) { showToast('Enter a mode name', 'error'); return; }
+      const sortRaw = document.getElementById('modeSort').value.trim();
+      const sortOrder = sortRaw === '' ? null : Number(sortRaw);
+      if (sortOrder !== null && (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 999)) { showToast('Order must be a whole number 0-999', 'error'); return; }
       if (modeBusy) return;
       modeBusy = true;
       const btn = document.getElementById('modeSaveBtn');
@@ -2014,7 +2075,7 @@
       const editing = modeEditing;
       try {
         await catFetch(editing ? `${MODES_ENDPOINT}/${editing.id}` : MODES_ENDPOINT,
-                       { method: editing ? 'PUT' : 'POST', body: JSON.stringify({ name }) });
+                       { method: editing ? 'PUT' : 'POST', body: JSON.stringify({ name, sortOrder }) });
         closeModeModal();
         await loadModes();
         showToast(editing ? `${name} updated` : `${name} added`);
@@ -2026,6 +2087,7 @@
       }
     }
     document.getElementById('modeName').addEventListener('keydown', e => { if (e.key === 'Enter') saveMode(); });
+    document.getElementById('modeSort').addEventListener('keydown', e => { if (e.key === 'Enter') saveMode(); });
 
     function confirmDeleteMode(id) {
       const m = MODES.find(x => x.id === id);
@@ -2062,7 +2124,23 @@
     const ITEMS_ENDPOINT = '@Url.Action("MenuItems", "Admin")';
     // The shop country's currency, as the till opens with, so prices read the same in both places.
     const TILL_CURRENCY = SHOP_TIME.currency;
-    document.getElementById('setCurrency').value = `${SHOP_TIME.currencyCode} (${SHOP_TIME.currency})`;
+    function setPayNowToggle(on) {
+      const btn = document.getElementById('setPayNowEnabled');
+      btn.dataset.on = on ? '1' : '0';
+      btn.classList.toggle('bg-brand-600', on);
+      btn.classList.toggle('bg-slate-300', !on);
+      btn.querySelector('span').classList.toggle('translate-x-5', on);
+    }
+    const QR_UPI = SHOP_TIME.qrScheme === 'UPI';
+    function renderPayNowHint() {
+      if (QR_UPI) return;
+      const mobile = document.getElementById('setPayNowType').value === 'mobile';
+      document.getElementById('setPayNowProxy').placeholder = mobile ? '+6591234567' : '202312345A';
+      document.getElementById('payNowHint').textContent = mobile
+        ? 'Mobile number in +65 format, as registered for PayNow.'
+        : 'Business UEN as registered for PayNow.';
+    }
+    renderPayNowHint();
     const price2 = v => TILL_CURRENCY + (Number(v) || 0).toFixed(2);
     document.querySelectorAll('.till-currency').forEach(el => el.textContent = TILL_CURRENCY);
 

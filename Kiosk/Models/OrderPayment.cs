@@ -16,11 +16,30 @@ public class OrderPayment
 
     public static readonly string[] Methods = [Cash, Card, Qr, Split];
 
+    /// <summary>Longest method: a transaction mode name (config_transaction_mode.Name).</summary>
+    public const int MethodMaxLength = 30;
+
+    /// <summary>
+    /// The method a transaction mode is saved under. The CASH mode is the built-in
+    /// "cash" so the drawer total, tendered and change keep working; every other
+    /// mode (NETS, VISA...) is saved under its own name.
+    /// </summary>
+    public static string MethodForMode(string modeName) =>
+        string.Equals(modeName, "CASH", StringComparison.OrdinalIgnoreCase) ? Cash : modeName;
+
+    /// <summary>
+    /// Credit sales in the settlement: card and the card-terminal modes. Cash, QR,
+    /// split and any mode with CASH in its name (KIOSK CASH) are plain sales.
+    /// </summary>
+    public static bool IsCredit(string method) =>
+        method is not (Cash or Qr or Split or "unrecorded")
+        && !method.Contains("CASH", StringComparison.OrdinalIgnoreCase);
+
     public int Id { get; set; }
     public int OrderId { get; set; }
     public Order? Order { get; set; }
 
-    /// <summary>"cash", "card", "qr" (QR / UPI) or "split".</summary>
+    /// <summary>"cash", "card", "qr" (QR / UPI), "split", or a transaction mode name (NETS, VISA...).</summary>
     public string Method { get; set; } = Cash;
 
     /// <summary>What this method paid towards the bill, change already taken off.</summary>

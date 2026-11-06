@@ -251,16 +251,11 @@
         <button onclick="openModifierModal()" class="tap flex-1 h-9 rounded-lg bg-brand-50 border border-brand-200 text-brand-800 text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>Note</button>
         <button onclick="toggleFOCForSelected()" class="tap flex-1 h-9 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold">FOC</button>
         <button onclick="openDiscountModal()" class="tap flex-1 h-9 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="percent" class="w-3.5 h-3.5"></i>Disc.</button>
-        <button onclick="removeSelectedItem()" class="tap w-9 h-9 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center" title="Delete line"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        <button onclick="clearCurrentOrder()" class="tap w-9 h-9 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center" title="Clear cart (F2)"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
         <div class="relative">
           <button onclick="toggleMoreMenu(event)" class="tap w-9 h-9 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center" title="More"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
           <div id="moreMenu" class="hidden absolute bottom-11 right-0 w-52 glass-strong rounded-2xl shadow-lift p-1.5 z-40 animate-pop-in text-sm">
-            <button onclick="closeMoreMenu();openViewOrderModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>View Order</button>
-            <button onclick="closeMoreMenu();openMergeBillModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 flex items-center gap-2"><i data-lucide="git-merge" class="w-4 h-4 text-slate-400"></i>Merge Bill <span class="ml-auto text-[10px] text-slate-400">F11</span></button>
-            <button onclick="closeMoreMenu();handleRefund()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 flex items-center gap-2"><i data-lucide="undo-2" class="w-4 h-4 text-slate-400"></i>Refund</button>
             <button onclick="closeMoreMenu();handleReprintReceipt()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-brand-50 flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>Last Order</button>
-            <div class="h-px bg-slate-100 my-1"></div>
-            <button onclick="closeMoreMenu();clearCurrentOrder()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-rose-50 text-rose-600 flex items-center gap-2"><i data-lucide="rotate-ccw" class="w-4 h-4"></i>Clear Order <span class="ml-auto text-[10px] text-rose-300">F2</span></button>
           </div>
         </div>
       </div>
@@ -280,8 +275,8 @@
         </div>
         <div class="grid grid-cols-3 gap-2 mt-3">
           <button onclick="holdCurrentOrder()" class="tap h-12 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="pause" class="w-4 h-4"></i>Hold</button>
-          <button onclick="placeOrder()" class="tap h-12 rounded-xl bg-brand-100 border border-brand-300 text-brand-800 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="clipboard-check" class="w-4 h-4"></i>Order</button>
-          <button onclick="printBill()" class="tap h-12 rounded-xl bg-mint-50 border border-mint-200 text-mint-700 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="printer" class="w-4 h-4"></i>Print</button>
+          <button onclick="openViewOrderModal()" class="tap h-12 rounded-xl bg-brand-100 border border-brand-300 text-brand-800 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="file-text" class="w-4 h-4"></i>Order</button>
+          <button onclick="printBill()" class="tap h-12 rounded-xl bg-mint-50 border border-mint-200 text-mint-700 text-xs font-bold flex flex-col items-center justify-center"><i data-lucide="printer" class="w-4 h-4"></i>Quote</button>
         </div>
         <button onclick="openPaymentModal()" class="tap mt-2 w-full h-14 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-500 text-white font-extrabold shadow-lift flex items-center justify-between px-5">
           <span class="flex items-center gap-2"><i data-lucide="credit-card" class="w-5 h-5"></i>Pay <span class="text-[10px] font-bold text-brand-200">F10</span></span>
@@ -338,49 +333,18 @@
           <span id="paymentModalModeBadge" class="shrink-0 ml-auto self-start sm:self-center bg-white border border-brand-200 text-brand-800 text-xs px-3 py-1 rounded-full font-bold">Dine In (T5)</span>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="selectPaymentMethod('mixed')" id="payTabMixed" class="tap"><i data-lucide="layers" class="w-5 h-5"></i><span>Mixed</span></button>
-          <button onclick="selectPaymentMethod('split')" id="payTabSplit" class="tap"><i data-lucide="users" class="w-5 h-5"></i><span>Split</span></button>
-        </div>
-
-        <!-- MIXED: one payer, up to three tenders. The cashier types the cash and card
-             parts and the balance goes on QR / UPI; leave a part at 0 to skip it, so
-             an all-cash or all-card bill is just one part. Split is for several people. -->
+        <!-- MIXED: one payer, any number of tenders. One box per active mode under
+             Admin > Transaction Modes; whatever they leave goes on QR / UPI. Leave a
+             part at 0 to skip it, so an all-cash bill is just one part. -->
         <div id="mixedSection" class="hidden space-y-3">
-          <div class="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-            <div>
-              <div class="flex items-center justify-between h-7 mb-1">
-                <span class="text-xs font-bold text-slate-500 flex items-center gap-1"><i data-lucide="banknote" class="w-3.5 h-3.5"></i>Cash</span>
-                <button onclick="setMixedHalf()" class="tap text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-lg">Half</button>
-              </div>
-              <input id="inputMixedCash" type="number" step="0.10" min="0" value="0.00" oninput="updateMixedCalculation()" onblur="this.value = (parseFloat(this.value) || 0).toFixed(2)" placeholder="Cash amount" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg focus:outline-none focus:border-brand-600">
-            </div>
-            <div>
-              <div class="flex items-center justify-between h-7 mb-1">
-                <span class="text-xs font-bold text-slate-500 flex items-center gap-1"><i data-lucide="credit-card" class="w-3.5 h-3.5"></i>Card</span>
-              </div>
-              <input id="inputMixedCard" type="number" step="0.10" min="0" value="0.00" oninput="updateMixedCalculation()" onblur="this.value = (parseFloat(this.value) || 0).toFixed(2)" placeholder="Card amount" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg focus:outline-none focus:border-brand-600">
-            </div>
-            <p class="col-span-2 text-[11px] text-slate-400">The rest is paid by QR / UPI. Leave a part at 0 to skip it.</p>
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <!-- Two rows of tenders show at once (row = 28 label + 4 + 46 input = 78px,
+                 x2 + 12 gap = 168, + 4 padding so the focus border isn't clipped);
+                 the rest scroll. Focusing a box (Tab / Enter) scrolls it into view. -->
+            <div id="mixedInputs" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[172px] overflow-y-auto p-0.5 pr-1.5"></div>
+            <p class="text-[11px] text-slate-400 mt-2">The rest is paid by QR / UPI. Leave a part at 0 to skip it.</p>
           </div>
-          <div class="grid grid-cols-4 gap-2 text-center">
-            <div class="bg-mint-50 border border-mint-200 rounded-xl py-2">
-              <div class="text-[10px] font-bold text-mint-600 uppercase tracking-wider">Cash</div>
-              <div id="mixedCashShow" class="font-digital font-bold text-lg text-mint-700">$0.00</div>
-            </div>
-            <div class="bg-brand-50 border border-brand-200 rounded-xl py-2">
-              <div class="text-[10px] font-bold text-brand-600 uppercase tracking-wider">Card</div>
-              <div id="mixedCardShow" class="font-digital font-bold text-lg text-brand-800">$0.00</div>
-            </div>
-            <div class="bg-brand-50 border border-brand-200 rounded-xl py-2">
-              <div class="text-[10px] font-bold text-brand-600 uppercase tracking-wider">QR / UPI</div>
-              <div id="mixedQrShow" class="font-digital font-bold text-lg text-brand-800">$0.00</div>
-            </div>
-            <div class="bg-slate-50 border border-slate-200 rounded-xl py-2">
-              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</div>
-              <div id="mixedTotalShow" class="font-digital font-bold text-lg text-slate-800">$0.00</div>
-            </div>
-          </div>
+          <div id="mixedSummary" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center"></div>
           <p id="mixedOverWarn" class="hidden text-xs font-bold text-red-600 text-center"></p>
         </div>
 
@@ -501,22 +465,86 @@
   </div>
 
   <!-- VIEW / RECALL ORDER -->
-  <div id="recallModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="glass-strong rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[85vh]">
-      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
-        <div>
-          <h2 class="text-base font-extrabold text-slate-900">Open Orders</h2>
-          <p class="text-[11px] text-slate-400 font-semibold">Unpaid bills from today &middot; tap one to collect payment</p>
+  <div id="recallModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6">
+    <div class="glass-strong rounded-3xl w-full max-w-6xl h-full max-h-[92vh] shadow-2xl overflow-hidden animate-pop-in flex flex-col">
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center gap-3 shrink-0">
+        <div class="min-w-0">
+          <h2 class="text-lg font-extrabold text-slate-900">Today's Orders</h2>
+          <p class="text-[11px] text-slate-400 font-semibold">Paid bills and holds of this trading day &middot; newest first &middot; tap a row to preview</p>
         </div>
         <div class="flex items-center gap-1">
           <button id="recallRefreshBtn" onclick="loadRecallList()" title="Refresh list" class="tap w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-brand-700 flex items-center justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
           <button onclick="closeModal('recallModal')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
       </div>
-      <div id="recallList" class="flex-1 overflow-y-auto px-6 py-4 space-y-2"></div>
-      <div class="px-6 py-3 border-t border-slate-100 bg-slate-50/70 flex items-center shrink-0">
-        <span class="text-[11px] font-semibold text-slate-400">Settling a recalled bill keeps the till's own bill number intact.</span>
-        <button onclick="closeModal('recallModal')" class="tap ml-auto px-5 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm">Close</button>
+      <!-- Toolbar: search + status chips -->
+      <div class="px-6 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3 shrink-0">
+        <div class="relative flex-1 min-w-[220px] max-w-md">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input id="recallSearch" type="text" autocomplete="off" placeholder="Search order no, customer or phone…"
+                 oninput="onRecallSearch()"
+                 class="w-full h-10 pl-9 pr-9 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:border-brand-500 focus:bg-white">
+          <button id="recallSearchClear" onclick="clearRecallSearch()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md text-slate-400 hover:text-slate-700 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div id="recallStatusChips" class="flex flex-wrap gap-1.5"></div>
+      </div>
+      <!-- Table -->
+      <div class="flex-1 overflow-auto">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
+            <tr class="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200">
+              <th class="text-left px-6 py-2.5">Order</th>
+              <th class="text-left px-3 py-2.5">Time</th>
+              <th class="text-left px-3 py-2.5">Customer</th>
+              <th class="text-left px-3 py-2.5">Phone</th>
+              <th class="text-left px-3 py-2.5 hidden md:table-cell">Waiter</th>
+              <th class="text-center px-3 py-2.5">Qty</th>
+              <th class="text-left px-3 py-2.5">Status</th>
+              <th class="text-right px-3 py-2.5">Total</th>
+              <th class="px-6 py-2.5"></th>
+            </tr>
+          </thead>
+          <tbody id="recallList"></tbody>
+        </table>
+      </div>
+      <!-- Footer: paging -->
+      <div class="px-6 py-3 border-t border-slate-100 bg-slate-50/70 flex flex-wrap items-center gap-3 shrink-0">
+        <label class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+          Rows per page
+          <select id="recallPageSize" onchange="setRecallPageSize(this.value)"
+                  class="h-9 pl-3 pr-8 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-brand-500 cursor-pointer">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </label>
+        <span id="recallPageInfo" class="text-xs font-semibold text-slate-500"></span>
+        <div class="ml-auto flex items-center gap-1.5">
+          <button id="recallPrev" onclick="gotoRecallPage(_recall.page - 1)" class="tap h-9 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none"><i data-lucide="chevron-left" class="w-4 h-4"></i>Prev</button>
+          <div id="recallPageNums" class="flex items-center gap-1"></div>
+          <button id="recallNext" onclick="gotoRecallPage(_recall.page + 1)" class="tap h-9 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none">Next<i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDER PREVIEW -->
+  <div id="orderPreviewModal" onclick="if (event.target === this) closeModal('orderPreviewModal')" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div class="glass-strong rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-pop-in flex flex-col max-h-[90vh]">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-start gap-3 shrink-0">
+        <div class="min-w-0">
+          <h2 id="opTitle" class="text-base font-extrabold text-slate-900"></h2>
+          <p id="opSub" class="text-[11px] text-slate-400 font-semibold mt-0.5"></p>
+        </div>
+        <button onclick="closeModal('orderPreviewModal')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700 shrink-0"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div id="opBody" class="flex-1 overflow-y-auto px-6 py-4"></div>
+      <div class="px-6 py-3 border-t border-slate-100 bg-slate-50/70 flex items-center gap-2 shrink-0">
+        <button id="opRecallBtn" class="hidden tap px-5 py-2 rounded-xl bg-brand-600 text-white font-bold text-sm flex items-center gap-1.5"><i data-lucide="rotate-ccw" class="w-4 h-4"></i>Recall to till</button>
+        <button id="opRemoveBtn" class="hidden tap px-4 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 font-bold text-sm flex items-center gap-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i>Remove</button>
+        <button onclick="closeModal('orderPreviewModal')" class="tap ml-auto px-5 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm">Close</button>
       </div>
     </div>
   </div>
@@ -718,41 +746,6 @@
       <div class="flex justify-between items-center mb-4"><h3 class="text-base font-extrabold">Terminal Settings</h3><button onclick="closeModal('settingsModal')" class="text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button></div>
       <div class="space-y-4 text-sm mb-5">
         <div class="flex justify-between items-center"><span class="font-semibold flex items-center gap-2"><i id="soundIcon" data-lucide="volume-2" class="w-4 h-4 text-brand-700"></i>Sound</span><button onclick="toggleSound()" id="soundToggleCheckbox" class="tap px-3 py-1 rounded-xl bg-brand-600 text-white font-bold text-xs">Enabled</button></div>
-        <div class="flex justify-between items-center"><span class="font-semibold">Service Charge %</span><input id="settingServiceCharge" type="number" value="@ViewData["ServiceChargePercent"]" onchange="updateTaxSettings()" placeholder="Service %" class="w-20 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-right font-mono font-bold"></div>
-        <div class="flex justify-between items-center"><span class="font-semibold">GST / Tax %</span><input id="settingGST" type="number" value="@ViewData["GstPercent"]" onchange="updateTaxSettings()" placeholder="GST %" class="w-20 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-right font-mono font-bold"></div>
-        <div class="flex justify-between items-center"><span class="font-semibold">Currency</span>
-          <select id="settingCurrency" onchange="updateCurrencySetting()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1 font-bold">
-            <option value="$">$ (USD / SGD)</option><option value="&#8377;">&#8377; (INR)</option><option value="&#163;">&#163; (GBP)</option><option value="&#8364;">&#8364; (EUR)</option><option value="RM">RM (MYR)</option>
-          </select></div>
-        <div class="pt-3 border-t border-slate-100">
-          <div class="flex justify-between items-center">
-            <div>
-              <span class="font-semibold">PayNow QR on customer screen</span>
-              <p class="text-[11px] text-slate-400 font-medium mt-0.5">Splits the customer display and shows a scannable PayNow QR for the amount due.</p>
-            </div>
-            <button onclick="togglePaymentQr()" id="qrToggleCheckbox" class="tap px-3 py-1 rounded-xl bg-slate-400 text-white font-bold text-xs shrink-0 ml-3">Off</button>
-          </div>
-          <div id="qrPayeeRow" class="hidden mt-3 space-y-2.5">
-            <div>
-              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">PayNow registered to</label>
-              <div class="flex gap-2 mt-1">
-                <select id="settingPayNowType" onchange="updatePayNowSettings()" class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm font-bold">
-                  <option value="uen">UEN</option>
-                  <option value="mobile">Mobile</option>
-                </select>
-                <input id="settingPayNowProxy" type="text" placeholder="202312345A" onchange="updatePayNowSettings()"
-                       class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-brand-600">
-              </div>
-              <p id="payNowHint" class="text-[11px] text-slate-400 font-medium mt-1">Business UEN as registered for PayNow.</p>
-            </div>
-            <div>
-              <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Business name on the QR</label>
-              <input id="settingMerchantName" type="text" placeholder="MY CAFE PTE LTD" maxlength="25" onchange="updatePayNowSettings()"
-                     class="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-600">
-              <p class="text-[11px] text-slate-400 font-medium mt-1">Shown in the customer's banking app. Max 25 characters.</p>
-            </div>
-          </div>
-        </div>
         <div class="flex justify-between items-center pt-3 border-t border-slate-100"><span class="font-semibold">Fullscreen</span><button onclick="toggleFullscreen()" class="tap px-3 py-1 rounded-xl bg-slate-100 text-xs font-bold">Toggle</button></div>
       </div>
       <div class="flex justify-end"><button onclick="closeModal('settingsModal')" class="tap px-5 py-2 bg-brand-600 rounded-xl text-xs font-extrabold text-white">Done</button></div>
@@ -792,8 +785,6 @@
       categories: INITIAL_CATEGORIES, catalog: INITIAL_MENU_CATALOG
     };
 
-    // The Settings panel's currency picker opens on the shop country's currency.
-    document.getElementById('settingCurrency').value = AppState.currency;
     const money = v => `${AppState.currency}${v.toFixed(2)}`;
     // Cash In less Cash Out, sign before the currency. Rounded so float error cannot show as "-$0.00".
     const netAmount = (cashIn, cashOut) => Math.round((cashIn - cashOut) * 100) / 100;
@@ -1027,7 +1018,8 @@
             <span class="w-6 text-center font-mono font-bold text-sm">${item.qty}</span>
             <button class="tap w-8 h-8 flex items-center justify-center text-brand-700" onclick="changeLineQty(${index},1)"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
           </div>
-          <div class="w-16 text-right font-mono font-bold text-sm ${item.foc ? 'text-amber-600 line-through' : 'text-slate-900'}">${money(item.foc ? item.qty * item.rPrice : line)}</div>`;
+          <div class="w-16 text-right font-mono font-bold text-sm ${item.foc ? 'text-amber-600 line-through' : 'text-slate-900'}">${money(item.foc ? item.qty * item.rPrice : line)}</div>
+          <button class="tap w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 border border-transparent hover:border-rose-200" title="Remove item" onclick="event.stopPropagation(); removeCartItem(${index})"><i data-lucide="x" class="w-4 h-4"></i></button>`;
         box.appendChild(row);
       });
       const r = box.children[AppState.selectedCartIndex];
@@ -1090,6 +1082,12 @@
       playBeep('click'); renderCart();
     }
     function adjustSelectedQty(d) { if (AppState.selectedCartIndex < 0) return; changeLineQty(AppState.selectedCartIndex, d); }
+
+    function removeCartItem(index) {
+      if (index < 0 || index >= AppState.cart.length) return;
+      AppState.selectedCartIndex = index;
+      removeSelectedItem();
+    }
 
     function removeSelectedItem() {
       const i = AppState.selectedCartIndex;
@@ -1603,18 +1601,13 @@
       scrollWaiterIntoView();
       loadWaiters();
 
-      // Mixed opens with the whole bill on cash; the cashier edits from there.
-      document.getElementById('inputMixedCash').value = netTotal.toFixed(2);
-      document.getElementById('inputMixedCard').value = '0.00';
+      // Mixed opens with the whole bill on the first mode (cash when it is active).
+      renderMixedInputs(netTotal);
       selectPaymentMethod('mixed');
       openModal('paymentModal');
     }
     function selectPaymentMethod(m) {
-      selectedPayMethod = m; playBeep('click');
-      ['mixed', 'split'].forEach(t => {
-        const b = document.getElementById(`payTab${cap(t)}`);
-        b.className = `tap py-3.5 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 border-2 ${t === m ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-slate-200 bg-white text-slate-600'}`;
-      });
+      selectedPayMethod = m;
       document.getElementById('mixedSection').classList.toggle('hidden', m !== 'mixed');
       document.getElementById('splitSection').classList.toggle('hidden', m !== 'split');
       if (m === 'split') renderSplit();
@@ -1622,35 +1615,87 @@
     }
 
     // ================= MIXED PAYMENT =================
-    // One payer, up to three tenders: the cashier types the cash and card parts and
+    // One payer, any number of tenders: one box per active transaction mode, and
     // the balance goes on QR / UPI. Saved as one order_payment row per non-zero part.
+    // The CASH mode arrives as the built-in "cash" method; the rest by their name.
     const PAY_LABELS = { cash: 'Cash', card: 'Card', qr: 'QR / UPI', split: 'Split' };
+    const payLabel = m => PAY_LABELS[m] || m;
+    const PAY_MODES = (_posData.payModes && _posData.payModes.length) ? _posData.payModes : ['cash'];
+    const payIcon = m => m === 'cash' || /CASH/i.test(m) ? 'banknote' : /NETS|DEBIT/i.test(m) ? 'landmark' : 'credit-card';
+
+    function renderMixedInputs(netTotal) {
+      const e = escapeHtml;
+      document.getElementById('mixedInputs').innerHTML = PAY_MODES.map((m, i) => `
+        <div>
+          <div class="flex items-center justify-between h-7 mb-1">
+            <span class="text-xs font-bold text-slate-500 flex items-center gap-1 truncate"><i data-lucide="${payIcon(m)}" class="w-3.5 h-3.5 shrink-0"></i>${e(payLabel(m))}</span>
+            ${i === 0 ? '<button onclick="setMixedHalf()" class="tap text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-lg">Half</button>' : ''}
+          </div>
+          <input data-method="${e(m)}" type="number" step="0.10" min="0" value="${(i === 0 ? netTotal : 0).toFixed(2)}" oninput="updateMixedCalculation()" onkeydown="if (event.key === 'Enter') { event.preventDefault(); mixedEnter(this); }" onblur="this.value = (parseFloat(this.value) || 0).toFixed(2)" placeholder="${e(payLabel(m))} amount" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-lg focus:outline-none focus:border-brand-600">
+        </div>`).join('');
+
+      const tile = (cls, label, attr) => `<div class="${cls} rounded-xl py-2"><div class="text-[10px] font-bold uppercase tracking-wider opacity-80 truncate px-1">${e(label)}</div><div ${attr} class="font-digital font-bold text-lg">$0.00</div></div>`;
+      document.getElementById('mixedSummary').innerHTML =
+        PAY_MODES.map(m => tile(m === 'cash' ? 'bg-mint-50 border border-mint-200 text-mint-700' : 'bg-brand-50 border border-brand-200 text-brand-800', payLabel(m), `data-show="${e(m)}"`)).join('') +
+        tile('bg-brand-50 border border-brand-200 text-brand-800', 'QR / UPI', 'id="mixedQrShow"') +
+        tile('bg-slate-50 border border-slate-200 text-slate-800', 'Total', 'id="mixedTotalShow"');
+      lucide.createIcons();
+    }
 
     function mixedParts() {
-      const cents = id => Math.max(0, Math.round((parseFloat(document.getElementById(id).value) || 0) * 100));
       const total = Math.round(calculateTotals().netTotal * 100);
-      const cash = cents('inputMixedCash');
-      const card = cents('inputMixedCard');
-      // Cash and card typed past the bill leave nothing for QR; `over` is how far.
-      const over = Math.max(0, cash + card - total);
-      return { cash: cash / 100, card: card / 100, qr: Math.max(0, total - cash - card) / 100, over: over / 100, total: total / 100 };
+      const parts = [...document.querySelectorAll('#mixedInputs input[data-method]')].map(el => ({
+        method: el.dataset.method,
+        cents: Math.max(0, Math.round((parseFloat(el.value) || 0) * 100))
+      }));
+      const typed = parts.reduce((a, p) => a + p.cents, 0);
+      // Parts typed past the bill leave nothing for QR; `over` is how far.
+      return {
+        parts: parts.map(p => ({ method: p.method, amount: p.cents / 100 })),
+        qr: Math.max(0, total - typed) / 100,
+        over: Math.max(0, typed - total) / 100,
+        total: total / 100
+      };
+    }
+
+    // Enter in an empty box fills it with the balance the other boxes leave:
+    // CASH 10 of a 100 bill, move to MASTER, Enter, and MASTER gets 90. Moving
+    // between boxes alone never fills anything, and a box that already holds an
+    // amount keeps it. The text is selected so typing replaces it.
+    function mixedEnter(el) {
+      const cents = v => Math.max(0, Math.round((parseFloat(v) || 0) * 100));
+      if (cents(el.value) === 0) {
+        const total = Math.round(calculateTotals().netTotal * 100);
+        const others = [...document.querySelectorAll('#mixedInputs input[data-method]')]
+          .filter(x => x !== el).reduce((a, x) => a + cents(x.value), 0);
+        const balance = total - others;
+        if (balance > 0) el.value = (balance / 100).toFixed(2);
+      } else {
+        el.value = (cents(el.value) / 100).toFixed(2);
+      }
+      updateMixedCalculation();
+      setTimeout(() => { try { el.select(); } catch { } }, 0);
     }
 
     function setMixedHalf() {
       playBeep('click');
       const total = Math.round(calculateTotals().netTotal * 100);
-      document.getElementById('inputMixedCash').value = (Math.round(total / 2) / 100).toFixed(2);
+      const first = document.querySelector('#mixedInputs input[data-method]');
+      if (first) first.value = (Math.round(total / 2) / 100).toFixed(2);
       updateMixedCalculation();
     }
 
     function updateMixedCalculation() {
-      const { cash, card, qr, over, total } = mixedParts();
-      document.getElementById('mixedCashShow').textContent = money(cash);
-      document.getElementById('mixedCardShow').textContent = money(card);
+      const { parts, qr, over, total } = mixedParts();
+      const shows = [...document.querySelectorAll('#mixedSummary [data-show]')];
+      parts.forEach(p => {
+        const el = shows.find(x => x.dataset.show === p.method);
+        if (el) el.textContent = money(p.amount);
+      });
       document.getElementById('mixedQrShow').textContent = money(qr);
       document.getElementById('mixedTotalShow').textContent = money(total);
       const warn = document.getElementById('mixedOverWarn');
-      warn.textContent = over > 0 ? `Cash + Card is ${money(over)} more than the bill.` : '';
+      warn.textContent = over > 0 ? `The parts are ${money(over)} more than the bill.` : '';
       warn.classList.toggle('hidden', over <= 0);
     }
     // ================= SPLIT BILL =================
@@ -1833,18 +1878,17 @@
       }
 
       if (selectedPayMethod === 'mixed') {
-        const { cash, card, qr, over } = mixedParts();
+        const { parts: typed, qr, over } = mixedParts();
         if (over > 0) {
-          showPOSNotification('warning', 'Mixed Payment', `Cash + Card is ${money(over)} more than the bill of ${money(t.netTotal)}.`);
+          showPOSNotification('warning', 'Mixed Payment', `The parts are ${money(over)} more than the bill of ${money(t.netTotal)}.`);
           return;
         }
         const parts = [
-          { method: 'cash', amount: cash, tendered: cash },
-          { method: 'card', amount: card, tendered: 0 },
-          { method: 'qr',   amount: qr,   tendered: 0 }
+          ...typed.map(p => ({ method: p.method, amount: p.amount, tendered: p.method === 'cash' ? p.amount : 0 })),
+          { method: 'qr', amount: qr, tendered: 0 }
         ].filter(p => p.amount > 0);
-        // Mixed is the only single-payer tab, so one part is a plain cash, card or
-        // QR bill. A zero bill still needs a line to save against.
+        // Mixed is the only single-payer tab, so one part is a plain one-mode bill.
+        // A zero bill still needs a line to save against.
         if (!parts.length) parts.push({ method: 'cash', amount: 0, tendered: 0 });
         closeModal('paymentModal');
         finalizePaymentWithDetails(0, parts);
@@ -1870,7 +1914,7 @@
         });
         if (res.ok) {
           const data = await res.json();
-          const how = payments.map(p => payments.length > 1 ? `${PAY_LABELS[p.method]} ${money(p.amount)}` : PAY_LABELS[p.method]).join(' + ');
+          const how = payments.map(p => payments.length > 1 ? `${payLabel(p.method)} ${money(p.amount)}` : payLabel(p.method)).join(' + ');
           showPOSNotification('success', `Paid (${how})`,
             `${orderLabel(data.seqNo)} settled • Total ${money(t.netTotal)} • Change ${money(change)}`);
           // The server reports the real next number, so settling a recalled bill
@@ -1917,7 +1961,7 @@
       // A recalled or merge-staged bill already has a row in Orders; parking a copy
       // would leave two versions of it. Saving it with Order keeps it open instead.
       if (AppState.openOrderId || AppState.mergeFrom.size) {
-        showPOSNotification('warning', 'Cannot Hold', 'This is a saved bill. Use Order to keep it open.');
+        showPOSNotification('warning', 'Cannot Hold', 'This is a saved bill. Use Pay to settle it.');
         return;
       }
       playBeep('click');
@@ -2169,45 +2213,284 @@
     // so this is remembered and restored rather than derived from the recall.
     let _tillSeqNo = null;
 
+    // Search, status filter and page are server-side, so a busy day stays light.
+    // The rows-per-page choice is remembered on this till only.
+    const RECALL_PAGE_SIZES = [10, 25, 50, 100];
+    const _recall = { q: '', status: 'all', page: 1, pageSize: 10, pages: 1, seq: 0 };
+    try {
+      const saved = parseInt(localStorage.getItem('till.orders.pageSize'), 10);
+      if (RECALL_PAGE_SIZES.includes(saved)) _recall.pageSize = saved;
+    } catch { }
+    let _recallSearchTimer = null;
+
+    function setRecallPageSize(v) {
+      const n = parseInt(v, 10);
+      if (!RECALL_PAGE_SIZES.includes(n)) return;
+      _recall.pageSize = n; _recall.page = 1;
+      try { localStorage.setItem('till.orders.pageSize', n); } catch { }
+      playBeep('click');
+      loadRecallList();
+    }
+
     function openViewOrderModal() {
+      _recall.q = ''; _recall.status = 'all'; _recall.page = 1;
+      document.getElementById('recallPageSize').value = _recall.pageSize;
+      document.getElementById('recallSearch').value = '';
+      document.getElementById('recallSearchClear').classList.add('hidden');
       openModal('recallModal');
       loadRecallList();
+    }
+
+    function onRecallSearch() {
+      const v = document.getElementById('recallSearch').value;
+      document.getElementById('recallSearchClear').classList.toggle('hidden', !v);
+      clearTimeout(_recallSearchTimer);
+      _recallSearchTimer = setTimeout(() => { _recall.q = v.trim(); _recall.page = 1; loadRecallList(); }, 300);
+    }
+
+    function clearRecallSearch() {
+      document.getElementById('recallSearch').value = '';
+      onRecallSearch();
+    }
+
+    function setRecallStatus(s) { _recall.status = s; _recall.page = 1; playBeep('click'); loadRecallList(); }
+
+    function gotoRecallPage(p) {
+      if (p < 1 || p > _recall.pages || p === _recall.page) return;
+      _recall.page = p; playBeep('click'); loadRecallList();
     }
 
     async function loadRecallList() {
       const list = document.getElementById('recallList');
       const btn = document.getElementById('recallRefreshBtn');
-      list.innerHTML = '<p class="py-10 text-center text-sm font-bold text-slate-400">Loading…</p>';
+      const mySeq = ++_recall.seq;   // a slow reply must not overwrite a newer search
+      list.innerHTML = '<tr><td colspan="9" class="py-12 text-center text-sm font-bold text-slate-400">Loading…</td></tr>';
       btn.classList.add('refreshing');
 
-      let orders = [];
+      let data = null;
       try {
-        const res = await fetch(BASE + 'api/billing/open-orders');
-        if (res.ok) orders = await res.json();
+        const qs = new URLSearchParams({ q: _recall.q, status: _recall.status, page: _recall.page, pageSize: _recall.pageSize });
+        const res = await fetch(BASE + 'api/billing/today-orders?' + qs);
+        if (res.ok) data = await res.json();
       } catch { }
+      if (mySeq !== _recall.seq) return;
       btn.classList.remove('refreshing');
 
-      list.innerHTML = '';
-      if (!orders.length) {
-        list.innerHTML = `<div class="py-12 text-center"><div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-400 flex items-center justify-center mx-auto mb-3"><i data-lucide="inbox" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">No unpaid bills today</p><p class="text-xs text-slate-400 mt-1">Save an order with the Order button first</p></div>`;
+      if (!data) {
+        list.innerHTML = '<tr><td colspan="9" class="py-12 text-center text-sm font-bold text-rose-500">Could not load orders. Tap refresh to try again.</td></tr>';
+        renderRecallPager(null); lucide.createIcons(); return;
+      }
+
+      _recall.page = data.page; _recall.pages = data.pages;
+      renderRecallChips(data.counts);
+      renderRecallPager(data);
+
+      if (!data.orders.length) {
+        const msg = _recall.q || _recall.status !== 'all'
+          ? ['No matching orders', 'Try another search or filter']
+          : ['No orders today yet', 'Paid bills and held orders will show here'];
+        list.innerHTML = `<tr><td colspan="9" class="py-14 text-center"><div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-400 flex items-center justify-center mx-auto mb-3"><i data-lucide="inbox" class="w-7 h-7"></i></div><p class="font-bold text-sm text-slate-700">${msg[0]}</p><p class="text-xs text-slate-400 mt-1">${msg[1]}</p></td></tr>`;
         lucide.createIcons(); return;
       }
 
-      orders.forEach(o => {
-        const who = [o.customerName, o.customerPhone].filter(v => v && v !== 'Walk-in').join(' · ');
-        // Shown so the till can tell two open tables apart by who is serving them.
-        const served = o.waiter ? ` · ${o.waiter}` : '';
-        const row = document.createElement('button');
-        row.className = 'tap w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl border bg-white border-slate-200 hover:bg-brand-50 hover:border-brand-300';
-        row.onclick = () => recallOrder(o.id);
-        row.innerHTML = `
-          <span class="font-digital font-bold text-lg text-brand-800 w-16 shrink-0">${orderLabel(o.seqNo)}</span>
-          <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">${o.orderMode === 'dinein' ? o.tableNo : 'Take Away'}</span>
-          <span class="flex-1 min-w-0 text-xs text-slate-500 font-semibold truncate">${who || 'Walk-in'} &middot; ${o.lines} line(s)${served}</span>
-          <span class="font-digital font-bold text-base text-slate-900 shrink-0">${money(o.netTotal)}</span>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>`;
-        list.appendChild(row);
+      list.innerHTML = data.orders.map(o => {
+        const name = o.customerName && o.customerName !== 'Walk-in' ? escHtml(o.customerName) : '<span class="text-slate-400">Walk-in</span>';
+        const phone = o.customerPhone
+          ? `<span class="inline-flex items-center gap-1 text-xs font-bold text-slate-700 font-digital whitespace-nowrap"><i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>${escHtml(o.customerPhone)}</span>`
+          : '<span class="text-slate-300">&mdash;</span>';
+        const isHeld = o.kind === 'held';
+        const label = isHeld ? `H${o.id}` : orderLabel(o.seqNo);
+        return `<tr onclick="openOrderPreview(${o.id}, '${isHeld ? 'held' : 'order'}')" class="cursor-pointer border-b border-slate-100 last:border-0 hover:bg-brand-50/60">
+          <td class="px-6 py-3 font-digital font-bold text-base ${isHeld ? 'text-amber-700' : 'text-brand-800'} whitespace-nowrap">${label}</td>
+          <td class="px-3 py-3 text-xs font-semibold text-slate-500 whitespace-nowrap">${escHtml(o.localTime)}</td>
+          <td class="px-3 py-3 max-w-[200px]"><p class="font-bold text-slate-700 truncate">${name}</p></td>
+          <td class="px-3 py-3">${phone}</td>
+          <td class="px-3 py-3 text-xs font-semibold text-slate-500 hidden md:table-cell">${o.waiter ? escHtml(o.waiter) : '<span class="text-slate-300">&mdash;</span>'}</td>
+          <td class="px-3 py-3 text-center font-bold text-slate-600">${o.itemCount}</td>
+          <td class="px-3 py-3">${orderStatusChip(o.status)}</td>
+          <td class="px-3 py-3 text-right font-digital font-bold text-slate-900 whitespace-nowrap">${money(o.netTotal)}</td>
+          <td class="px-6 py-3 text-right whitespace-nowrap">
+            ${isHeld ? `<button onclick="event.stopPropagation(); removeHeldFromList(${o.id})" title="Remove this hold" class="tap mr-1.5 inline-flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg hover:bg-rose-100"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Remove</button>` : ''}
+            <span class="inline-flex items-center gap-1 text-xs font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-lg"><i data-lucide="eye" class="w-3.5 h-3.5"></i>View</span>
+          </td>
+        </tr>`;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // Discards a parked hold from the Today's Orders panel. Only holds can be
+    // removed here — a paid bill is a sale on the books and stays.
+    async function removeHeldFromList(id) {
+      if (!await posConfirm({ title: `Remove hold H${id}?`, lines: ['The held items are discarded and cannot be recalled afterwards.'], okText: 'Remove', tone: 'danger' })) return false;
+      playBeep('delete');
+      let ok = false;
+      try {
+        const res = await fetch(BASE + `api/billing/held/${id}/discard`, { method: 'POST' });
+        ok = res.ok;
+        if (ok) showPOSNotification('info', 'Hold Removed', `H${id} was discarded.`);
+        else showPOSNotification('warning', 'Cannot Remove', 'That hold was already recalled or discarded.');
+      } catch {
+        showPOSNotification('warning', 'Network Error', 'Could not reach the server.');
+        return false;
+      }
+      // Either way the row is gone or stale, so refresh the list and the hold badge.
+      loadRecallList();
+      updatePendingBadge();
+      return true;
+    }
+
+    function renderRecallChips(c) {
+      const chips = [['all', 'All', c.all], ['completed', 'Paid', c.completed], ['held', 'Hold', c.held]];
+      document.getElementById('recallStatusChips').innerHTML = chips.map(([key, label, n]) => {
+        const on = _recall.status === key;
+        return `<button onclick="setRecallStatus('${key}')" class="tap h-9 px-3 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${on ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}">
+          ${label}<span class="text-[10px] font-extrabold px-1.5 rounded-md ${on ? 'bg-white/20' : 'bg-slate-100 text-slate-500'}">${n}</span></button>`;
+      }).join('');
+    }
+
+    function renderRecallPager(d) {
+      const info = document.getElementById('recallPageInfo'), nums = document.getElementById('recallPageNums');
+      const prev = document.getElementById('recallPrev'), next = document.getElementById('recallNext');
+      if (!d || !d.total) {
+        info.textContent = d ? '0 orders' : ''; nums.innerHTML = '';
+        prev.disabled = next.disabled = true; return;
+      }
+      const from = (d.page - 1) * d.pageSize + 1, to = Math.min(d.total, d.page * d.pageSize);
+      info.textContent = `Showing ${from}–${to} of ${d.total} order${d.total === 1 ? '' : 's'}`;
+      prev.disabled = d.page <= 1; next.disabled = d.page >= d.pages;
+
+      // First, last and a window around the current page, with gaps as "…".
+      const show = new Set([1, d.pages, d.page - 1, d.page, d.page + 1].filter(p => p >= 1 && p <= d.pages));
+      const list = [...show].sort((a, b) => a - b);
+      let html = '', last = 0;
+      list.forEach(p => {
+        if (p - last > 1) html += '<span class="px-1 text-xs font-bold text-slate-400">…</span>';
+        html += `<button onclick="gotoRecallPage(${p})" class="tap w-9 h-9 rounded-xl text-xs font-bold border ${p === d.page ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}">${p}</button>`;
+        last = p;
       });
+      nums.innerHTML = html;
+    }
+
+    function orderStatusChip(status) {
+      const map = {
+        ordered:   ['Unpaid', 'bg-amber-50 text-amber-700 border-amber-200'],
+        completed: ['Paid',   'bg-emerald-50 text-emerald-700 border-emerald-200'],
+        held:      ['Hold',   'bg-amber-50 text-amber-700 border-amber-200'],
+        merged:    ['Merged', 'bg-slate-100 text-slate-500 border-slate-200']
+      };
+      const [label, cls] = map[status] || [status, 'bg-slate-100 text-slate-500 border-slate-200'];
+      return `<span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0 ${cls}">${escHtml(label)}</span>`;
+    }
+
+    // Read-only view of one bill, same layout as the admin panel's View dialog.
+    async function openOrderPreview(id, kind = 'order') {
+      const isHeld = kind === 'held';
+      const title = document.getElementById('opTitle'), sub = document.getElementById('opSub'),
+            body = document.getElementById('opBody'), recall = document.getElementById('opRecallBtn');
+      title.textContent = 'Loading…'; sub.textContent = '';
+      body.innerHTML = '<p class="py-10 text-center text-sm font-bold text-slate-400">Loading items…</p>';
+      recall.classList.add('hidden');
+      document.getElementById('opRemoveBtn').classList.add('hidden');
+      openModal('orderPreviewModal');
+
+      let d;
+      try {
+        const res = await fetch(BASE + 'api/billing/today-orders/' + (isHeld ? 'held/' : '') + id);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          title.textContent = 'Not available';
+          body.innerHTML = `<p class="py-6 text-center text-xs font-bold text-rose-500">${escHtml(err.error || 'That bill could not be loaded.')}</p>`;
+          return;
+        }
+        d = await res.json();
+      } catch {
+        title.textContent = 'Not available';
+        body.innerHTML = '<p class="py-6 text-center text-xs font-bold text-rose-500">Could not reach the server.</p>';
+        return;
+      }
+
+      title.innerHTML = `${isHeld ? 'Hold H' + d.id : 'Order ' + orderLabel(d.seqNo)} <span class="ml-1 align-middle">${orderStatusChip(d.status)}</span>`;
+      sub.textContent = [d.localTime, d.orderMode === 'takeaway' ? 'Take Away' : (d.tableNo ? 'Table ' + d.tableNo : 'Dine In'),
+                         d.guests ? d.guests + ' pax' : '', d.waiter ? 'Waiter: ' + d.waiter : '']
+                        .filter(Boolean).join('  ·  ');
+
+      const lines = (d.items || []).map(i => `
+        <tr class="border-b border-slate-100 last:border-0">
+          <td class="py-2 pr-2">
+            <p class="font-bold text-slate-700">${escHtml(i.name)}${i.foc ? ' <span class="text-[10px] font-extrabold text-emerald-600">FOC</span>' : ''}</p>
+            ${i.note ? `<p class="text-[10px] font-semibold text-slate-400 italic">${escHtml(i.note)}</p>` : ''}
+          </td>
+          <td class="py-2 px-2 text-center font-bold text-slate-600">${i.qty}</td>
+          <td class="py-2 px-2 text-right font-semibold text-slate-500 font-digital">${money(i.price)}</td>
+          <td class="py-2 pl-2 text-right font-bold text-slate-900 font-digital">${money(i.foc ? 0 : i.price * i.qty)}</td>
+        </tr>`).join('');
+
+      const row = (label, value, strong) =>
+        `<div class="flex justify-between ${strong ? 'text-sm font-extrabold text-slate-900 pt-2 mt-1 border-t border-slate-200' : 'text-xs font-semibold text-slate-500'}"><span>${label}</span><span class="font-digital">${value}</span></div>`;
+
+      let totals = '';
+      if (isHeld) {
+        // A hold has no bill breakdown yet; charges are worked out on recall.
+        if (d.discountPercent) totals += row(`Discount (${d.discountPercent}%)`, 'applied on recall');
+        totals += row('Total when held', money(d.total), true);
+      } else {
+        totals += row('Sub total', money(d.subTotal));
+        if (d.discountAmount) totals += row(`Discount (${d.discountPercent}%)`, '- ' + money(d.discountAmount));
+        if (d.serviceChargeAmount) totals += row(`Service charge (${d.serviceChargePercent}%)`, money(d.serviceChargeAmount));
+        if (d.gstAmount) totals += row(`GST (${d.gstPercent}%)`, money(d.gstAmount));
+        totals += row('Net total', money(d.total), true);
+        if (d.billType === 'split') totals += row('Split between', d.splitCount + ' people');
+      }
+
+      const pays = d.payments || [];
+      if (pays.length) {
+        totals += `<div class="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Paid by</p>
+          ${pays.map(p => `<div class="flex items-center justify-between gap-3">
+              <span class="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2 py-0.5 rounded-lg">${escHtml(p.method)}</span>
+              <div class="text-right">
+                <p class="text-sm font-extrabold text-slate-900 font-digital">${money(p.amount)}</p>
+                ${p.change ? `<p class="text-[10px] font-semibold text-slate-400 font-digital">TENDERED ${money(p.tendered)} &middot; CHANGE ${money(p.change)}</p>` : ''}
+              </div>
+            </div>`).join('')}
+        </div>`;
+      } else if (isHeld) {
+        totals += `<p class="mt-3 text-center text-xs font-extrabold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl py-2 uppercase tracking-wider">On hold &middot; not billed yet</p>`;
+      } else if (d.status === 'ordered') {
+        totals += `<p class="mt-3 text-center text-xs font-extrabold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl py-2 uppercase tracking-wider">Not paid yet</p>`;
+      }
+      if (d.mergedInto) totals += `<p class="text-[11px] font-bold text-slate-400 mt-2">Merged into ${orderLabel(d.mergedInto)} &mdash; these lines are billed there.</p>`;
+
+      const who = `<div class="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+          <div class="min-w-0">
+            <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Customer</p>
+            <p class="text-sm font-extrabold text-slate-900 truncate">${escHtml(d.customer) || 'Walk-in'}</p>
+          </div>
+          ${d.phone ? `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-sm font-extrabold text-brand-700 font-digital whitespace-nowrap"><i data-lucide="phone" class="w-4 h-4"></i>${escHtml(d.phone)}</span>`
+                    : '<span class="text-xs font-bold text-slate-300">No phone</span>'}
+        </div>`;
+
+      body.innerHTML = who + `<table class="w-full text-sm">
+          <thead><tr class="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200">
+            <th class="text-left pb-2 pr-2">Item</th><th class="text-center pb-2 px-2">Qty</th><th class="text-right pb-2 px-2">Rate</th><th class="text-right pb-2 pl-2">Amount</th>
+          </tr></thead>
+          <tbody>${lines || '<tr><td colspan="4" class="py-6 text-center text-xs font-bold text-slate-400">No lines on this bill</td></tr>'}</tbody>
+        </table>
+        <div class="mt-4 space-y-1">${totals}</div>`;
+
+      // A hold goes back onto the till (removing it from the hold list), or is
+      // removed outright. Paid bills are read-only here.
+      const remove = document.getElementById('opRemoveBtn');
+      remove.classList.toggle('hidden', !isHeld);
+      remove.onclick = async () => { if (await removeHeldFromList(d.id)) closeModal('orderPreviewModal'); };
+      if (isHeld) {
+        recall.classList.remove('hidden');
+        recall.onclick = async () => {
+          if (AppState.cart.length) { showPOSNotification('warning', 'Order in Progress', 'Hold, save or clear the current order first.'); return; }
+          closeModal('orderPreviewModal'); closeModal('recallModal');
+          await recallPendingOrder(d.id);
+        };
+      }
       lucide.createIcons();
     }
 
@@ -2508,67 +2791,15 @@
     }
 
     function openSettingsModal() { openModal('settingsModal'); }
-    function updateTaxSettings() { AppState.serviceChargePercent = parseFloat(document.getElementById('settingServiceCharge').value) || 0; AppState.gstPercent = parseFloat(document.getElementById('settingGST').value) || 0; calculateTotals(); broadcastCart(); }
-    function updateCurrencySetting() { AppState.currency = document.getElementById('settingCurrency').value; refreshAll(); }
 
     // ================= PAYMENT QR =================
-    // Persisted: a kiosk relaunches daily and the QR silently vanishing would
-    // not be obvious to staff.
-    function saveQrSettings() {
-      try {
-        localStorage.setItem('pos.showPaymentQr', AppState.showPaymentQr ? '1' : '0');
-        localStorage.setItem('pos.payNowType', AppState.payNowType);
-        localStorage.setItem('pos.payNowProxy', AppState.payNowProxy);
-        localStorage.setItem('pos.merchantName', AppState.merchantName);
-      } catch { }
-    }
-
+    // Set under Admin > Settings for every till; read once on load.
     function loadQrSettings() {
-      try {
-        AppState.showPaymentQr = localStorage.getItem('pos.showPaymentQr') === '1';
-        AppState.payNowType    = localStorage.getItem('pos.payNowType') || 'uen';
-        AppState.payNowProxy   = localStorage.getItem('pos.payNowProxy') || '';
-        AppState.merchantName  = localStorage.getItem('pos.merchantName') || '';
-      } catch { }
-      document.getElementById('settingPayNowType').value = AppState.payNowType;
-      document.getElementById('settingPayNowProxy').value = AppState.payNowProxy;
-      document.getElementById('settingMerchantName').value = AppState.merchantName;
-      renderQrSettingUi();
-    }
-
-    function renderQrSettingUi() {
-      const btn = document.getElementById('qrToggleCheckbox');
-      btn.textContent = AppState.showPaymentQr ? 'On' : 'Off';
-      btn.classList.toggle('bg-brand-600', AppState.showPaymentQr);
-      btn.classList.toggle('bg-slate-400', !AppState.showPaymentQr);
-      document.getElementById('qrPayeeRow').classList.toggle('hidden', !AppState.showPaymentQr);
-
-      const mobile = AppState.payNowType === 'mobile';
-      document.getElementById('settingPayNowProxy').placeholder = mobile ? '+6591234567' : '202312345A';
-      document.getElementById('payNowHint').textContent = mobile
-        ? 'Mobile number in +65 format, as registered for PayNow.'
-        : 'Business UEN as registered for PayNow.';
-    }
-
-    function togglePaymentQr() {
-      AppState.showPaymentQr = !AppState.showPaymentQr;
-      playBeep('click');
-      renderQrSettingUi();
-      saveQrSettings();
-      broadcastCart(true);
-      showPOSNotification('info', 'PayNow QR',
-        AppState.showPaymentQr
-          ? (AppState.payNowProxy ? 'Showing on the customer screen.' : 'Enabled — add your UEN or mobile to make it payable.')
-          : 'Hidden from the customer screen.');
-    }
-
-    function updatePayNowSettings() {
-      AppState.payNowType   = document.getElementById('settingPayNowType').value;
-      AppState.payNowProxy  = document.getElementById('settingPayNowProxy').value.trim();
-      AppState.merchantName = document.getElementById('settingMerchantName').value.trim();
-      renderQrSettingUi();
-      saveQrSettings();
-      broadcastCart(true);
+      const p = _posData.payNow || {};
+      AppState.showPaymentQr = !!p.enabled;
+      AppState.payNowType    = p.type || 'uen';
+      AppState.payNowProxy   = p.proxy || '';
+      AppState.merchantName  = p.merchantName || '';
     }
     function toggleFullscreen() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }
 
@@ -2968,13 +3199,13 @@
         if (e.key === 'Escape') { document.activeElement.blur(); closeGlobalVirtualKeyboard(); }
         return;
       }
-      const map = { F2: clearCurrentOrder, F3: openPendingOrdersModal, F6: holdCurrentOrder, F7: placeOrder, F8: handleCheckOut, F10: openPaymentModal, F11: openMergeBillModal };
+      const map = { F2: clearCurrentOrder, F3: openPendingOrdersModal, F6: holdCurrentOrder, F7: openViewOrderModal, F8: handleCheckOut, F10: openPaymentModal };
       if (map[e.key]) { e.preventDefault(); map[e.key](); return; }
       if (e.key === 'Escape') {
         e.preventDefault(); closeGlobalVirtualKeyboard(); closeMoreMenu(); closePowerMenu();
         // A confirm sits above whatever asked it; Esc answers it and stops there.
         if (_confirmResolve) { resolveConfirm(false); return; }
-        const open = ['paymentModal','tableModal','personsModal','pendingModal','modifierModal','discountModal','customerModal','settingsModal','settlementModal','mergeModal','recallModal','punchModal'].find(id => !document.getElementById(id).classList.contains('hidden'));
+        const open = ['paymentModal','tableModal','personsModal','pendingModal','modifierModal','discountModal','customerModal','settingsModal','settlementModal','mergeModal','orderPreviewModal','recallModal','punchModal'].find(id => !document.getElementById(id).classList.contains('hidden'));
         // Esc only dismisses things. It must never exit the till — a stray
         // keypress mid-order would close the terminal.
         if (open) closeModal(open);

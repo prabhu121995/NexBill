@@ -622,8 +622,8 @@ namespace Kiosk.Migrations
 
                     b.Property<string>("Method")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
@@ -661,8 +661,8 @@ namespace Kiosk.Migrations
 
                     b.Property<string>("Method")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
@@ -812,6 +812,13 @@ namespace Kiosk.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
+                    b.Property<string>("CurrencySymbol")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)")
+                        .HasDefaultValue("");
+
                     b.Property<string>("GstNo")
                         .IsRequired()
                         .HasMaxLength(15)
@@ -821,6 +828,30 @@ namespace Kiosk.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("PayNowEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PayNowMerchantName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("PayNowProxy")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("PayNowType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("uen");
 
                     b.Property<string>("Phone")
                         .IsRequired()

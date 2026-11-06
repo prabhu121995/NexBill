@@ -88,12 +88,30 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
         // charging them after an admin changed the rate.
         var charges = await Charges.LoadAsync(db);
 
+        // PayNow is set once under Admin > Settings for every till.
+        var store = await db.StoreInfo.AsNoTracking().OrderBy(s => s.Id).FirstOrDefaultAsync() ?? new StoreInfo();
+
+        // The tenders the Mixed tab offers: every active mode under Admin > Transaction Modes.
+        var payModes = await db.TransactionModes
+            .Where(m => m.IsActive)
+            .OrderBy(m => m.SortOrder).ThenBy(m => m.Name)
+            .Select(m => m.Name)
+            .ToListAsync();
+
         var posData = JsonSerializer.Serialize(new
         {
             categories,
+            payModes = payModes.Select(OrderPayment.MethodForMode),
             catalog,
             serviceChargePercent = charges.ServiceCharge,
-            gstPercent           = charges.Gst
+            gstPercent           = charges.Gst,
+            payNow = new
+            {
+                enabled      = store.PayNowEnabled,
+                type         = store.PayNowType,
+                proxy        = store.PayNowProxy,
+                merchantName = store.PayNowMerchantName
+            }
         });
         ViewData["PosData"] = posData;
 
@@ -158,9 +176,17 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
 
         // Only a settle records payments. The parts must use known methods and add
         // up to the bill, or the drawer and card totals would not reconcile.
+        // A method is one of the built-in ones or an active transaction mode's name.
         var payments = status == "completed" ? req.Payments ?? [] : [];
-        if (payments.Any(p => !OrderPayment.Methods.Contains(p.Method) || p.Amount <= 0))
+        if (payments.Any(p => p.Amount <= 0))
             return BadRequest(new { error = "Invalid payment line" });
+        var customMethods = payments.Select(p => p.Method).Where(m => !OrderPayment.Methods.Contains(m)).Distinct().ToList();
+        if (customMethods.Count > 0)
+        {
+            var activeModes = await db.TransactionModes.Where(m => m.IsActive).Select(m => m.Name).ToListAsync();
+            if (customMethods.Any(m => !activeModes.Select(OrderPayment.MethodForMode).Contains(m)))
+                return BadRequest(new { error = "That payment mode is no longer active. Reopen the till." });
+        }
         if (payments.Count > 0 && Math.Abs(payments.Sum(p => p.Amount) - req.NetTotal) > 0.01m)
             return BadRequest(new { error = "Payments do not add up to the bill" });
 
@@ -441,8 +467,8 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
     /// <summary>
     /// Figures for a range of trading dates, today when none is given. Reads the live
     /// and archive tables, so End of Day does not change them. Only settled bills
-    /// count as sales; open bills show as unbilled. Card is the till's only credit
-    /// tender, so Sales and Credit Sales together make up the Sales Summary total.
+    /// count as sales; open bills show as unbilled. Card and the card-terminal
+    /// transaction modes (NETS, VISA...) are credit tenders, so Sales and Credit Sales together make up the Sales Summary total.
     /// </summary>
     [HttpGet]
     [Route("api/billing/settlement")]
@@ -486,7 +512,9 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
 
         var paymodes = tenders
             .GroupBy(p => p.Method)
-            .OrderBy(g => Array.IndexOf(OrderPayment.Methods, g.Key))
+            // Built-in methods first in their usual order, then the transaction modes by name.
+            .OrderBy(g => Array.IndexOf(OrderPayment.Methods, g.Key) is var i and >= 0 ? i : int.MaxValue)
+            .ThenBy(g => g.Key)
             .Select(g => new SettlementPaymode(g.Key, PaymodeLabel(g.Key), g.Sum(p => p.Amount), g.Select(p => p.OrderId).Distinct().Count()))
             .ToList();
 
@@ -523,8 +551,8 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
             },
             paymodes,
             transactions = cash,
-            sales       = paymodes.Where(p => p.Method != OrderPayment.Card),
-            creditSales = paymodes.Where(p => p.Method == OrderPayment.Card),
+            sales       = paymodes.Where(p => !OrderPayment.IsCredit(p.Method)),
+            creditSales = paymodes.Where(p => OrderPayment.IsCredit(p.Method)),
             discounts   = discount > 0
                 ? new[] { new { name = "Bill Discount", amount = discount } }
                 : []
@@ -771,6 +799,177 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
             .ToListAsync();
 
         return Ok(orders);
+    }
+
+    /// <summary>
+    /// The till's Order list: today's paid bills and today's parked holds, newest
+    /// first. Bills come live and archived together, so End of Day run mid-day
+    /// hides nothing. Unpaid and merged bills are left out on purpose. Holds live in
+    /// their own table, so the two are merged and paged here; one trading day is
+    /// small enough for that. Lines come per row from the detail endpoints.
+    /// </summary>
+    [HttpGet]
+    [Route("api/billing/today-orders")]
+    public async Task<IActionResult> TodayOrders(string? q, string? status, int page = 1, int pageSize = 10)
+    {
+        page     = Math.Max(1, page);
+        pageSize = pageSize is >= 5 and <= 100 ? pageSize : 10;
+
+        var today = clock.Today;
+        var bills = db.AllOrders().Where(o => o.BusinessDate == today && o.Status == "completed");
+        var holds = db.HeldOrders.Where(h => h.BusinessDate == today);
+
+        // One box finds a row by number (#7, 007, H12), table, customer name or phone.
+        q = q?.Trim();
+        if (!string.IsNullOrEmpty(q))
+        {
+            var term = q.TrimStart('#');
+            int? seq = int.TryParse(term, out var n) ? n : null;
+            int? heldId = (term.StartsWith('H') || term.StartsWith('h')) && int.TryParse(term[1..], out var hn) ? hn : null;
+
+            bills = bills.Where(o => o.SeqNo == seq || o.CustomerName.Contains(q) || o.TableNo.Contains(q) || o.CustomerPhone.Contains(term));
+            holds = holds.Where(h => h.Id == heldId || h.CustomerName.Contains(q) || h.TableNo.Contains(q) || h.CustomerPhone.Contains(term));
+        }
+
+        var billRows = await bills
+            .Select(o => new { o.Id, o.SeqNo, o.OrderMode, o.TableNo, o.Guests, o.CustomerName, o.CustomerPhone, o.WaiterId, o.NetTotal, At = o.CreatedAt })
+            .ToListAsync();
+        var holdRows = await holds
+            .Select(h => new { h.Id, h.OrderMode, h.TableNo, h.Guests, h.CustomerName, h.CustomerPhone, h.WaiterId, h.NetTotal, At = h.HeldAt,
+                               Qty = h.Items.Sum(i => (int?)i.Qty) ?? 0 })
+            .ToListAsync();
+
+        // Counted before the status filter so every chip shows its own total.
+        var paidCount = billRows.Count;
+        var heldCount = holdRows.Count;
+
+        var merged = new List<TillListRow>();
+        if (status is null or "" or "all" or "completed")
+            merged.AddRange(billRows.Select(o => new TillListRow("completed", o.Id, o.SeqNo, o.OrderMode, o.TableNo, o.Guests,
+                o.CustomerName, o.CustomerPhone, o.WaiterId, o.NetTotal, 0, o.At)));
+        if (status is null or "" or "all" or "held")
+            merged.AddRange(holdRows.Select(h => new TillListRow("held", h.Id, null, h.OrderMode, h.TableNo, h.Guests,
+                h.CustomerName, h.CustomerPhone, h.WaiterId, h.NetTotal, h.Qty, h.At)));
+
+        var total = merged.Count;
+        var pages = Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
+        page = Math.Min(page, pages);
+
+        var rows = merged
+            .OrderByDescending(r => r.At).ThenByDescending(r => r.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        // Quantities and waiter names for this page only.
+        var billIds = rows.Where(r => r.Kind == "completed").Select(r => r.Id).ToList();
+        var qty = await db.AllOrderItems()
+            .Where(i => billIds.Contains(i.OrderId))
+            .GroupBy(i => i.OrderId)
+            .Select(g => new { g.Key, qty = g.Sum(i => i.Qty) })
+            .ToDictionaryAsync(x => x.Key, x => x.qty);
+        var waiterIds = rows.Where(r => r.WaiterId != null).Select(r => r.WaiterId!.Value).Distinct().ToList();
+        var waiters = await db.Users.Where(u => waiterIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.DisplayName);
+
+        return Ok(new
+        {
+            page,
+            pageSize,
+            total,
+            pages,
+            counts = new { all = paidCount + heldCount, completed = paidCount, held = heldCount },
+            orders = rows.Select(r => new
+            {
+                kind          = r.Kind == "held" ? "held" : "order",
+                id            = r.Id,
+                seqNo         = r.SeqNo,
+                orderMode     = r.OrderMode,
+                tableNo       = r.TableNo,
+                guests        = r.Guests,
+                customerName  = r.CustomerName,
+                customerPhone = r.CustomerPhone,
+                status        = r.Kind,
+                waiter        = r.WaiterId is int w ? waiters.GetValueOrDefault(w) : null,
+                netTotal      = r.NetTotal,
+                itemCount     = r.Kind == "held" ? r.ItemCount : qty.GetValueOrDefault(r.Id),
+                localTime     = clock.FormatTime(r.At)
+            })
+        });
+    }
+
+    private sealed record TillListRow(string Kind, int Id, int? SeqNo, string OrderMode, string TableNo, int Guests,
+        string CustomerName, string CustomerPhone, int? WaiterId, decimal NetTotal, int ItemCount, DateTime At);
+
+    /// <summary>One parked hold with its lines, for the till's preview.</summary>
+    [HttpGet]
+    [Route("api/billing/today-orders/held/{id:int}")]
+    public async Task<IActionResult> TodayHeldDetail(int id)
+    {
+        var h = await db.HeldOrders.AsNoTracking()
+            .Include(x => x.Items)
+            .Include(x => x.Waiter)
+            .FirstOrDefaultAsync(x => x.Id == id);
+        // Recalled or discarded on a till since the list was loaded.
+        if (h is null) return NotFound(new { error = "That hold was recalled or discarded" });
+
+        return Ok(new
+        {
+            id              = h.Id,
+            orderMode       = h.OrderMode,
+            tableNo         = h.TableNo,
+            guests          = h.Guests,
+            customer        = h.CustomerName,
+            phone           = h.CustomerPhone,
+            status          = "held",
+            waiter          = h.Waiter?.DisplayName,
+            localTime       = clock.FormatDateTime(h.HeldAt),
+            discountPercent = h.DiscountPercent,
+            total           = h.NetTotal,
+            items = h.Items.OrderBy(i => i.Id).Select(i => new { name = i.Name, qty = i.Qty, price = i.UnitPrice, foc = i.IsFOC, note = i.Note })
+        });
+    }
+
+    /// <summary>One bill of any status with its lines, totals and payments, for the till's preview.</summary>
+    [HttpGet]
+    [Route("api/billing/today-orders/{id:int}")]
+    public async Task<IActionResult> TodayOrderDetail(int id)
+    {
+        var o = await db.AllOrders().FirstOrDefaultAsync(x => x.Id == id);
+        if (o is null) return NotFound(new { error = "That bill no longer exists" });
+
+        var items    = await db.AllOrderItems().Where(i => i.OrderId == id).OrderBy(i => i.Id).ToListAsync();
+        var payments = await db.AllPayments().Where(p => p.OrderId == id).OrderBy(p => p.Id).ToListAsync();
+        var waiter   = o.WaiterId is int w ? await db.Users.Where(u => u.Id == w).Select(u => u.DisplayName).FirstOrDefaultAsync() : null;
+        int? mergedInto = o.MergedIntoOrderId is int m
+            ? await db.AllOrders().Where(x => x.Id == m).Select(x => (int?)x.SeqNo).FirstOrDefaultAsync()
+            : null;
+
+        return Ok(new
+        {
+            id              = o.Id,
+            seqNo           = o.SeqNo,
+            orderMode       = o.OrderMode,
+            tableNo         = o.TableNo,
+            guests          = o.Guests,
+            customer        = o.CustomerName,
+            phone           = o.CustomerPhone,
+            status          = o.Status,
+            billType        = o.BillType,
+            splitCount      = o.SplitCount,
+            waiter,
+            mergedInto,
+            localTime       = clock.FormatDateTime(o.CreatedAt),
+            subTotal        = o.SubTotal,
+            discountPercent = o.DiscountPercent,
+            discountAmount  = o.DiscountAmount,
+            serviceChargePercent = o.ServiceChargePercent,
+            serviceChargeAmount  = o.ServiceChargeAmount,
+            gstPercent      = o.GstPercent,
+            gstAmount       = o.GstAmount,
+            total           = o.NetTotal,
+            items = items.Select(i => new { name = i.Name, qty = i.Qty, price = i.UnitPrice, foc = i.IsFOC, note = i.Note }),
+            payments = payments.Select(p => new { method = p.Method, amount = p.Amount, tendered = p.Tendered, change = p.ChangeGiven })
+        });
     }
 
     /// <summary>

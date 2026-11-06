@@ -170,7 +170,7 @@
    <aside id="cd-qrPanel" class="hidden w-[480px] shrink-0 border-l border-brand-100 bg-white/70 backdrop-blur flex-col items-center justify-center px-10 gap-7">
      <div class="text-center">
        <h2 class="text-4xl font-extrabold text-brand-900 tracking-tight">Scan to Pay</h2>
-       <p class="text-slate-400 font-semibold text-lg mt-2">PayNow &middot; any Singapore banking app</p>
+       <p id="cd-qrScheme" class="text-slate-400 font-semibold text-lg mt-2">PayNow &middot; any Singapore banking app</p>
      </div>
 
      <div class="relative">
@@ -186,7 +186,7 @@
      </div>
 
      <p id="cd-qrWarning" class="hidden text-center text-sm font-bold text-amber-600 bg-amber-50 ring-1 ring-amber-200 rounded-xl px-4 py-2.5">
-       No PayNow UEN or mobile configured — this code shows the amount only and cannot take payment.
+       <span id="cd-qrWarningText">No PayNow UEN or mobile configured — this code shows the amount only and cannot take payment.</span>
      </p>
    </aside>
   </div>
@@ -220,10 +220,33 @@
       return crc.toString(16).toUpperCase().padStart(4, '0');
     }
 
+    // Pos:Country picks the scheme: UPI in India, PayNow in Singapore.
+    const QR_UPI = SHOP_TIME.qrScheme === 'UPI';
+    if (QR_UPI) {
+      document.getElementById('cd-qrScheme').textContent = 'UPI · GPay, PhonePe, Paytm or any UPI app';
+      document.getElementById('cd-qrWarningText').textContent =
+        'No UPI ID configured — this code shows the amount only and cannot take payment.';
+    }
+
+    // UPI is a plain URI (NPCI deep-link spec); the amount is fixed by "am".
+    function upiPayload(data, amount) {
+      const q = new URLSearchParams({
+        pa: data.payNowProxy,
+        pn: (data.merchantName || 'NEXBILL').slice(0, 25),
+        am: amount,
+        cu: 'INR',
+        tr: String(data.seqNo),
+        tn: `Order ${data.seqNo}`
+      });
+      // URLSearchParams writes spaces as "+", which some UPI apps show literally.
+      return 'upi://pay?' + q.toString().replace(/\+/g, '%20');
+    }
+
     function paymentPayload(data) {
       const amount = Number(data.totals.netTotal).toFixed(2);
 
       if (!data.payNowProxy) return `Order ${data.seqNo} - Amount ${amount}`;
+      if (QR_UPI) return upiPayload(data, amount);
 
       // Proxy type: "0" = mobile, "2" = UEN.
       const account =

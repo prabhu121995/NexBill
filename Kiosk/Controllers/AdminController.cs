@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Kiosk.Data;
 using Kiosk.Models;
 using Kiosk.Services;
@@ -73,6 +73,22 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
             if (value.Length > max)
                 return BadRequest(new { error = $"{label} must be at most {max} characters" });
 
+        var currency     = req.CurrencySymbol?.Trim() ?? "";
+        // The QR scheme follows Pos:Country: UPI in India, PayNow in Singapore.
+        var upi          = clock.Country.UsesUpi;
+        var payNowType   = upi ? "upi" : req.PayNowType == "mobile" ? "mobile" : "uen";
+        var payNowProxy  = req.PayNowProxy?.Trim() ?? "";
+        var merchantName = req.PayNowMerchantName?.Trim() ?? "";
+        if (currency.Length > 0 && !Kiosk.Services.CurrencyOptions.Symbols.Contains(currency))
+            return BadRequest(new { error = "Unknown currency" });
+        var proxyLabel = upi ? "UPI ID" : "PayNow UEN / mobile";
+        foreach (var (label, value, max) in new[] { (proxyLabel, payNowProxy, upi ? 60 : 20), (upi ? "Payee name" : "PayNow business name", merchantName, 25) })
+            if (value.Length > max)
+                return BadRequest(new { error = $"{label} must be at most {max} characters" });
+        // A UPI ID is handle@bank, e.g. myshop@okaxis.
+        if (upi && payNowProxy.Length > 0 && !System.Text.RegularExpressions.Regex.IsMatch(payNowProxy, @"^[A-Za-z0-9.\-_]{2,}@[A-Za-z][A-Za-z0-9]{1,}$"))
+            return BadRequest(new { error = "UPI ID must look like myshop@okaxis" });
+
         var userId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
             ? id
             : AuditableEntity.SystemUserId;
@@ -93,9 +109,18 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         row.Address   = address;
         row.Phone     = phone;
         row.GstNo     = gstNo;
+        row.CurrencySymbol     = currency;
+        row.PayNowEnabled      = req.PayNowEnabled;
+        row.PayNowType         = payNowType;
+        row.PayNowProxy        = payNowProxy;
+        row.PayNowMerchantName = merchantName;
         await db.SaveChangesAsync();
 
-        return Ok(new { row.StoreName, row.Address, row.Phone, row.GstNo });
+        return Ok(new
+        {
+            row.StoreName, row.Address, row.Phone, row.GstNo,
+            row.CurrencySymbol, row.PayNowEnabled, row.PayNowType, row.PayNowProxy, row.PayNowMerchantName
+        });
     }
 
     /// <summary>
@@ -479,6 +504,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
             {
                 id       = m.Id,
                 name     = m.Name,
+                sortOrder = m.SortOrder,
                 isActive = m.IsActive,
                 used     = db.CashTransactions.Count(t => t.ModeId == m.Id)
             })
@@ -495,8 +521,9 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         var (name, error) = await ValidateTransactionModeAsync(req, excludeId: null);
         if (error is not null) return error;
 
-        var sort = await db.TransactionModes.MaxAsync(m => (int?)m.SortOrder) ?? 0;
-        var mode = new TransactionMode { Name = name, SortOrder = sort + 1, CreatedBy = CurrentUserId() };
+        // No order given: put the new mode at the end.
+        var sort = req.SortOrder ?? (await db.TransactionModes.MaxAsync(m => (int?)m.SortOrder) ?? 0) + 1;
+        var mode = new TransactionMode { Name = name, SortOrder = sort, CreatedBy = CurrentUserId() };
         db.TransactionModes.Add(mode);
         await db.SaveChangesAsync();
 
@@ -516,6 +543,7 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         if (error is not null) return error;
 
         mode.Name      = name;
+        if (req.SortOrder is int sortOrder) mode.SortOrder = sortOrder;
         mode.UpdatedBy = CurrentUserId();
         mode.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
@@ -562,6 +590,9 @@ public class AdminController(AppDbContext db, BusinessClock clock) : Controller
         var name = (req.Name ?? "").Trim().ToUpperInvariant();
         if (name.Length is 0 or > 30)
             return (name, BadRequest(new { error = "Name is required (max 30 characters)" }));
+
+        if (req.SortOrder is < 0 or > 999)
+            return (name, BadRequest(new { error = "Order must be between 0 and 999" }));
 
         if (await db.TransactionModes.AnyAsync(m => m.Id != excludeId && m.Name == name))
             return (name, Conflict(new { error = $"\"{name}\" already exists" }));
@@ -1216,6 +1247,8 @@ public class MenuItemRequest
 public class TransactionModeRequest
 {
     public string? Name { get; set; }
+    /// <summary>Position in the till's payment list, lowest first. Null keeps the current one (or appends on add).</summary>
+    public int? SortOrder { get; set; }
 }
 
 public class CategoryActiveRequest
@@ -1229,6 +1262,11 @@ public class StoreRequest
     public string? Address { get; set; }
     public string? Phone { get; set; }
     public string? GstNo { get; set; }
+    public string? CurrencySymbol { get; set; }
+    public bool PayNowEnabled { get; set; }
+    public string? PayNowType { get; set; }
+    public string? PayNowProxy { get; set; }
+    public string? PayNowMerchantName { get; set; }
 }
 
 public class ChargesRequest

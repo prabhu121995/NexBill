@@ -37,6 +37,13 @@ public sealed record ShopCountry(
     public CultureInfo CultureInfo => CultureInfo.GetCultureInfo(Culture);
 
     /// <summary>
+    /// The payment QR the customer screen shows: a UPI intent in India, a PayNow
+    /// (SGQR) code in Singapore. Admin &gt; Settings asks for that scheme's details.
+    /// </summary>
+    public bool UsesUpi => CurrencyCode == "INR";
+    public string QrScheme => UsesUpi ? "UPI" : "PayNow";
+
+    /// <summary>
     /// The configured country, with any date/time format overrides applied. Left
     /// out, it is Singapore. A country that is set but unknown stops startup: a typo
     /// quietly becoming some other country, or the server's zone, would stamp bills

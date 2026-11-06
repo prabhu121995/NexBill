@@ -174,7 +174,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.ToTable("order_payment_archive");
             e.Property(p => p.Id).ValueGeneratedNever();
-            e.Property(p => p.Method).HasColumnType("nvarchar(10)").HasMaxLength(10);
+            e.Property(p => p.Method).HasColumnType($"nvarchar({OrderPayment.MethodMaxLength})").HasMaxLength(OrderPayment.MethodMaxLength);
             e.Property(p => p.Amount).HasColumnType("decimal(10,2)");
             e.Property(p => p.Tendered).HasColumnType("decimal(10,2)");
             e.Property(p => p.ChangeGiven).HasColumnType("decimal(10,2)");
@@ -193,6 +193,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(s => s.Address).HasMaxLength(250);
             e.Property(s => s.Phone).HasMaxLength(20);
             e.Property(s => s.GstNo).HasMaxLength(15);
+            e.Property(s => s.CurrencySymbol).HasMaxLength(5).HasDefaultValue("");
+            e.Property(s => s.PayNowType).HasMaxLength(10).HasDefaultValue("uen");
+            e.Property(s => s.PayNowProxy).HasMaxLength(60).HasDefaultValue("");
+            e.Property(s => s.PayNowMerchantName).HasMaxLength(25).HasDefaultValue("");
         });
 
         b.Entity<User>(e =>
@@ -237,7 +241,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<OrderPayment>(e =>
         {
             e.ToTable("order_payment");
-            e.Property(p => p.Method).HasMaxLength(10);
+            e.Property(p => p.Method).HasMaxLength(OrderPayment.MethodMaxLength);
             e.Property(p => p.Amount).HasColumnType("decimal(10,2)");
             e.Property(p => p.Tendered).HasColumnType("decimal(10,2)");
             e.Property(p => p.ChangeGiven).HasColumnType("decimal(10,2)");
