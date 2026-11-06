@@ -57,6 +57,8 @@
     .tap:active { transform: scale(.96); }
     .tap:focus-visible { outline: 2px solid #74793f; outline-offset: 2px; }
     .dish-card:hover { box-shadow: 0 8px 22px -10px rgba(116,121,63,.35); border-color: #d0d3b1; }
+    #categoryRail { --rail-col: 66px; }
+    @@media (min-width: 1024px) { #categoryRail { --rail-col: 86px; } }
     .rail-btn.active::before { content: ''; position: absolute; left: -10px; top: 18%; bottom: 18%; width: 4px; border-radius: 4px; background: #74793f; }
     .rail-btn.active::after { content: ''; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 9px solid #74793f; }
     .cut { --c: 14px; clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c))); }
@@ -177,8 +179,10 @@
   <main class="flex-1 flex min-h-0">
 
     <!-- CATEGORY RAIL -->
-    <nav class="w-[84px] lg:w-[104px] shrink-0 bg-white/60 backdrop-blur-xl border-r border-brand-100 flex flex-col">
-      <div id="categoryRail" class="flex-1 overflow-y-auto no-scrollbar py-3 pl-[10px] pr-2 space-y-2"></div>
+    <!-- Width follows the column count: renderCategories() adds columns (up to
+         Pos:CategoryColumns in appsettings.json) until the tiles fit the screen height. -->
+    <nav class="shrink-0 bg-white/60 backdrop-blur-xl border-r border-brand-100 flex flex-col">
+      <div id="categoryRail" class="flex-1 min-h-0 overflow-y-auto no-scrollbar grid content-start gap-y-2 gap-x-3 py-3 pl-[10px] pr-2"></div>
     </nav>
 
     <!-- MENU AREA -->
@@ -817,9 +821,14 @@
       return AppState.catalog.filter(i => i.category === catId);
     }
 
+    // Max category columns: Pos:CategoryColumns in appsettings.json (1–3, default 1).
+    const RAIL_MAX_COLS = Math.min(3, Math.max(1, _posData.categoryColumns || 1));
+
     function renderCategories() {
       const rail = document.getElementById('categoryRail');
+      const prevScroll = rail.scrollTop;
       rail.innerHTML = '';
+      const maxCols = RAIL_MAX_COLS;
       AppState.categories.forEach(cat => {
         const active = AppState.activeCategory === cat.id;
         const count = itemsInCategory(cat.id).length;
@@ -835,8 +844,48 @@
         btn.onclick = () => selectCategory(cat.id);
         rail.appendChild(btn);
       });
+      // Queue fill: column 1 takes as many tiles as fit the screen height, the
+      // rest go to column 2, then column 3. If even the max columns can't hold
+      // them all, the columns grow evenly and the rail scrolls.
+      const tileCount = rail.children.length;
+      const overflows = () => rail.scrollHeight > rail.clientHeight + 1;
+      rail.style.gridAutoFlow = 'column';
+      const layout = (cols, rows) => {
+        rail.style.gridTemplateColumns = `repeat(${cols}, var(--rail-col))`;
+        rail.style.gridTemplateRows = `repeat(${Math.max(1, rows)}, auto)`;
+      };
+
+      // Single column first; more only when it overflows and config allows.
+      layout(1, tileCount);
+      if (maxCols > 1 && rail.clientHeight > 0 && overflows()) {
+        // How many tiles fit in one column on this screen.
+        const padBottom = parseFloat(getComputedStyle(rail).paddingBottom) || 0;
+        const limit = rail.getBoundingClientRect().top + rail.clientHeight - padBottom;
+        let perCol = 0;
+        for (const tile of rail.children) {
+          if (tile.getBoundingClientRect().bottom <= limit + 1) perCol++; else break;
+        }
+        perCol = Math.max(1, perCol);
+        // A row is as tall as its tallest tile across columns, so step down
+        // until the queue really fits (or the max columns are used up).
+        for (;;) {
+          const cols = Math.min(maxCols, Math.ceil(tileCount / perCol));
+          const rows = cols < maxCols ? perCol : Math.max(perCol, Math.ceil(tileCount / maxCols));
+          layout(cols, rows);
+          if (!overflows() || perCol <= 1 || (cols === maxCols && rows > perCol)) break;
+          perCol--;
+        }
+      }
+      rail.scrollTop = prevScroll;
       renderLevelPath();
     }
+
+    // Screen size changes how many fit per column.
+    let _railResizeT = 0;
+    window.addEventListener('resize', () => {
+      clearTimeout(_railResizeT);
+      _railResizeT = setTimeout(() => { renderCategories(); if (window.lucide) lucide.createIcons(); }, 150);
+    });
 
     function renderLevelPath() {
       const el = document.getElementById('levelPath');
@@ -3220,6 +3269,8 @@
     window.addEventListener('DOMContentLoaded', async () => {
       buildKeyboard();
       renderCategories(); renderDishGrid(); renderCart(); calculateTotals();
+      // Web fonts can change how tall a tile is; re-split the columns once they're in.
+      try { document.fonts.ready.then(() => { renderCategories(); lucide.createIcons(); }); } catch { }
       try { toggleTotalsBreakdown(localStorage.getItem('pos.totalsOpen') === '1'); } catch { }
       setOrderMode('dinein'); setVegFilter('all');
       bindVirtualKeyboardToInputs(); updateCustomerDisplay(); updateClock(); updatePendingBadge();

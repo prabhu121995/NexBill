@@ -4,7 +4,10 @@ ASP.NET Core MVC billing terminal for a cafe, built to run on a two-monitor till
 the cashier bills on one screen, the customer sees their order live on the other.
 
 - **Framework:** .NET 10 (`net10.0`), ASP.NET Core MVC
-- **Data:** EF Core 10.0.12, SQL Server, database `POS`
+- **Data:** EF Core 10.0.12, SQL Server. Development uses LocalDB `dbNexBill`;
+  production uses `db_NexBill` on `winsome.grabweb.in,7525`. See
+  [Production database](#production-database-db_nexbill-on-winsomegrabwebin7525)
+  for the step-by-step migration.
 - **Front end:** Razor views with Tailwind, no build step — every asset is
   served locally, so the till works with the internet down
 
@@ -1021,6 +1024,82 @@ Nothing applies migrations at startup, so a fresh machine starts with no schema:
 ```bash
 dotnet ef database update --project Kiosk
 ```
+
+#### Production database (`db_NexBill` on `winsome.grabweb.in,7525`)
+
+Production uses SQL authentication. `Kiosk/appsettings.Production.json` holds
+the connection string with `YOUR_DB_USER` / `YOUR_DB_PASSWORD` placeholders.
+**Don't commit the real values.** Set them on the server instead (step 4 below),
+or replace them only in the published copy of the file.
+
+Run these from the repo root on a machine that can reach the server on port 7525.
+
+1. **Restore the EF tool** (pinned in `Kiosk/dotnet-tools.json`):
+
+   ```powershell
+   dotnet tool restore --tool-manifest Kiosk/dotnet-tools.json
+   ```
+
+2. **Check the server is reachable** before anything else:
+
+   ```powershell
+   Test-NetConnection winsome.grabweb.in -Port 7525
+   ```
+
+   `TcpTestSucceeded : True` is required. If it is `False`, ask the host to open
+   the port for your IP, or use option B below.
+
+3. **Back up `db_NexBill`** if it already has data. Use the hosting panel's
+   backup, or SSMS › right-click the database › *Tasks › Back Up*.
+
+4. **Option A: apply the migrations directly.** Pass the connection string
+   for this one session only, so the password never goes into a file:
+
+   ```powershell
+   $env:ConnectionStrings__DefaultConnection = "Server=winsome.grabweb.in,7525;Database=db_NexBill;User Id=<user>;Password=<password>;Encrypt=True;TrustServerCertificate=True;"
+   dotnet ef migrations list  --project Kiosk     # shows (Pending) for the ones still to run
+   dotnet ef database update  --project Kiosk
+   Remove-Item Env:ConnectionStrings__DefaultConnection
+   ```
+
+   If `db_NexBill` does not exist yet, `database update` creates it, but only
+   when the login has `dbcreator` rights. On shared hosting, create the empty
+   database in the hosting panel first.
+
+5. **Option B: run a SQL script.** Use this when the port is blocked or the
+   host only lets you run SQL through their panel or SSMS:
+
+   ```powershell
+   dotnet ef migrations script --idempotent --project Kiosk -o db_NexBill-migrate.sql
+   ```
+
+   Open `db_NexBill-migrate.sql` in SSMS connected to `winsome.grabweb.in,7525`,
+   switch the database to `db_NexBill`, and execute it. Because the script is
+   idempotent, it skips migrations that already ran. You can re-run it after
+   every release, so it works for a new database and for upgrading an old one.
+
+6. **Verify.** You should see one row per file in `Kiosk/Migrations` (excluding
+   the snapshot):
+
+   ```sql
+   SELECT MigrationId FROM db_NexBill.dbo.__EFMigrationsHistory ORDER BY MigrationId;
+   ```
+
+7. **Give the running app its credentials.** Pick one:
+   - Set the environment variable `ConnectionStrings__DefaultConnection` on the
+     server: system environment, or IIS › site › *Configuration Editor ›
+     system.webServer/aspNetCore › environmentVariables*.
+   - Or edit `appsettings.Production.json` in the publish folder only.
+
+   The app reads `appsettings.Production.json` only when
+   `ASPNETCORE_ENVIRONMENT=Production`. That is the default when the variable
+   is unset, but check that the server doesn't set it to `Development`.
+
+8. **Start the app.** Startup seeds the roles, the `admin` account, the
+   terminal settings, the store row and the transaction modes, so sign in once
+   and change the `admin` password.
+
+On every later release, run step 4 or 5 again **before** you start the new build.
 
 `config_terminal_setting` is seeded on every start with the service charge
 (**10%**) and tax (**5%**) rows, inserting only what is missing — a rate an admin

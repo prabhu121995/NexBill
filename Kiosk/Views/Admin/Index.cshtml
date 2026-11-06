@@ -376,13 +376,12 @@
               <button onclick="filterOrders('all', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white">All <span data-ocount="all" class="opacity-70"></span></button>
               <button onclick="filterOrders('ordered', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Open <span data-ocount="ordered" class="opacity-70"></span></button>
               <button onclick="filterOrders('completed', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Paid <span data-ocount="completed" class="opacity-70"></span></button>
-              <button onclick="filterOrders('merged', this)" class="tap order-filter-btn px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-500 border border-brand-200">Merged <span data-ocount="merged" class="opacity-70"></span></button>
             </div>
             <div class="glass rounded-2xl shadow-soft overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-sm min-w-[760px]">
                   <thead><tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-brand-100">
-                    <th class="text-left px-4 sm:px-5 py-3">Order #</th><th class="text-left px-4 sm:px-5 py-3">Customer</th><th class="text-left px-4 sm:px-5 py-3">Table</th><th class="text-left px-4 sm:px-5 py-3">Waiter</th><th class="text-left px-4 sm:px-5 py-3">Time</th><th class="text-left px-4 sm:px-5 py-3">Status</th><th class="text-right px-4 sm:px-5 py-3">Total</th><th class="text-right px-4 sm:px-5 py-3">Items</th>
+                    <th class="text-left px-4 sm:px-5 py-3">Order #</th><th class="text-left px-4 sm:px-5 py-3">Customer</th><th class="text-left px-4 sm:px-5 py-3">Phone</th><th class="text-left px-4 sm:px-5 py-3">Waiter</th><th class="text-left px-4 sm:px-5 py-3">Time</th><th class="text-left px-4 sm:px-5 py-3">Status</th><th class="text-right px-4 sm:px-5 py-3">Total</th><th class="text-right px-4 sm:px-5 py-3">Items</th>
                   </tr></thead>
                   <tbody id="ordersBody"><tr><td colspan="8" class="px-5 py-8 text-center text-xs font-bold text-slate-400">Loading&#8230;</td></tr></tbody>
                 </table>
@@ -1360,8 +1359,8 @@
       document.getElementById('ordersBody').innerHTML = list.length ? list.map(o =>
         `<tr class="table-row border-b border-brand-50 last:border-0 ${o.status === 'merged' ? 'opacity-60' : ''}">
           <td class="px-4 sm:px-5 py-3 font-bold text-brand-700 font-mono whitespace-nowrap">${orderNo(o.seqNo)}${o.billType === 'split' ? ' <span class="text-[10px] font-extrabold text-sky-600">SPLIT</span>' : ''}</td>
-          <td class="px-4 sm:px-5 py-3">${customerCell(o)}</td>
-          <td class="px-4 sm:px-5 py-3 text-slate-500 font-semibold whitespace-nowrap">${modeLabel(o)}${o.guests ? ` <span class="text-slate-300">&middot; ${o.guests} pax</span>` : ''}</td>
+          <td class="px-4 sm:px-5 py-3 font-semibold text-slate-700">${esc(o.customer)}</td>
+          <td class="px-4 sm:px-5 py-3 font-mono text-xs font-bold text-slate-500 whitespace-nowrap">${o.phone ? esc(o.phone) : '<span class="text-slate-300">&mdash;</span>'}</td>
           <td class="px-4 sm:px-5 py-3 text-slate-500 font-semibold">${esc(o.waiter) || '<span class="text-slate-300">&mdash;</span>'}</td>
           <td class="px-4 sm:px-5 py-3 text-slate-400 font-semibold whitespace-nowrap" title="${esc(o.date)} ${esc(o.localTime)}">${esc(o.localTime)}</td>
           <td class="px-4 sm:px-5 py-3">${statusBadge(o.status)}${o.mergedInto ? ` <span class="text-[10px] font-bold text-slate-400">into ${orderNo(o.mergedInto)}</span>` : ''}</td>

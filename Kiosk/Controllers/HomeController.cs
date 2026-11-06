@@ -18,7 +18,7 @@ namespace Kiosk.Controllers;
 /// individually — a new billing endpoint is then protected by default.
 /// </summary>
 [Authorize]
-public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdentity machine) : Controller
+public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdentity machine, IConfiguration config) : Controller
 {
     /// <summary>
     /// Next order number for the current trading day, restarting at 1 daily. Read
@@ -66,7 +66,9 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
         // are left out too so they cannot surface under "All" or search.
         var categories = await db.Categories
             .Where(c => c.IsActive)
-            .OrderBy(c => c.SortOrder)
+            // "All" always first on the rail, then A–Z.
+            .OrderByDescending(c => c.ExternalId == "ALL")
+            .ThenBy(c => c.Name)
             .Select(c => new { id = c.ExternalId, name = c.Name, icon = c.Icon, color = c.Color })
             .ToListAsync();
 
@@ -103,6 +105,8 @@ public class HomeController(AppDbContext db, BusinessClock clock, TerminalIdenti
             categories,
             payModes = payModes.Select(OrderPayment.MethodForMode),
             catalog,
+            // Max category columns on the rail, from Pos:CategoryColumns (1–3, default 1).
+            categoryColumns = Math.Clamp(config.GetValue("Pos:CategoryColumns", 1), 1, 3),
             serviceChargePercent = charges.ServiceCharge,
             gstPercent           = charges.Gst,
             payNow = new

@@ -495,11 +495,3 @@ E:\Client\NexBill\Kiosk\obj\Release\net10.0\ref\Kiosk.dll
 E:\Client\NexBill\Kiosk\obj\Release\net10.0\compressed\3izy2nvvt3-{0}-dozs7ffzrm-dozs7ffzrm.gz
 E:\Client\NexBill\Kiosk\obj\Release\net10.0\compressed\bhkg0qlx6l-{0}-dozs7ffzrm-dozs7ffzrm.gz
 E:\Client\NexBill\Kiosk\obj\Release\net10.0\compressed\mfv6hidk0c-{0}-do2vrr6vuv-do2vrr6vuv.gz
-E:\Client\NexBill\Kiosk\bin\Release\net10.0\publish\web.config
-E:\Client\NexBill\Kiosk\bin\Release\net10.0\publish\appsettings.Development.json
-E:\Client\NexBill\Kiosk\bin\Release\net10.0\publish\appsettings.json
-E:\Client\NexBill\Kiosk\bin\Release\net10.0\publish\appsettings.Production.json
-E:\Client\NexBill\Kiosk\bin\Release\net10.0\publish\dotnet-tools.json
-E:\Client\NexBill\Kiosk\bin\Release\net10.0\publish\Kiosk.deps.json
-E:\Client\NexBill\Kiosk\bin\Release\net10.0\publish\Kiosk.runtimeconfig.json
-E:\Client\NexBill\Kiosk\bin\Release\net10.0\publish\Kiosk.staticwebassets.endpoints.json
