@@ -44,7 +44,7 @@ $ErrorActionPreference = 'Stop'
 # staff never type it.
 #   app runs on this machine : http://localhost:5034
 #   hosted elsewhere         : https://pos.yourdomain.com
-$url = 'http://localhost:5034'
+$url = 'https://nexbill.techgeeksasia.in'
 
 # Name on the Desktop icon, in the Start menu, and of the scheduled task.
 # Safe to rename - the next run finds the old one by what it points at and

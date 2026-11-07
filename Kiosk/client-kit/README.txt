@@ -1,7 +1,7 @@
 ﻿NexBill - terminal setup
 =========================
 
-Server: http://localhost:5034
+Server: https://nexbill.techgeeksasia.in
 
 This folder is everything a till needs. The application itself runs on the
 server above; nothing here needs .NET, SQL Server, or the published app.
@@ -31,7 +31,7 @@ Install-Kiosk.bat again.
 
 To start it right now without installing:
 
-    .\Start-Kiosk.bat -Url http://localhost:5034
+    .\Start-Kiosk.bat -Url https://nexbill.techgeeksasia.in
 
 Notes for whoever sets this up:
 
@@ -48,7 +48,7 @@ Notes for whoever sets this up:
     with the till, however the till was ended.
   * That launcher is the hidden PowerShell process behind each till. Leave it
     alone - if it is killed, closing the till leaves the customer display lit.
-  * No internet, no till. The screens are served by http://localhost:5034.
+  * No internet, no till. The screens are served by https://nexbill.techgeeksasia.in.
 
 To remove it again, from a command prompt in this folder:
 

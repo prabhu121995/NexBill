@@ -1,4 +1,5 @@
 ﻿using Kiosk.Data;
+using Microsoft.AspNetCore.DataProtection;
 using Kiosk.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,15 @@ builder.Services.AddSingleton<Kiosk.Services.KioskSession>();
 builder.Services.AddScoped<Kiosk.Services.Attendance>();
 builder.Services.AddScoped<Kiosk.Services.AppBranding>();
 builder.Services.AddControllersWithViews();
+
+// Shared IIS hosting usually runs without a loaded user profile, so ASP.NET keeps its
+// data-protection keys in memory and makes new ones on every app-pool recycle. That
+// invalidates the antiforgery token on the login form (every sign-in answers 400)
+// and signs everyone out. Keeping the keys in a folder beside the app survives
+// restarts; it is outside wwwroot, so the keys are never served.
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")))
+    .SetApplicationName("NexBill");
 builder.Services.AddKioskRateLimiting(builder.Configuration);
 
 // Staff sign-in. Cookie auth only: there is no external identity provider and the
@@ -98,7 +108,18 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<Kiosk.Data.AppDbContext>();
     var seedLog = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Kiosk.Seed");
-    await Kiosk.Data.DbSeeder.SeedAsync(db, seedLog);
+
+    // Seeding is the first database call, so an unreachable server or a missing
+    // table surfaces here. Letting it throw takes the whole site down (IIS 500.30)
+    // with nothing on screen; logging it keeps the site up and names the real cause.
+    try
+    {
+        await Kiosk.Data.DbSeeder.SeedAsync(db, seedLog);
+    }
+    catch (Exception ex)
+    {
+        seedLog.LogError(ex, "Database seeding failed at startup. Check the connection string and that migrations are applied.");
+    }
 }
 
 app.Run();
